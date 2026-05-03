@@ -59,6 +59,8 @@ export default async function OGImage() {
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
               maxWidth: "920px",
+              display: "flex",
+              flexWrap: "wrap",
             }}
           >
             Digitalni servis{" "}
