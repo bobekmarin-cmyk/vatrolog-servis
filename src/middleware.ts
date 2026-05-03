@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { resolveAuthJwtSecret, resolvePlatformJwtSecret } from "@/lib/authEnv";
+import { getAppBaseUrl, getPublicAppUrl } from "@/lib/appVersion";
 
 type AccountRole = "ADMIN" | "WORKSHOP";
 type PlatformRole = "OWNER";
@@ -111,6 +112,22 @@ function isWriteMethod(method: string): boolean {
 }
 
 /**
+ * Javni origin zahtjeva (Railway/Vercel — x-forwarded-*). Bez ovoga
+ * req.nextUrl.origin često nije https javna domena pa CSRF blokira login.
+ */
+function getInboundOrigin(req: NextRequest): string {
+  const protoRaw = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const hostRaw =
+    req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    req.headers.get("host")?.split(",")[0]?.trim();
+  if (hostRaw) {
+    const proto = protoRaw === "http" || protoRaw === "https" ? protoRaw : "https";
+    return `${proto}://${hostRaw}`;
+  }
+  return req.nextUrl.origin;
+}
+
+/**
  * CSRF zaštita preko Origin/Referer provjere (same-origin policy).
  * Pokriva sve mutacijske API pozive. Webhook-ovi i cron ne koriste cookie sesiju
  * pa ih preskačemo.
@@ -124,15 +141,17 @@ function csrfCheckPasses(req: NextRequest): boolean {
   if (pathname.startsWith("/api/webhooks/")) return true;
   if (pathname.startsWith("/api/cron/")) return true;
 
-  const selfOrigin = req.nextUrl.origin;
+  const selfOrigin = getInboundOrigin(req);
   const origin = req.headers.get("origin");
   const referer = req.headers.get("referer");
 
-  // Whitelistaj konfigurabilne domene (APP_BASE_URL) u slučaju proxya.
-  const appBase = process.env.APP_BASE_URL?.trim();
   const allowed = new Set<string>([selfOrigin]);
-  if (appBase) {
-    try { allowed.add(new URL(appBase).origin); } catch { /* ignore */ }
+  for (const base of [getAppBaseUrl(), getPublicAppUrl()]) {
+    try {
+      allowed.add(new URL(base).origin);
+    } catch {
+      /* ignore */
+    }
   }
 
   if (origin) return allowed.has(origin);
