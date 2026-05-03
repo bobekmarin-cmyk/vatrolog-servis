@@ -149,6 +149,10 @@ function collectTrustedHosts(req: NextRequest): Set<string> {
   addTrustedHost(hosts, req.headers.get("host")?.split(",")[0]);
   const rail = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
   if (rail) addTrustedHost(hosts, rail);
+
+  const extras = process.env.CSRF_ALLOWED_HOSTS?.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+  for (const e of extras ?? []) addTrustedHost(hosts, e);
+
   return hosts;
 }
 
