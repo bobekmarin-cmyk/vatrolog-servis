@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { getAppBaseUrl } from "@/lib/appVersion";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_BASE_URL?.trim() || "https://vatrolog.hr"),
+  metadataBase: new URL(getAppBaseUrl()),
   title: {
     default: "VatroLog — Digitalni servis vatrogasnih aparata",
     template: "%s | VatroLog",

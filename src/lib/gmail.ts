@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { getPublicAppUrl } from "@/lib/appVersion";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
@@ -51,10 +52,7 @@ export function decryptToken(ciphertext: string): string {
 // --- OAuth helpers ---
 
 export function getRedirectUri() {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
-  return `${base}/api/gmail/callback`;
+  return `${getPublicAppUrl()}/api/gmail/callback`;
 }
 
 export function buildConsentUrl(state: string): string {
