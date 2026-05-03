@@ -1,0 +1,289 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
+import { resolveAuthJwtSecret, resolvePlatformJwtSecret } from "@/lib/authEnv";
+
+type AccountRole = "ADMIN" | "WORKSHOP";
+type PlatformRole = "OWNER";
+
+type SessionInfo = {
+  role: AccountRole;
+  setupComplete: boolean;
+  activeUntilTs: number;
+  blocked: boolean;
+  isVendorImpersonation: boolean;
+};
+
+async function readSession(req: NextRequest): Promise<null | SessionInfo> {
+  const token = req.cookies.get("vb_session")?.value;
+  if (!token) return null;
+
+  const secret = resolveAuthJwtSecret();
+  if (!secret) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    const role = payload.role;
+    if (role !== "ADMIN" && role !== "WORKSHOP") return null;
+    const setupComplete = payload.setupComplete;
+    const activeUntilTs = typeof payload.activeUntilTs === "number" ? payload.activeUntilTs : 0;
+    const blocked = typeof payload.blocked === "boolean" ? payload.blocked : false;
+    const isVendorImpersonation =
+      typeof payload.isVendorImpersonation === "boolean" ? payload.isVendorImpersonation : false;
+    return {
+      role,
+      setupComplete: typeof setupComplete === "boolean" ? setupComplete : true,
+      activeUntilTs,
+      blocked,
+      isVendorImpersonation,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isSubscriptionActive(session: SessionInfo): boolean {
+  if (session.blocked) return false;
+  if (session.activeUntilTs > 0 && session.activeUntilTs < Date.now()) return false;
+  return true;
+}
+
+/**
+ * Putovi koji moraju raditi i nakon isteka pretplate
+ * (logout, stranica /subscription-expired, auth API).
+ */
+function isAllowedWhenExpired(pathname: string): boolean {
+  if (pathname === "/subscription-expired") return true;
+  if (pathname.startsWith("/api/auth/")) return true;
+  if (pathname === "/login") return true;
+  return false;
+}
+
+async function readPlatformSession(req: NextRequest): Promise<null | { role: PlatformRole }> {
+  const token = req.cookies.get("vb_platform_session")?.value;
+  if (!token) return null;
+
+  const secret = resolvePlatformJwtSecret();
+  if (!secret) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    const role = payload.role;
+    if (role !== "OWNER") return null;
+    return { role };
+  } catch {
+    return null;
+  }
+}
+
+function isPublicPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  if (pathname === "/login") return true;
+  if (pathname === "/register") return true;
+  if (pathname === "/forgot-password") return true;
+  if (pathname === "/reset-password") return true;
+  if (pathname === "/verify-email") return true;
+  if (pathname.startsWith("/auth/")) return true;
+  if (pathname === "/subscription-expired") return true;
+  if (pathname === "/api/health") return true;
+  if (pathname.startsWith("/api/auth/")) return true;
+  if (pathname.startsWith("/api/public/")) return true;
+  if (pathname.startsWith("/api/webhooks/")) return true;
+  if (pathname.startsWith("/api/cron/")) return true;
+  if (pathname.startsWith("/portal/")) return true;
+  if (pathname.startsWith("/legal/")) return true;
+  if (pathname === "/landing" || pathname.startsWith("/landing/")) return true;
+  return false;
+}
+
+function isRestrictedForWorkshop(pathname: string): boolean {
+  // WORKSHOP ne smije vidjeti admin sekcije i izvještaje/analize
+  if (pathname.startsWith("/admin")) return true;
+  if (pathname.startsWith("/reports")) return true;
+  if (pathname.startsWith("/api/admin")) return true;
+  if (pathname.startsWith("/api/reports")) return true;
+  return false;
+}
+
+function isWriteMethod(method: string): boolean {
+  const m = method.toUpperCase();
+  return !(m === "GET" || m === "HEAD" || m === "OPTIONS");
+}
+
+/**
+ * CSRF zaštita preko Origin/Referer provjere (same-origin policy).
+ * Pokriva sve mutacijske API pozive. Webhook-ovi i cron ne koriste cookie sesiju
+ * pa ih preskačemo.
+ */
+function csrfCheckPasses(req: NextRequest): boolean {
+  const method = req.method.toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return true;
+
+  const pathname = req.nextUrl.pathname;
+  if (!pathname.startsWith("/api/")) return true;
+  if (pathname.startsWith("/api/webhooks/")) return true;
+  if (pathname.startsWith("/api/cron/")) return true;
+
+  const selfOrigin = req.nextUrl.origin;
+  const origin = req.headers.get("origin");
+  const referer = req.headers.get("referer");
+
+  // Whitelistaj konfigurabilne domene (APP_BASE_URL) u slučaju proxya.
+  const appBase = process.env.APP_BASE_URL?.trim();
+  const allowed = new Set<string>([selfOrigin]);
+  if (appBase) {
+    try { allowed.add(new URL(appBase).origin); } catch { /* ignore */ }
+  }
+
+  if (origin) return allowed.has(origin);
+  if (referer) {
+    try { return allowed.has(new URL(referer).origin); } catch { return false; }
+  }
+  // Niti Origin niti Referer → odbij (moderni browseri uvijek šalju barem jedno).
+  return false;
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  if (!csrfCheckPasses(req)) {
+    return NextResponse.json(
+      { error: "CSRF zaštita: nedozvoljen izvor zahtjeva.", code: "CSRF_BLOCKED" },
+      { status: 403 },
+    );
+  }
+
+  const isPlatformPath =
+    pathname === "/platform" ||
+    pathname.startsWith("/platform/") ||
+    pathname.startsWith("/api/platform/");
+
+  if (isPlatformPath) {
+    const ps = await readPlatformSession(req);
+
+    // Public platform rute
+    if (pathname === "/platform/login" || pathname.startsWith("/api/platform/auth/")) {
+      // ako je već ulogiran, preskoči login
+      if (pathname === "/platform/login" && ps) {
+        const url = req.nextUrl.clone();
+        url.pathname = "/platform/companies";
+        return NextResponse.redirect(url);
+      }
+      return NextResponse.next();
+    }
+
+    // sve ostalo zahtijeva platform sesiju
+    if (!ps) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Niste prijavljeni (platform)." }, { status: 401 });
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = "/platform/login";
+      return NextResponse.redirect(url);
+    }
+
+    return NextResponse.next();
+  }
+
+  const session = await readSession(req);
+
+  // /login: redirect ako je već prijavljen rješava login/layout.tsx + getSession (DB), ne middleware
+  // Public rute su dostupne bez sesije
+  if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Sve ostalo zahtijeva login
+  if (!session) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Niste prijavljeni." }, { status: 401 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Pretplata: ako istekla ili blokirana, dozvoli samo /subscription-expired, logout i auth API.
+  if (!isSubscriptionActive(session) && !isAllowedWhenExpired(pathname)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        {
+          error: session.blocked
+            ? "Vaša tvrtka je blokirana."
+            : "Pretplata je istekla. Obnovite pretplatu za nastavak rada.",
+          code: session.blocked ? "SUBSCRIPTION_BLOCKED" : "SUBSCRIPTION_EXPIRED",
+        },
+        { status: 402 },
+      );
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/subscription-expired";
+    return NextResponse.redirect(url);
+  }
+
+  // Role-based zabrane
+  if (session.role === "WORKSHOP" && isRestrictedForWorkshop(pathname)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Nemate ovlasti za ovu radnju." }, { status: 403 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.searchParams.set("forbidden", "1");
+    return NextResponse.redirect(url);
+  }
+
+  // Vendor impersonation: read-only by default.
+  const vendorImpersonationCookie = req.cookies.get("vb_impersonation_mode")?.value === "1";
+  const vendorImpersonation = session.isVendorImpersonation && vendorImpersonationCookie;
+  const writeEnabled = req.cookies.get("vb_impersonation_write")?.value === "1";
+  if (vendorImpersonation && isWriteMethod(req.method) && pathname.startsWith("/api/")) {
+    if (!writeEnabled && !pathname.startsWith("/api/auth/logout")) {
+      return NextResponse.json(
+        {
+          error: "Vendor access mode je read-only. Uključite write mode za ovu radnju.",
+          code: "VENDOR_IMPERSONATION_READ_ONLY",
+        },
+        { status: 403 },
+      );
+    }
+  }
+
+  // Setup gating: dok admin ne popuni obavezne podatke tvrtke
+  if (!session.setupComplete) {
+    // uvijek dozvoli logout
+    if (pathname.startsWith("/api/auth/logout")) return NextResponse.next();
+
+    if (session.role === "ADMIN") {
+      // admin smije samo u Postavke + admin API dok ne popuni podatke
+      if (pathname.startsWith("/admin/settings") || pathname.startsWith("/api/admin/")) {
+        return NextResponse.next();
+      }
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Potrebno je dovršiti postavke tvrtke." }, { status: 409 });
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/settings";
+      url.searchParams.set("setup", "1");
+      return NextResponse.redirect(url);
+    }
+
+    // WORKSHOP: info screen
+    if (pathname === "/setup-required") return NextResponse.next();
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Admin mora dovršiti postavke tvrtke." }, { status: 409 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/setup-required";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    // sve osim Next internals i statike
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+  ],
+};
+

@@ -1,0 +1,1537 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * =======================
+ * ENUMI
+ * =======================
+ */
+
+enum UserRole {
+  ADMIN
+  SERVISER
+}
+
+enum CustomerType {
+  LEGAL
+  PERSON
+}
+
+enum WorkOrderStatus {
+  DRAFT
+  IN_PROGRESS
+  LOCKED
+}
+
+/// Tko je dostavio aparate na servis
+enum ReceiptDeliveryMode {
+  CUSTOMER // kupac dovozi
+  SERVISER // serviser preuzima / dostavlja
+}
+
+enum ExtinguisherStatus {
+  ACTIVE
+  SCRAPPED
+  LOST
+}
+
+enum CapacityUnit {
+  KG
+  L
+}
+
+enum InternalRuleMode {
+  FIXED // uvijek X godina (Total)
+  AGE_BASED // do N godina => Y, starije => Z (Pastor)
+}
+
+enum AccountRole {
+  ADMIN
+  WORKSHOP
+}
+
+/// Tip servisne lokacije:
+/// - STATIONARY: stacionarni servis u sjedištu (više od jedne moguće, sufiksi S, S2, S3...)
+/// - VEHICLE: servisno vozilo na lokaciji kupca (uvijek numerirane od V1)
+enum ServiceLocationKind {
+  STATIONARY
+  VEHICLE
+}
+
+enum ServiceKind {
+  PERIODIC
+  INTERNAL
+}
+
+/// Tip servisne naljepnice koja se troši pri periodičnom pregledu aparata.
+/// Svaki proizvođač ima točno ova tri tipa naljepnica.
+enum ServiceLabelKind {
+  PERIODIC        // Naljepnica periodičnog pregleda
+  APPARATUS_MASS  // Naljepnica mase aparata (STORED_PRESSURE + CO2)
+  CYLINDER_MASS   // Naljepnica mase bočice (CARTRIDGE)
+}
+
+/**
+ * =======================
+ * PLATFORM (ULTRA ADMIN)
+ * =======================
+ */
+
+enum PlatformRole {
+  OWNER
+}
+
+model PlatformUser {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  passwordHash String
+  role         PlatformRole @default(OWNER)
+  active       Boolean      @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Singleton (jedan red po `provider`) za vendor/platform integracije.
+/// Trenutno: Gmail za sistemski mail (reset, invite, verify, expiry, podsjetnici).
+model PlatformIntegration {
+  id              String    @id @default(cuid())
+  provider        String    @unique // "GMAIL"
+  email           String?
+  accessTokenEnc  String?
+  refreshTokenEnc String?
+  scope           String?
+  expiresAt       DateTime?
+  connectedAt     DateTime?
+  connectedById   String?
+  updatedAt       DateTime  @updatedAt
+}
+
+/// Singleton platformske postavke (branding overrides za sistemski mail i sl.).
+model PlatformSettings {
+  id               String   @id @default(cuid())
+  defaultFromName  String?
+  defaultFromEmail String?
+  signatureHtml    String?
+  logoUrl          String?
+  brandColor       String?
+  updatedAt        DateTime @updatedAt
+}
+
+model CompanyFeature {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// npr. "REPORTS_MONTHLY", "ADMIN_SERVICERS"
+  key String
+
+  enabledForAdmin    Boolean @default(true)
+  enabledForWorkshop Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, key])
+  @@index([companyId])
+}
+
+/**
+ * =======================
+ * KORISNICI (SERVISERI)
+ * =======================
+ */
+
+model User {
+  id       String   @id @default(cuid())
+  fullName String
+  role     UserRole @default(SERVISER)
+  active   Boolean  @default(true)
+
+  pin         String?
+  activatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  servicedItems WorkOrderItem[] @relation("ServicerItems")
+  lockedOrders  WorkOrder[]     @relation("LockedBy")
+  documentLogs  DocumentLog[]   @relation("DocumentLogUser")
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+/// Brisanje tvrtke (Company) uklanja sve vezane zapise (onDelete: Cascade na većini relacija).
+/// U produkciji koristi soft-delete preko deletedAt.
+model Company {
+  id String @id @default(cuid())
+
+  name        String
+  oib         String @unique
+  /// šifra servisa / tenant prefix (npr. "4201")
+  serviceCode String @unique
+
+  /// Slug koji se kombinira sa serviceCode-om za usernamee računa (npr. "vatrobr" → "01-vatrobr").
+  /// Auto-derive iz shortName-a (lowercase a-z0-9, prvih 7 chars), editabilno na platformi.
+  usernameSlug String
+
+  street     String
+  city       String
+  postalCode String
+  iban       String
+
+  contactName String?
+  email       String?
+  phone       String?
+
+  /// SaaS pretplata: null = neograničeno, inače datum do kad vrijedi
+  activeUntil DateTime?
+  /// Ručna blokada od strane platform ownera
+  blocked     Boolean   @default(false)
+
+  /// Trial koji je samopostavljen pri signupu (14 dana). Null nakon pretvorbe u plaćenu pretplatu.
+  trialEndsAt DateTime?
+
+  /// Stripe SaaS polja (popunjena ako je Stripe omogućen).
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+
+  /// White-label.
+  logoUrl    String?
+  brandColor String?
+  fromName   String?
+
+  gmailAccessToken  String?
+  gmailRefreshToken String?
+  gmailEmail        String?
+  gmailConnectedAt  DateTime?
+
+  /// Soft delete — ne hard cascade; scrub job nakon 30 dana.
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts         AccountUser[]
+  servicers        User[]
+  features         CompanyFeature[]
+  serviceLocations CompanyServiceLocation[]
+
+  customers           Customer[]
+  customerDepartments CustomerDepartment[]
+  workOrders          WorkOrder[]
+  extinguishers       Extinguisher[]
+  workOrderItems      WorkOrderItem[]
+  workOrderItemParts  WorkOrderItemPart[]
+  itemCounters        InternalCodeCounter[]
+  documentLogs        DocumentLog[]
+  emailLogs           EmailLog[]
+  emailTemplates      EmailTemplate[]
+
+  authTokens  AuthToken[]
+  auditLogs   AuditLog[]
+  userInvites UserInvite[]
+  invoices    Invoice[]
+  apiKeys     ApiKey[]
+
+  /// Veza na zahtjev za pristup od kojeg je tvrtka kreirana (može biti null
+  /// za tvrtke koje vendor ručno kreira mimo public formulara).
+  registrationRequest RegistrationRequest?
+
+  /// Vlastiti (tenant-specific) dijelovi koje je ova tvrtka dodala izvan platform kataloga.
+  customParts Part[]
+
+  /// Tenant-specific katalog usluga (šifre za računovodstvo, opcionalna cijena).
+  serviceCatalog CompanyServiceCatalog[]
+
+  /// Vlastite (slobodne) usluge tenanta — neovisne o varijanti aparata.
+  customServices             CompanyCustomService[]
+  workOrderItemCustomServices WorkOrderItemCustomService[]
+
+  authorizations      CompanyManufacturerAuthorization[]
+  serviceLabelStocks  ServiceLabelStock[]
+  serviceLabelReceipts ServiceLabelReceipt[]
+  serviceLabelAdjustments ServiceLabelAdjustment[]
+
+  @@index([deletedAt])
+}
+
+model AccountUser {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  username     String      @unique
+  passwordHash String
+  role         AccountRole @default(WORKSHOP)
+  active       Boolean     @default(true)
+
+  /// Servisna lokacija na koju je račun vezan. Null za ADMIN; obavezno za WORKSHOP.
+  serviceLocationId String?
+  serviceLocation   CompanyServiceLocation? @relation(fields: [serviceLocationId], references: [id], onDelete: SetNull)
+
+  /// Email koristi se za reset lozinke, pozivnice, verifikaciju.
+  email           String?
+  emailVerifiedAt DateTime?
+
+  /// TOTP MFA (opcionalno, uključeno kada admin doda MFA).
+  mfaSecret    String?
+  mfaEnabledAt DateTime?
+
+  /// Force-logout marker: ako je postavljen, sve sesije izdane prije ovog vremena
+  /// (`iat < sessionsValidAfter`) tretiraju se kao nevažeće.
+  sessionsValidAfter DateTime?
+  /// Trenutno važeći session id za WORKSHOP račune. Novi login zamjenjuje staru sesiju.
+  currentSessionId  String?
+
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authTokens AuthToken[]
+  auditLogs  AuditLog[]  @relation("AuditActor")
+  emailLogs  EmailLog[]  @relation("EmailLogAccountUser")
+
+  stockReceipts    StockReceipt[]
+  stockAdjustments StockAdjustment[]
+
+  serviceLabelReceipts    ServiceLabelReceipt[]
+  serviceLabelAdjustments ServiceLabelAdjustment[]
+
+  workOrdersCreated WorkOrder[] @relation("WorkOrderCreatedByAccountUser")
+
+  @@index([companyId, role])
+  @@index([email])
+  @@index([serviceLocationId])
+}
+
+/// Servisna lokacija tvrtke (stacionarni servis ili servisno vozilo).
+/// Vezano 1:N na AccountUser (po dizajnu jedan workshop račun = jedna lokacija, ali shema dopušta više
+/// AccountUsera po lokaciji ako se kasnije pokaže potreba). WorkOrder snapshota lokaciju pri kreiranju.
+model CompanyServiceLocation {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  kind    ServiceLocationKind
+  /// Korisnička labela koja se prikazuje (npr. "Stacionarni servis", "Servisno vozilo Mate").
+  label   String
+  /// Redni broj unutar tipa (1, 2, 3...). Koristi se za sufiks usernamea.
+  ordinal Int
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts   AccountUser[]
+  workOrders WorkOrder[]
+
+  @@unique([companyId, kind, ordinal])
+  @@index([companyId, active])
+}
+
+/**
+ * =======================
+ * KUPCI
+ * =======================
+ */
+
+model Customer {
+  id         String       @id @default(cuid())
+  companyId  String
+  company    Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type       CustomerType
+  name       String
+  shortName  String?
+  oib        String
+  street     String?
+  postalCode String?
+  city       String?
+  address    String
+
+  contactPerson String?
+  phone         String?
+  email         String?
+  note          String?
+
+  autoNotify Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Token za javni customer portal (kupac vidi svoju opremu bez logina).
+  /// Random 32-byte string. Null znači da portal nije omogućen.
+  portalSecret String? @unique
+
+  /// Soft delete.
+  deletedAt DateTime?
+
+  workOrders  WorkOrder[]
+  departments CustomerDepartment[]
+
+  backlogSnoozes CustomerBacklogSnooze[]
+  emailLogs      EmailLog[]
+
+  @@unique([companyId, oib])
+  @@index([companyId])
+  @@index([deletedAt])
+}
+
+model CustomerDepartment {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+
+  workOrders WorkOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId, name])
+  @@index([companyId])
+  @@index([customerId])
+}
+
+/**
+ * =======================
+ * PROIZVOĐAČI
+ * =======================
+ */
+
+model Manufacturer {
+  id   String @id @default(cuid())
+  name String @unique
+
+  /// Skraćeni prikaz na svim user-facing dokumentima (PDF, otpremnica, upisnik, …).
+  /// Ako je null/empty, koristi se `name`.
+  displayName String?
+
+  oib           String?
+  address       String?
+  contactPerson String?
+  contactEmail  String?
+
+  createdAt DateTime @default(now())
+
+  extinguishers  Extinguisher[]
+  supportedTypes ManufacturerExtinguisherType[]
+  parts          Part[]
+  serviceLabels  ServiceLabel[]
+  authorizations CompanyManufacturerAuthorization[]
+}
+
+model ManufacturerExtinguisherType {
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+
+  extinguisherTypeId String
+  extinguisherType   ExtinguisherType @relation(fields: [extinguisherTypeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([manufacturerId, extinguisherTypeId])
+  @@index([extinguisherTypeId])
+}
+
+/**
+ * =======================
+ * KATALOG -- IZVEDBE I SREDSTVA GAŠENJA
+ * =======================
+ */
+
+/// Sredstvo gašenja (prah, pjena, CO2, voda, wet chemical, F-500, ...)
+model AgentType {
+  id        String  @id @default(cuid())
+  code      String  @unique
+  label     String
+  symbol    String?
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  types          ExtinguisherType[]
+  serviceCatalog CompanyServiceCatalog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Izvedba aparata (stalni tlak / bočica / CO2)
+model Construction {
+  id        String  @id @default(cuid())
+  code      String  @unique
+  label     String
+  prefix    String?
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  types          ExtinguisherType[]
+  serviceCatalog CompanyServiceCatalog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/**
+ * =======================
+ * TIPOVI APARATA
+ * =======================
+ */
+
+model ExtinguisherType {
+  id   String @id @default(cuid())
+  code String
+  name String
+
+  agentId String
+  agent   AgentType @relation(fields: [agentId], references: [id])
+
+  constructionId String
+  construction   Construction @relation(fields: [constructionId], references: [id])
+
+  capacity     Int?
+  capacityUnit CapacityUnit?
+
+  /// Pravila unutarnjeg pregleda (UP) — definirana po tipu aparata.
+  /// FIXED:     uvijek `internalIntervalYears` (npr. Total = 4).
+  /// AGE_BASED: ovisno o starosti aparata (npr. Pastor: prag 14, mladi 5, stari 2).
+  internalRuleMode      InternalRuleMode @default(FIXED)
+  internalIntervalYears Int              @default(4)
+
+  /// samo za AGE_BASED
+  internalOldThresholdYears  Int?
+  internalOldIntervalYears   Int?
+  internalYoungIntervalYears Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  extinguishers Extinguisher[]
+  manufacturers ManufacturerExtinguisherType[]
+  parts         PartExtinguisherType[]
+
+  @@unique([code, agentId])
+  @@index([agentId])
+  @@index([constructionId])
+}
+
+/// Per-tenant katalog usluga (Periodični / Unutarnji pregled) po **varijanti**
+/// aparata. Varijanta se izračunava iz (agent, construction, capacity,
+/// capacityUnit); deterministički `variantKey` osigurava da isti fizički tip
+/// aparata prisutan kod više proizvođača dobije **jedan** red u katalogu
+/// (tenant upisuje šifru samo jednom). Za tipove bez prefix/capacity koristi
+/// se fallback ključ po `type.code` i `fallbackLabel`.
+model CompanyServiceCatalog {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  agentId String
+  agent   AgentType @relation(fields: [agentId], references: [id])
+
+  constructionId String?
+  construction   Construction? @relation(fields: [constructionId], references: [id])
+
+  capacity     Int?
+  capacityUnit CapacityUnit?
+
+  /// Fallback label kad prefix/capacity nedostaju (npr. "CO2-2", manualni tipovi).
+  fallbackLabel String?
+  variantKey    String
+
+  kind  ServiceKind
+  code  String?
+  price Decimal?    @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, variantKey, kind])
+  @@index([companyId])
+  @@index([agentId])
+  @@index([constructionId])
+}
+
+/**
+ * =======================
+ * DIJELOVI (GLOBALNI KATALOG, PER-PROIZVOĐAČ)
+ * =======================
+ */
+
+model Part {
+  id String @id @default(cuid())
+
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+
+  /// null = globalni katalog (platform), non-null = vlastiti dio tenant-a.
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  code   String
+  name   String
+  common Boolean @default(false)
+  active Boolean @default(true)
+
+  /// Cijena dijela u EUR, koristi se kao default na nalogu.
+  defaultPrice Decimal? @db.Decimal(10, 2)
+
+  types        PartExtinguisherType[]
+  usedIn       WorkOrderItemPart[]
+  stocks       PartStock[]
+  receiptItems StockReceiptItem[]
+  adjustments  StockAdjustment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([manufacturerId, companyId, code])
+  @@index([manufacturerId])
+  @@index([companyId])
+}
+
+/// Zaliha dijela po tvrtki (multi-tenant stock). Dijeli se od globalnog kataloga Part-a.
+model PartStock {
+  id String @id @default(cuid())
+
+  companyId String
+  part      Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+  partId    String
+
+  stockQty    Int @default(0)
+  minStockQty Int @default(0)
+
+  /// Tenant može sakriti (deaktivirati) globalni ili vlastiti dio da ga ne vidi
+  /// u svojim popisima i picker-u na radnom nalogu.
+  hidden Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, partId])
+  @@index([companyId])
+}
+
+model PartExtinguisherType {
+  partId String
+  part   Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  extinguisherTypeId String
+  extinguisherType   ExtinguisherType @relation(fields: [extinguisherTypeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([partId, extinguisherTypeId])
+  @@index([extinguisherTypeId])
+}
+
+/// Skladišna primka — ulaz dijelova od dobavljača (slobodan tekst dobavljača).
+model StockReceipt {
+  id           String   @id @default(cuid())
+  companyId    String
+  number       String
+  receiptDate  DateTime @default(now())
+  supplierName String
+  reference    String?
+  note         String?
+
+  createdById String?
+  createdBy   AccountUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  items StockReceiptItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, number])
+  @@index([companyId, receiptDate])
+}
+
+model StockReceiptItem {
+  id        String       @id @default(cuid())
+  receiptId String
+  receipt   StockReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  partId String
+  part   Part   @relation(fields: [partId], references: [id], onDelete: Restrict)
+
+  quantity  Int
+  unitPrice Decimal? @db.Decimal(10, 2)
+
+  @@index([receiptId])
+  @@index([partId])
+}
+
+/// Ručna korekcija stanja (+/-), s razlogom.
+model StockAdjustment {
+  id        String @id @default(cuid())
+  companyId String
+  partId    String
+  part      Part   @relation(fields: [partId], references: [id], onDelete: Restrict)
+
+  delta  Int
+  reason String
+
+  createdById String?
+  createdBy   AccountUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, partId, createdAt])
+}
+
+/**
+ * =======================
+ * VATROGASNI APARATI
+ * =======================
+ */
+
+model Extinguisher {
+  id              String  @id @default(cuid())
+  companyId       String
+  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  internalCode    String
+  serialNumber    String
+  productionYear  Int
+  typeDescription String?
+
+  status ExtinguisherStatus @default(ACTIVE)
+
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id])
+
+  // ✅ A2: agregati za rokove (računamo kod servisa)
+  lastPeriodicAt  DateTime?
+  lastInternalAt  DateTime?
+  nextPeriodicDue DateTime?
+  nextInternalDue DateTime?
+
+  scrappedAt  DateTime?
+  scrapReason String?
+
+  /// Soft delete (npr. ako se aparat greškom unese). SCRAPPED status je poslovni, ne delete.
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workItems WorkOrderItem[]
+
+  extinguisherTypeId String
+  type               ExtinguisherType @relation(fields: [extinguisherTypeId], references: [id])
+
+  @@unique([companyId, internalCode])
+  @@index([companyId])
+  @@index([deletedAt])
+}
+
+/**
+ * =======================
+ * SERVISNI NALOZI
+ * =======================
+ */
+
+model WorkOrder {
+  id String @id @default(cuid())
+
+  /// format: 26-01-001
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  orderNumber String
+
+  status WorkOrderStatus @default(DRAFT)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  departmentId String?
+  department   CustomerDepartment? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  /// datum primitka (prije bio na Receipt)
+  receivedAt DateTime
+
+  /// Način dostave aparata na servis. Obavezno samo kad se servis odvija u STATIONARY lokaciji
+  /// (kupac/serviser); za VEHICLE je null jer se servis radi na lokaciji kupca u vozilu.
+  deliveryMode ReceiptDeliveryMode?
+
+  /// Servisna lokacija na kojoj se nalog izvršava (snapshot u trenutku kreiranja).
+  /// Null za stare naloge prije uvođenja koncepta lokacija.
+  serviceLocationId String?
+  serviceLocation   CompanyServiceLocation? @relation(fields: [serviceLocationId], references: [id], onDelete: SetNull)
+
+  /// AccountUser koji je kreirao radni nalog (za audit i filtriranje po lokaciji/useru).
+  createdByAccountUserId String?
+  createdByAccountUser   AccountUser? @relation("WorkOrderCreatedByAccountUser", fields: [createdByAccountUserId], references: [id], onDelete: SetNull)
+
+  dueAt      DateTime?
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  lockedAt   DateTime?
+  lockedById String?
+  lockedBy   User?     @relation("LockedBy", fields: [lockedById], references: [id])
+
+  /// inicijalni broj aparata unesen pri kreiranju naloga
+  receivedQty Int     @default(0)
+  note        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items WorkOrderItem[]
+
+  documentLogs DocumentLog[]
+
+  labelConsumptions WorkOrderLabelConsumption[]
+
+  @@unique([companyId, orderNumber])
+  @@index([companyId, createdAt])
+  @@index([companyId, status, createdAt])
+  @@index([companyId, departmentId])
+  @@index([companyId, receivedAt])
+  @@index([companyId, serviceLocationId])
+  @@index([companyId, createdByAccountUserId])
+}
+
+/**
+ * =======================
+ * LOG GENERIRANJA DOKUMENATA
+ * =======================
+ */
+
+model DocumentLog {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  /// "REGISTER_VIEW" | "REGISTER_PDF" | "DELIVERY_NOTE_PDF"
+  docType String
+
+  userId String?
+  user   User?   @relation("DocumentLogUser", fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([workOrderId, createdAt])
+  @@index([companyId])
+}
+
+/**
+ * =======================
+ * STAVKE SERVISNOG NALOGA
+ * =======================
+ */
+
+model WorkOrderItem {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+
+  extinguisherId String?
+  extinguisher   Extinguisher? @relation(fields: [extinguisherId], references: [id])
+
+  servicerId String?
+  servicer   User?   @relation("ServicerItems", fields: [servicerId], references: [id])
+
+  /// placeholder za primku (još nije poznat točan aparat)
+  isPlaceholder Boolean @default(false)
+
+  periodicDone Boolean @default(false)
+  internalDone Boolean @default(false)
+
+  // ✅ A2: datum kad je odrađen unutarnji pregled (povijest po stavci)
+  internalDoneAt DateTime?
+
+  /// slobodan unos naljepnice (kontrola duplikata u kodu)
+  labelNumber String?
+
+  /// ide na upisnik
+  serviceLocationText String?
+
+  /// ugrađeni dijelovi (slobodan tekst)
+  partsText String?
+
+  /// ugrađeni dijelovi (strukturirano)
+  parts WorkOrderItemPart[]
+
+  /// vlastite (slobodne) usluge dodane na ovu stavku (qty = 1 po vezi)
+  customServices WorkOrderItemCustomService[]
+
+  /// interno
+  serviceNote String?
+
+  servicedAt DateTime?
+
+  nextPeriodicDue DateTime?
+  nextInternalDue DateTime?
+
+  /// Snapshot originalnog PP roka (prije servisa) u trenutku kad se aparat pridruži nalogu.
+  /// Koristi se za "popis po mjesecima" kako aparat ne bi "nestao" iz mjeseca nakon servisa.
+  /// Unutarnji pregled se ne vodi zasebno — ide uvijek uz PP (2/4/5 god interval).
+  targetPeriodicMonth DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, labelNumber])
+  @@index([companyId])
+  @@index([targetPeriodicMonth])
+}
+
+model WorkOrderItemPart {
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workOrderItemId String
+  workOrderItem   WorkOrderItem @relation(fields: [workOrderItemId], references: [id], onDelete: Cascade)
+
+  partId String
+  part   Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  /// Ugrađena količina (default 1).
+  quantity Int @default(1)
+
+  /// Jedinična cijena u EUR u trenutku ugradnje (snapshot, ne referencira Part.defaultPrice).
+  unitPrice Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@id([workOrderItemId, partId])
+  @@index([companyId])
+  @@index([partId])
+}
+
+/**
+ * =======================
+ * VLASTITE (SLOBODNE) USLUGE TENANTA
+ * =======================
+ *
+ * Neovisne od varijante aparata — ne vežu se uz `ExtinguisherType`. Tenant ih
+ * sam definira u 'Šifre usluga' (naziv, šifra, cijena) i može ih dodati uz
+ * pojedinu stavku radnog naloga preko boxa 'Dodatne usluge' (qty = 1).
+ */
+model CompanyCustomService {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name  String
+  code  String?
+  price Decimal? @db.Decimal(10, 2)
+
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workOrderItems WorkOrderItemCustomService[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model WorkOrderItemCustomService {
+  companyId       String
+  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workOrderItemId String
+  workOrderItem   WorkOrderItem @relation(fields: [workOrderItemId], references: [id], onDelete: Cascade)
+
+  customServiceId String
+  customService   CompanyCustomService @relation(fields: [customServiceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@id([workOrderItemId, customServiceId])
+  @@index([customServiceId])
+  @@index([companyId])
+}
+
+/**
+ * =======================
+ * ODGAĐANJE BACKLOGA PO KUPCU
+ * =======================
+ */
+
+model CustomerBacklogSnooze {
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  /// mjesec na koji se odnosi (uvijek spremamo 1. u mjesecu)
+  monthStart DateTime
+
+  /// koliko komada zaostatka ignorirati (maknuti iz backlog liste)
+  ignoreCount Int @default(0)
+
+  /// do kada vrijedi (null = neograničeno)
+  validUntil DateTime?
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId, monthStart])
+}
+
+model InternalCodeCounter {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// npr. "09" (težina punjenja kao prefix)
+  weightCode String
+
+  /// zadnji korišten broj za tu težinu
+  lastNumber Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, weightCode])
+  @@index([companyId])
+}
+
+/**
+ * =======================
+ * EMAIL LOGOVI
+ * =======================
+ */
+
+model EmailLog {
+  id String @id @default(cuid())
+
+  /// Null za sistemske mailove vezane uz vendor (npr. test-send bez tvrtke).
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// Null za sistemske mailove (reset, invite, verify, vendor test).
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  /// Optional FK na primatelja iz `AccountUser` (reset/invite/verify cilja AccountUser).
+  accountUserId String?
+  accountUser   AccountUser? @relation("EmailLogAccountUser", fields: [accountUserId], references: [id], onDelete: SetNull)
+
+  toEmail   String
+  subject   String
+  htmlBody  String?
+
+  /// Tip maila: "CUSTOMER_NOTIFICATION" | "PASSWORD_RESET" | "ACCOUNT_INVITE" |
+  /// "EMAIL_VERIFY" | "SUBSCRIPTION_EXPIRY" | "MONTHLY_REMINDER" | "VENDOR_TEST" | "OTHER".
+  kind String @default("CUSTOMER_NOTIFICATION")
+
+  /// Transport kojim je mail poslan: "VENDOR_GMAIL" | "TENANT_GMAIL" | "SMTP" | "DEV_LOG".
+  transport String?
+
+  /// Provider message id (Gmail messageId / SMTP messageId).
+  messageId String?
+
+  /// Customer notification specifika — i dalje optional.
+  month     String?
+  itemCount Int?
+
+  sentAt DateTime @default(now())
+  status String
+  error  String?
+
+  @@index([companyId, month])
+  @@index([customerId])
+  @@index([accountUserId])
+  @@index([kind, sentAt])
+  @@index([sentAt])
+}
+
+/**
+ * =======================
+ * EMAIL PREDLOŠCI
+ * =======================
+ */
+
+model EmailTemplate {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type        String
+  label       String
+  subject     String
+  greeting    String
+  bodyText    String
+  calloutText String
+  closingText String
+  footerNote  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, type])
+  @@index([companyId])
+}
+
+/**
+ * =======================
+ * AUTH TOKENI (reset, email verify, invite)
+ * =======================
+ */
+
+enum AuthTokenType {
+  PASSWORD_RESET
+  EMAIL_VERIFY
+  ACCOUNT_INVITE
+  SUBACCOUNT_PASSWORD_SETUP
+}
+
+model AuthToken {
+  id String @id @default(cuid())
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  accountUserId String?
+  accountUser   AccountUser? @relation(fields: [accountUserId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 tokena; nikad ne spremamo plaintext.
+  tokenHash String @unique
+
+  type AuthTokenType
+
+  /// Email na koji je token poslan (koristi se kod EMAIL_VERIFY i ACCOUNT_INVITE).
+  email String?
+
+  /// Payload za flexibilne tokene (npr. invite sadrži planiranu rolu).
+  meta Json?
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([accountUserId])
+  @@index([type, expiresAt])
+}
+
+/**
+ * =======================
+ * AUDIT LOG (generički)
+ * =======================
+ */
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// Tko je izveo akciju (AccountUser id); null za sistemske akcije.
+  actorId String?
+  actor   AccountUser? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  /// "ADMIN", "WORKSHOP", "PLATFORM", "SYSTEM"
+  actorType String
+
+  /// "customer.delete", "workOrder.lock", "subscription.update", "pricing.change" ...
+  action String
+
+  /// Resurs nad kojim se dogodila akcija ("Customer", "WorkOrder", ...).
+  entity   String?
+  entityId String?
+
+  /// Detalji (prije/poslije, razlog, itd.)
+  meta Json?
+
+  ip        String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([entity, entityId])
+  @@index([actorId])
+}
+
+/**
+ * =======================
+ * POZIVNICE ZA TEAM
+ * =======================
+ */
+
+model UserInvite {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  invitedEmail String
+  invitedRole  AccountRole
+  invitedBy    String?
+
+  /// SHA-256 tokena.
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([invitedEmail])
+}
+
+/**
+ * =======================
+ * ZAHTJEVI ZA TRIAL PRISTUP
+ * =======================
+ *
+ * Javni zahtjev za probni pristup. Ne kreira tvrtku ni račune sve dok
+ * platform OWNER ne odobri. Po odobrenju se kreira Company + ADMIN/WORKSHOP
+ * neaktivni računi i šalje se onboarding pozivnica adminu.
+ */
+
+enum RegistrationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONVERTED
+}
+
+model RegistrationRequest {
+  id String @id @default(cuid())
+
+  status RegistrationRequestStatus @default(PENDING)
+
+  /// Podaci o subjektu (tvrtka, obrt, udruga, …) — tip nije obvezno provjeren.
+  companyName String
+  oib         String
+  street      String
+  city        String
+  postalCode  String
+
+  /// Osoba s kojom platform komunicira o zahtjevu i prima onboarding pozivnicu.
+  contactName  String?
+  contactEmail String
+  contactPhone String?
+
+  /// Slobodna napomena podnositelja (odakle nas zna, koje module želi, itd.).
+  note String?
+
+  /// Tracking za audit / abuse.
+  ip        String?
+  userAgent String?
+
+  /// Odobrenje
+  approvedAt               DateTime?
+  approvedByPlatformUserId String?
+  approvalNote             String?
+
+  /// Odbijanje
+  rejectedAt     DateTime?
+  rejectedReason String?
+
+  /// Veza na kreiranu tvrtku (postavi se kad status postane CONVERTED).
+  companyId String?  @unique
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([oib])
+  @@index([contactEmail])
+}
+
+/**
+ * =======================
+ * RAČUNI (invoicing)
+ * =======================
+ */
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  VOID
+}
+
+model Invoice {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// Broj računa: 2026-01-0001 (generira se pri izdavanju).
+  number String
+
+  status InvoiceStatus @default(DRAFT)
+
+  /// Kupac je opcionalan — može biti interni "za servis".
+  customerId String?
+
+  /// Vezni nalog (opcionalno).
+  workOrderId String?
+
+  /// Iznosi u EUR s 2 decimale.
+  subtotal  Decimal @default(0) @db.Decimal(12, 2)
+  vatAmount Decimal @default(0) @db.Decimal(12, 2)
+  total     Decimal @default(0) @db.Decimal(12, 2)
+
+  /// Stopa PDV-a kao cijeli broj postotaka (npr. 25).
+  vatRate Int @default(25)
+
+  issuedAt DateTime?
+  dueAt    DateTime?
+  paidAt   DateTime?
+
+  /// Croatian fiscalization (popunjeno ako je fiscalization feature uključen).
+  fiscalJIR         String?
+  fiscalZKI         String?
+  fiscalSubmittedAt DateTime?
+
+  note String?
+
+  items InvoiceItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, number])
+  @@index([companyId, status, issuedAt])
+  @@index([customerId])
+  @@index([workOrderId])
+}
+
+model InvoiceItem {
+  id String @id @default(cuid())
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(12, 2)
+
+  /// Ako je vezana uz dio iz kataloga.
+  partId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+/**
+ * =======================
+ * JAVNI API (API KEY-evi)
+ * =======================
+ */
+
+model ApiKey {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  label   String
+  /// SHA-256 ključa, plaintext se pokazuje samo pri kreiranju.
+  keyHash String @unique
+  /// Posljednje 4 znamenke za lak prepoznavanje u UI (npr. "...a4b7").
+  keyTail String
+
+  /// Oblik dozvola, bitmask ili JSON; zasad jednostavno: "read" ili "read_write".
+  scope String @default("read")
+
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+}
+
+/**
+ * =======================
+ * SERVISNE NALJEPNICE
+ * =======================
+ *
+ * Svaki proizvođač ima 3 naljepnice (PERIODIC, APPARATUS_MASS, CYLINDER_MASS).
+ * Platform automatski kreira 3 reda po proizvođaču. Tenant (servis) vodi svoje
+ * stanje, dodjeljuje interne šifre u okviru `CompanyManufacturerAuthorization`
+ * i prima naljepnice kroz `ServiceLabelReceipt`.
+ */
+
+model ServiceLabel {
+  id             String           @id @default(cuid())
+  manufacturerId String
+  manufacturer   Manufacturer     @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  kind           ServiceLabelKind
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stocks       ServiceLabelStock[]
+  receiptItems ServiceLabelReceiptItem[]
+  adjustments  ServiceLabelAdjustment[]
+  consumptions WorkOrderLabelConsumption[]
+
+  @@unique([manufacturerId, kind])
+  @@index([manufacturerId])
+}
+
+/// Ovlaštenje servisa za proizvođača + interne šifre 3 tipa naljepnica.
+model CompanyManufacturerAuthorization {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+
+  active    Boolean   @default(false)
+  expiresAt DateTime?
+
+  /// Interne šifre naljepnica iz računovodstvenog sustava tenanta.
+  periodicLabelCode      String?
+  apparatusMassLabelCode String?
+  cylinderMassLabelCode  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, manufacturerId])
+  @@index([companyId])
+  @@index([manufacturerId])
+}
+
+/// Stanje naljepnica po tvrtki.
+model ServiceLabelStock {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  serviceLabelId String
+  serviceLabel   ServiceLabel @relation(fields: [serviceLabelId], references: [id], onDelete: Cascade)
+
+  stockQty    Int @default(0)
+  minStockQty Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, serviceLabelId])
+  @@index([companyId])
+}
+
+/// Primka naljepnica (ulaz naljepnica od dobavljača).
+model ServiceLabelReceipt {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  number       String
+  receiptDate  DateTime @default(now())
+  supplierName String
+  reference    String?
+  note         String?
+
+  createdById String?
+  createdBy   AccountUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  items ServiceLabelReceiptItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, number])
+  @@index([companyId, receiptDate])
+}
+
+model ServiceLabelReceiptItem {
+  id        String              @id @default(cuid())
+  receiptId String
+  receipt   ServiceLabelReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  serviceLabelId String
+  serviceLabel   ServiceLabel @relation(fields: [serviceLabelId], references: [id], onDelete: Restrict)
+
+  quantity Int
+
+  @@index([receiptId])
+  @@index([serviceLabelId])
+}
+
+/// Ručna korekcija stanja naljepnica (+/-), s razlogom.
+model ServiceLabelAdjustment {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  serviceLabelId String
+  serviceLabel   ServiceLabel @relation(fields: [serviceLabelId], references: [id], onDelete: Restrict)
+
+  delta  Int
+  reason String
+
+  createdById String?
+  createdBy   AccountUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, serviceLabelId, createdAt])
+}
+
+/// Snimka potrošnje naljepnica pri zaključavanju radnog naloga (ispis na otpremnici).
+model WorkOrderLabelConsumption {
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  serviceLabelId String
+  serviceLabel   ServiceLabel @relation(fields: [serviceLabelId], references: [id], onDelete: Restrict)
+
+  quantity Int
+
+  createdAt DateTime @default(now())
+
+  @@id([workOrderId, serviceLabelId])
+  @@index([workOrderId])
+  @@index([serviceLabelId])
+}

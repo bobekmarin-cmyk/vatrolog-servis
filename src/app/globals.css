@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+:root {
+  /* PowerPixel-like palette */
+  --background: #ffffff; /* app canvas */
+  --foreground: #111827; /* slate-900 */
+  --brand: #dc2626;
+  --brand-hover: #b91c1c;
+  --brand-soft: #fef2f2;
+  --brand-ring: #fecaca;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  color-scheme: light;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  /* Surfaces */
+  .surface {
+    @apply rounded-2xl bg-white shadow-sm;
+  }
+  .surface-header {
+    @apply flex items-start justify-between gap-3 p-4;
+  }
+  .surface-body {
+    @apply bg-white/60 p-4;
+  }
+
+  /* Typography helpers */
+  .h1 {
+    @apply text-xl font-semibold;
+  }
+  .subtle {
+    @apply text-xs text-slate-500;
+  }
+
+  /* Controls */
+  .label {
+    @apply block text-xs font-medium text-slate-600;
+  }
+  .help {
+    @apply mt-1 text-xs text-slate-500;
+  }
+  .input {
+    @apply mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-500;
+    @apply focus:ring-2 focus:ring-red-200;
+  }
+  .select {
+    @apply mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none;
+    @apply focus:ring-2 focus:ring-red-200;
+  }
+  .select option {
+    color: #0f172a;
+    background-color: #ffffff;
+  }
+  .textarea {
+    @apply mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-500;
+    @apply focus:ring-2 focus:ring-red-200;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer;
+  }
+  .btn-primary {
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+  .btn-outline {
+    @apply bg-white hover:bg-slate-50 text-slate-800 shadow-sm;
+  }
+  .btn-ghost {
+    @apply text-slate-700 hover:bg-slate-100;
+  }
+  .btn-danger {
+    @apply bg-rose-50 text-rose-700 hover:bg-rose-100 shadow-sm;
+  }
+
+  /* Badges / pills */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-1 text-xs font-medium;
+  }
+  .badge-tight {
+    @apply py-0.5;
+  }
+  .badge-neutral {
+    @apply bg-slate-100 text-slate-700;
+  }
+  .badge-info {
+    @apply bg-red-50 text-red-700;
+  }
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+  .badge-warning {
+    @apply bg-amber-50 text-amber-800;
+  }
+  .badge-danger {
+    @apply bg-rose-50 text-rose-700;
+  }
+
+  /* Tables */
+  .table-wrap {
+    @apply overflow-x-auto;
+  }
+  .table {
+    @apply w-full text-sm leading-snug;
+  }
+  .table-head {
+    @apply bg-slate-50 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide;
+  }
+  .table-cell {
+    @apply p-2 align-top;
+  }
+  .table-muted {
+    @apply text-[11px] text-slate-500;
+  }
+  .table-strong {
+    @apply font-medium text-slate-900;
+  }
+
+  /* Clamp helpers (no plugin needed) */
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+}

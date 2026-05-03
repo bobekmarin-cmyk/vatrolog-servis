@@ -1,0 +1,260 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import {
+  decryptToken,
+  encryptToken,
+  refreshAccessToken,
+  sendGmailWithAttachment,
+} from "@/lib/gmail";
+import { customerDisplayName } from "@/lib/customerDisplay";
+import { displayManufacturer } from "@/lib/manufacturerDisplay";
+import { ensureDefaultTemplates, renderTemplateHtml, renderSubject, type RenderVars } from "@/lib/emailTemplates";
+import { formatExtinguisherTypeName } from "@/lib/formatExtinguisherType";
+import { renderPdfToBuffer } from "@/lib/renderPdfToBuffer";
+import RegisterPdfDocument, { type RegisterPdfData } from "@/pdf/RegisterPdfDocument";
+import React, { type ComponentProps } from "react";
+import { formatDateDdMmYyyy } from "@/lib/dateFormat";
+import { savePdf } from "@/lib/pdfStorage";
+import { APP_VERSION } from "@/lib/appVersion";
+import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
+
+export const runtime = "nodejs";
+
+function agentLabel(a: { label?: string | null; symbol?: string | null; code?: string } | null | undefined) {
+  if (!a) return "-";
+  return a.label ?? a.symbol ?? a.code ?? "-";
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const payload = await req.json();
+  const { workOrderId, toEmail: toEmailOverride } = payload as { workOrderId: string; toEmail?: string };
+
+  if (!workOrderId) {
+    return NextResponse.json({ error: "Missing workOrderId" }, { status: 400 });
+  }
+
+  const order = await prisma.workOrder.findFirst({
+    where: { id: workOrderId, companyId: session.companyId },
+    include: {
+      company: true,
+      customer: true,
+      serviceLocation: { select: { kind: true } },
+      items: {
+        orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
+        include: {
+          servicer: true,
+          extinguisher: {
+            include: { manufacturer: true, type: { include: { agent: true, construction: true } } },
+          },
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "Nalog ne postoji" }, { status: 404 });
+  }
+
+  if (order.status !== "LOCKED") {
+    return NextResponse.json({ error: "Nalog mora biti zaključan" }, { status: 400 });
+  }
+
+  const recipientEmail = (toEmailOverride ?? order.customer.email ?? "").trim();
+  if (!recipientEmail) {
+    return NextResponse.json({ error: "Kupac nema email adresu" }, { status: 400 });
+  }
+
+  const company = order.company;
+  if (!company.gmailAccessToken || !company.gmailRefreshToken || !company.gmailEmail) {
+    return NextResponse.json({ error: "Gmail nije povezan" }, { status: 400 });
+  }
+
+  // --- Load REGISTER template ---
+  const templates = await ensureDefaultTemplates(session.companyId);
+  const registerTpl = templates.find((t) => t.type === "REGISTER");
+  if (!registerTpl) {
+    return NextResponse.json({ error: "Predložak za upisnik nije pronađen" }, { status: 500 });
+  }
+
+  const custName = customerDisplayName(order.customer);
+  const itemCount = order.items.filter((i) => !i.isPlaceholder && i.extinguisher && i.servicedAt).length;
+
+  const vars: RenderVars = {
+    mjesec: "",
+    broj: itemCount,
+    kupac: custName,
+    tvrtka: company.name,
+    nalog: order.orderNumber,
+  };
+
+  const subject = renderSubject(registerTpl, vars);
+  const html = renderTemplateHtml(registerTpl, vars);
+
+  // --- Generate PDF ---
+  const realItems = order.items.filter((i) => !i.isPlaceholder && i.extinguisher);
+  const rows = realItems.map((i, idx) => {
+    const ex = i.extinguisher!;
+    return {
+      rbr: idx + 1,
+      manufacturer: displayManufacturer(ex.manufacturer),
+      type: ex.type ? formatExtinguisherTypeName(ex.type) : "-",
+      agent: agentLabel(ex.type?.agent ?? null),
+      serial: ex.serialNumber,
+      year: ex.productionYear,
+      internal: i.internalDone ? "DA" : "NE",
+      internalDone: !!i.internalDone,
+      parts: i.partsText ?? "",
+      nextPeriodic: formatDateDdMmYyyy(i.nextPeriodicDue),
+      nextInternal: formatDateDdMmYyyy(i.nextInternalDue),
+      location: i.serviceLocationText ?? "-",
+      label: i.labelNumber ?? "-",
+      servicer: i.servicer?.fullName ?? "-",
+      servicedAt: formatDateDdMmYyyy(i.servicedAt),
+    };
+  });
+
+  const generatedAt = new Date();
+  const hh = String(generatedAt.getHours()).padStart(2, "0");
+  const mm = String(generatedAt.getMinutes()).padStart(2, "0");
+  const generatedAtLabel = `${formatDateDdMmYyyy(generatedAt)} ${hh}:${mm}`;
+
+  const serviceContextLabel = describeWorkOrderServiceContext({
+    deliveryMode: order.deliveryMode,
+    serviceLocationKind: order.serviceLocation?.kind,
+  });
+
+  const pdfData: RegisterPdfData = {
+    company: {
+      name: company.name,
+      oib: company.oib,
+      street: company.street,
+      city: company.city,
+      postalCode: company.postalCode,
+      iban: company.iban,
+    },
+    orderNumber: order.orderNumber,
+    customer: {
+      displayName: custName,
+      fullName: order.customer.name,
+      oib: order.customer.oib,
+      address: order.customer.address,
+      street: order.customer.street,
+      postalCode: order.customer.postalCode,
+      city: order.customer.city,
+      contactPerson: order.customer.contactPerson ?? null,
+      phone: order.customer.phone ?? null,
+      email: order.customer.email ?? null,
+      department: null,
+    },
+    dates: {
+      receiptDate: formatDateDdMmYyyy(order.receivedAt ?? null),
+      orderDate: formatDateDdMmYyyy(order.receivedAt ?? order.createdAt),
+      registerDate: formatDateDdMmYyyy(generatedAt),
+    },
+    serviceContextLabel,
+    status: order.status,
+    docId: `upisnik-${order.orderNumber.replaceAll("/", "-")}`,
+    generatedAtLabel,
+    appVersion: APP_VERSION,
+    qrDataUrl: null,
+    rows,
+  };
+
+  const pdfProps = { data: pdfData } satisfies ComponentProps<typeof RegisterPdfDocument>;
+  const pdfElement = React.createElement(RegisterPdfDocument, pdfProps);
+  const pdfBuffer = Buffer.from(await renderPdfToBuffer(pdfElement));
+
+  savePdf(session.companyId, "register", order.orderNumber, pdfBuffer).catch(() => {});
+
+  const pdfFilename = `upisnik_${order.orderNumber.replaceAll("/", "-")}.pdf`;
+  const monthTag = `WO-${order.orderNumber}`;
+
+  // --- Send email with attachment ---
+  let accessToken: string;
+  try {
+    accessToken = decryptToken(company.gmailAccessToken);
+  } catch {
+    return NextResponse.json({ error: "Greška dekriptiranja tokena" }, { status: 500 });
+  }
+
+  async function trySend() {
+    await sendGmailWithAttachment(
+      accessToken,
+      company.gmailEmail!,
+      recipientEmail,
+      subject,
+      html,
+      { filename: pdfFilename, mimeType: "application/pdf", data: pdfBuffer },
+    );
+  }
+
+  try {
+    await trySend();
+  } catch (e: any) {
+    if (e.message?.includes("401") || e.message?.includes("403")) {
+      try {
+        const refreshToken = decryptToken(company.gmailRefreshToken!);
+        const newTokens = await refreshAccessToken(refreshToken);
+        accessToken = newTokens.access_token;
+
+        await prisma.company.update({
+          where: { id: session.companyId },
+          data: { gmailAccessToken: encryptToken(accessToken) },
+        });
+
+        await trySend();
+      } catch (refreshErr: any) {
+        await prisma.emailLog.create({
+          data: {
+            companyId: session.companyId,
+            customerId: order.customer.id,
+            toEmail: recipientEmail,
+            subject,
+            htmlBody: html,
+            month: monthTag,
+            itemCount,
+            status: "FAILED",
+            error: refreshErr.message?.slice(0, 500),
+          },
+        });
+        return NextResponse.json({ error: "Slanje neuspješno: " + (refreshErr.message ?? "") }, { status: 500 });
+      }
+    } else {
+      await prisma.emailLog.create({
+        data: {
+          companyId: session.companyId,
+          customerId: order.customer.id,
+          toEmail: recipientEmail,
+          subject,
+          htmlBody: html,
+          month: monthTag,
+          itemCount,
+          status: "FAILED",
+          error: e.message?.slice(0, 500),
+        },
+      });
+      return NextResponse.json({ error: "Slanje neuspješno: " + (e.message ?? "") }, { status: 500 });
+    }
+  }
+
+  await prisma.emailLog.create({
+    data: {
+      companyId: session.companyId,
+      customerId: order.customer.id,
+      toEmail: recipientEmail,
+      subject,
+      htmlBody: html,
+      month: monthTag,
+      itemCount,
+      status: "SENT",
+    },
+  });
+
+  return NextResponse.json({ ok: true });
+}

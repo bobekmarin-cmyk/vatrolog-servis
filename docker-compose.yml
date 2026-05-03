@@ -1,0 +1,21 @@
+# PostgreSQL za lokalni razvoj (port 5433 → 5432 u kontejneru).
+# Ako vidiš "superuser password is not specified": obriši stari volume pa digni ponovo:
+#   docker compose down -v
+#   docker compose up -d
+#
+# DATABASE_URL u .env (primjer):
+#   postgresql://vatrolog:vatrolog@localhost:5433/vatrolog_db
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: vatrolog_postgres
+    env_file:
+      - postgres.env
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

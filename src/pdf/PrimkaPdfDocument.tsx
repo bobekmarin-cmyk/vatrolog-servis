@@ -1,0 +1,527 @@
+import React from "react";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { type CompanyHeaderInfo } from "./PdfCompanyHeader";
+import { PdfDocumentFooter, PdfDocumentHeader, PdfWatermark } from "./PdfLayout";
+import { registerPdfFonts } from "./registerPdfFonts";
+
+registerPdfFonts();
+
+export type PrimkaItemRow = {
+  rbr: number;
+  internalCode: string;
+  manufacturer: string;
+  type: string;
+  serial: string;
+  year: string;
+  note: string;
+};
+
+export type PrimkaCustomerInfo = {
+  displayName: string;
+  fullName: string;
+  oib: string;
+  address: string;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
+  contactPerson: string | null;
+  phone: string | null;
+  email: string | null;
+  department: string | null;
+};
+
+export type PrimkaDates = {
+  receiptDate: string;
+  dueDate: string;
+  printDate: string;
+};
+
+export type PrimkaStatus = "DRAFT" | "IN_PROGRESS" | "LOCKED";
+
+export type PrimkaPdfData = {
+  company: CompanyHeaderInfo;
+  orderNumber: string;
+  customer: PrimkaCustomerInfo;
+  dates: PrimkaDates;
+  deliveryModeLabel: string;
+  serviceFooterLine?: string | null;
+  status: PrimkaStatus;
+  docId: string;
+  generatedAtLabel: string;
+  appVersion: string;
+  qrDataUrl: string | null;
+  rows: PrimkaItemRow[];
+  totalQty: number;
+  note: string | null;
+};
+
+const styles = StyleSheet.create({
+  page: {
+    paddingTop: 26,
+    paddingBottom: 78,
+    paddingHorizontal: 26,
+    fontSize: 9,
+    fontFamily: "Roboto",
+    color: "#0f172a",
+    flexDirection: "column",
+  },
+
+  spacer: { flexGrow: 1 },
+
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  companyBlock: { flexDirection: "column", flex: 1 },
+  companyName: { fontSize: 12, fontWeight: 700, color: "#0f172a" },
+  companyLine: { fontSize: 8, color: "#475569", marginTop: 1 },
+
+  brandBlock: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  brandText: { flexDirection: "column", alignItems: "flex-end" },
+  logoRow: { flexDirection: "row", alignItems: "baseline" },
+  logoVatro: { fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: -0.3 },
+  logoLog: { fontSize: 20, fontWeight: 700, color: "#dc2626", letterSpacing: -0.3 },
+  qrImage: { width: 54, height: 54 },
+
+  title: { fontSize: 13, fontWeight: 700, color: "#0f172a" },
+  orderLine: { fontSize: 8.5, color: "#475569", marginTop: 2, marginBottom: 10 },
+  orderLineBold: { fontWeight: 700, color: "#0f172a" },
+  orderLineStrong: { fontWeight: 700, color: "#0f172a", fontSize: 10 },
+
+  introGrid: {
+    flexDirection: "row",
+    gap: 28,
+    marginTop: 2,
+    marginBottom: 14,
+    alignItems: "flex-start",
+  },
+  introPanel: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 0,
+    minHeight: 98,
+  },
+  introDocPanel: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 0,
+    minHeight: 98,
+  },
+  introLabel: {
+    fontSize: 6.8,
+    color: "#64748b",
+    letterSpacing: 0.9,
+    textTransform: "uppercase" as const,
+    fontWeight: 700,
+  },
+  introAccent: {
+    width: 32,
+    height: 2,
+    backgroundColor: "#dc2626",
+    marginTop: 5,
+    marginBottom: 9,
+  },
+  introCustomerName: { fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 7 },
+  introCustomerLine: { fontSize: 8.2, color: "#0f172a", marginTop: 4 },
+  introCustomerMuted: { fontSize: 8, color: "#475569", marginTop: 4 },
+  introTitle: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#0f172a",
+    letterSpacing: -0.2,
+    marginBottom: 2,
+  },
+  introMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+    paddingVertical: 2.2,
+  },
+  introMetaRowLast: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+    paddingVertical: 2.2,
+  },
+  introMetaKey: {
+    fontSize: 7.8,
+    color: "#64748b",
+  },
+  introMetaValue: {
+    fontSize: 8.6,
+    color: "#0f172a",
+    fontWeight: 700,
+    textAlign: "right" as const,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    gap: 18,
+    marginBottom: 10,
+    alignItems: "stretch",
+  },
+
+  hCardCustomer: {
+    flex: 2,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+  },
+  hCardMeta: {
+    flex: 1,
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+  },
+  hLabel: {
+    fontSize: 7,
+    color: "#64748b",
+    letterSpacing: 0.6,
+    textTransform: "uppercase" as const,
+    marginBottom: 2,
+    fontWeight: 700,
+  },
+  hCustomerName: { fontSize: 10.5, fontWeight: 700, color: "#0f172a" },
+  hCustomerMeta: { fontSize: 7.8, color: "#334155", marginTop: 2 },
+  hCustomerContactRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 4,
+    flexWrap: "wrap",
+  },
+  hDetailCol: { flexDirection: "column" },
+  hDetailLabel: {
+    fontSize: 6.5,
+    color: "#64748b",
+    letterSpacing: 0.4,
+    textTransform: "uppercase" as const,
+  },
+  hDetailValue: { fontSize: 8.5, color: "#0f172a", marginTop: 1 },
+
+  hMetaLine: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 3,
+  },
+  hMetaKey: { fontSize: 7.5, color: "#64748b" },
+  hMetaValue: { fontSize: 9, color: "#0f172a", fontWeight: 700 },
+
+  sectionHeader: {
+    marginTop: 12,
+    marginBottom: 0,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  sectionTitle: {
+    fontSize: 9.2,
+    fontWeight: 700,
+    color: "#0f172a",
+    letterSpacing: 0.5,
+    textTransform: "uppercase" as const,
+  },
+
+  table: { marginTop: 2 },
+  tableHead: {
+    flexDirection: "row",
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  th: {
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    fontSize: 7.4,
+    fontWeight: 700,
+    color: "#64748b",
+    letterSpacing: 0.4,
+    textTransform: "uppercase" as const,
+  },
+  tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#edf2f7" },
+  trAlt: {},
+  td: { paddingVertical: 3, paddingHorizontal: 4, fontSize: 8.6, color: "#0f172a" },
+
+  colRbr: { width: 28, textAlign: "center" as const },
+  colCode: { width: 68 },
+  colMan: { width: 90 },
+  colType: { flex: 1, minWidth: 120 },
+  colSerial: { width: 90 },
+  colYear: { width: 50, textAlign: "center" as const },
+  colNote: { flex: 1, minWidth: 120 },
+
+  noteBox: {
+    marginTop: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 3,
+    backgroundColor: "#f8fafc",
+  },
+  noteLabel: {
+    fontSize: 7,
+    color: "#64748b",
+    letterSpacing: 0.6,
+    textTransform: "uppercase" as const,
+    fontWeight: 700,
+    marginBottom: 3,
+  },
+  noteText: { fontSize: 9, color: "#0f172a" },
+
+  empty: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    textAlign: "left" as const,
+    color: "#94a3b8",
+    fontSize: 8.5,
+  },
+  receivedSummary: {
+    marginTop: 8,
+    fontSize: 10,
+    color: "#0f172a",
+  },
+  receivedSummaryQty: { fontWeight: 700 },
+
+  sigBoxRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 22,
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  sigBox: {
+    width: 210,
+  },
+  sigTitle: {
+    fontSize: 7,
+    color: "#64748b",
+    letterSpacing: 0.6,
+    textTransform: "uppercase" as const,
+    fontWeight: 700,
+    marginBottom: 4,
+  },
+  sigLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#475569",
+    marginTop: 18,
+    marginBottom: 3,
+  },
+  sigCaption: { fontSize: 7, color: "#64748b", textAlign: "center" as const },
+  sigRow: { flexDirection: "row" },
+  sigCol: { flex: 1 },
+
+  footerNotes: { marginBottom: 4 },
+  footerNoteText: { fontSize: 6.5, color: "#64748b", lineHeight: 1.3 },
+  footerNoteBold: { fontSize: 6.5, color: "#0f172a", fontWeight: 700, lineHeight: 1.3 },
+
+  watermark: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  watermarkText: {
+    fontSize: 130,
+    fontWeight: 700,
+    letterSpacing: 6,
+    opacity: 0.12,
+    transform: "rotate(-22deg)",
+  },
+  watermarkDraft: { color: "#dc2626" },
+  watermarkInProgress: { color: "#d97706" },
+
+  footer: {
+    position: "absolute",
+    bottom: 16,
+    left: 26,
+    right: 26,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    paddingTop: 6,
+    flexDirection: "column",
+  },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  footerLeft: { fontSize: 7, color: "#94a3b8", flex: 1 },
+  footerCenter: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+    flex: 1,
+  },
+  footerVatro: { fontSize: 8, fontWeight: 700, color: "#0f172a" },
+  footerLog: { fontSize: 8, fontWeight: 700, color: "#dc2626" },
+  footerVer: { fontSize: 7, color: "#94a3b8", marginLeft: 4 },
+  footerPage: { fontSize: 7, color: "#94a3b8", flex: 1, textAlign: "right" as const },
+});
+
+function formatCustomerAddress(c: PrimkaCustomerInfo): string {
+  const line =
+    c.street && c.city
+      ? `${c.street}, ${c.postalCode ? c.postalCode + " " : ""}${c.city}`
+      : c.address;
+  return line || "—";
+}
+
+export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
+  const {
+    company,
+    orderNumber,
+    customer,
+    dates,
+    serviceFooterLine,
+    status,
+    docId,
+    generatedAtLabel,
+    appVersion,
+    qrDataUrl,
+    rows,
+    totalQty,
+    note,
+  } = data;
+
+  const addressLine = formatCustomerAddress(customer);
+
+  const contacts: Array<{ label: string; value: string }> = [];
+  if (customer.contactPerson) contacts.push({ label: "Kontakt osoba", value: customer.contactPerson });
+  if (customer.phone) contacts.push({ label: "Telefon", value: customer.phone });
+  if (customer.email) contacts.push({ label: "E-mail", value: customer.email });
+
+  const showWatermark = status === "DRAFT" || status === "IN_PROGRESS";
+  const watermarkLabel = status === "DRAFT" ? "NACRT" : "U RADU";
+  const watermarkColor = status === "DRAFT" ? "#dc2626" : "#d97706";
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <PdfDocumentHeader
+          company={company}
+          qrDataUrl={qrDataUrl}
+          documentTitle=""
+        />
+
+        <View style={styles.introGrid} wrap={false}>
+          <View style={styles.introPanel}>
+            <Text style={styles.introLabel}>Kupac</Text>
+            <View style={styles.introAccent} />
+            <Text style={styles.introCustomerName}>{customer.displayName}</Text>
+            <Text style={styles.introCustomerLine}>OIB: {customer.oib}</Text>
+            <Text style={styles.introCustomerLine}>{addressLine}</Text>
+            {customer.department ? (
+              <Text style={styles.introCustomerMuted}>Odjel: {customer.department}</Text>
+            ) : null}
+            {contacts.length > 0
+              ? contacts.map((d) => (
+                  <Text key={d.label} style={styles.introCustomerMuted}>
+                    {d.label}: {d.value}
+                  </Text>
+                ))
+              : null}
+          </View>
+
+          <View style={styles.introDocPanel}>
+            <Text style={styles.introTitle}>Primka</Text>
+            <View style={styles.introAccent} />
+            <View style={styles.introMetaRow}>
+              <Text style={styles.introMetaKey}>Broj naloga</Text>
+              <Text style={styles.introMetaValue}>{orderNumber}</Text>
+            </View>
+            <View style={styles.introMetaRow}>
+              <Text style={styles.introMetaKey}>Datum primitka</Text>
+              <Text style={styles.introMetaValue}>{dates.receiptDate}</Text>
+            </View>
+            <View style={styles.introMetaRow}>
+              <Text style={styles.introMetaKey}>Planirani datum završetka</Text>
+              <Text style={styles.introMetaValue}>{dates.dueDate}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Primljeni aparati</Text>
+        </View>
+        {rows.length === 0 ? (
+          <Text style={styles.receivedSummary}>
+            Na servis je primljeno{" "}
+            <Text style={styles.receivedSummaryQty}>{totalQty}</Text>
+            {" "}vatrogasnih aparata.
+          </Text>
+        ) : (
+          <View style={styles.table}>
+            <View style={styles.tableHead} fixed>
+              <Text style={[styles.th, styles.colRbr]}>Rb.</Text>
+              <Text style={[styles.th, styles.colCode]}>Interni br.</Text>
+              <Text style={[styles.th, styles.colMan]}>Proizvođač</Text>
+              <Text style={[styles.th, styles.colType]}>Tip aparata</Text>
+              <Text style={[styles.th, styles.colSerial]}>Serijski br.</Text>
+              <Text style={[styles.th, styles.colYear]}>Godina</Text>
+              <Text style={[styles.th, styles.colNote]}>Napomena</Text>
+            </View>
+            {rows.map((r, idx) => (
+              <View
+                key={`r-${idx}`}
+                style={idx % 2 === 1 ? [styles.tr, styles.trAlt] : styles.tr}
+                wrap={false}
+              >
+                <Text style={[styles.td, styles.colRbr]}>{r.rbr}</Text>
+                <Text style={[styles.td, styles.colCode]}>{r.internalCode}</Text>
+                <Text style={[styles.td, styles.colMan]}>{r.manufacturer}</Text>
+                <Text style={[styles.td, styles.colType]}>{r.type}</Text>
+                <Text style={[styles.td, styles.colSerial]}>{r.serial}</Text>
+                <Text style={[styles.td, styles.colYear]}>{r.year}</Text>
+                <Text style={[styles.td, styles.colNote]}>{r.note}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        {rows.length > 0 ? (
+          <Text style={styles.receivedSummary}>
+            Na servis je primljeno{" "}
+            <Text style={styles.receivedSummaryQty}>{totalQty}</Text>
+            {" "}vatrogasnih aparata.
+          </Text>
+        ) : null}
+
+        {note && note.trim().length > 0 ? (
+          <View style={styles.noteBox} wrap={false}>
+            <Text style={styles.noteLabel}>Napomena</Text>
+            <Text style={styles.noteText}>{note}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.spacer} />
+        <View style={styles.sigBoxRow} wrap={false}>
+          <View style={styles.sigBox}>
+            <Text style={styles.sigTitle}>Izdao kupac</Text>
+            <View style={styles.sigLine} />
+            <Text style={styles.sigCaption}>Potpis i pečat</Text>
+          </View>
+          <View style={styles.sigBox}>
+            <Text style={styles.sigTitle}>Primio serviser</Text>
+            <View style={styles.sigLine} />
+            <Text style={styles.sigCaption}>Potpis i pečat</Text>
+          </View>
+        </View>
+
+        {showWatermark ? <PdfWatermark label={watermarkLabel} color={watermarkColor} /> : null}
+
+        <PdfDocumentFooter
+          docId={docId}
+          generatedAtLabel={generatedAtLabel}
+          appVersion={appVersion}
+          metaLine={serviceFooterLine}
+          note="Primka evidentira preuzete vatrogasne aparate na servis. Stavke označene internim brojem su identificirani aparati; redovi bez podataka predstavljaju placeholdere koji se popunjavaju po identifikaciji u radioni."
+          boldNote="Dokument je elektronički generiran i vrijedi bez potpisa servisera."
+        />
+      </Page>
+    </Document>
+  );
+}
