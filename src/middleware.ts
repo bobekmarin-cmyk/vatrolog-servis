@@ -127,10 +127,45 @@ function getInboundOrigin(req: NextRequest): string {
   return req.nextUrl.origin;
 }
 
+function addTrustedHost(hosts: Set<string>, raw: string | null | undefined) {
+  const t = raw?.trim();
+  if (!t) return;
+  try {
+    const withScheme = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+    hosts.add(new URL(withScheme).host.toLowerCase());
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Host (.host uključuje ne-default port) — pouzdanije od punog string usporedb origin-a iza proxyja. */
+function collectTrustedHosts(req: NextRequest): Set<string> {
+  const hosts = new Set<string>();
+  addTrustedHost(hosts, getInboundOrigin(req));
+  addTrustedHost(hosts, getAppBaseUrl());
+  addTrustedHost(hosts, getPublicAppUrl());
+  addTrustedHost(hosts, req.nextUrl.origin);
+  addTrustedHost(hosts, req.headers.get("x-forwarded-host")?.split(",")[0]);
+  addTrustedHost(hosts, req.headers.get("host")?.split(",")[0]);
+  const rail = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  if (rail) addTrustedHost(hosts, rail);
+  return hosts;
+}
+
+function hostFromClientSource(originOrReferer: string): string | null {
+  try {
+    return new URL(originOrReferer).host.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * CSRF zaštita preko Origin/Referer provjere (same-origin policy).
  * Pokriva sve mutacijske API pozive. Webhook-ovi i cron ne koriste cookie sesiju
  * pa ih preskačemo.
+ *
+ * Usporedba po hostu (ne puni origin string): Railway/proxy često kvare shemu/port u odnosu na ono što preglednik šalje.
  */
 function csrfCheckPasses(req: NextRequest): boolean {
   const method = req.method.toUpperCase();
@@ -141,24 +176,20 @@ function csrfCheckPasses(req: NextRequest): boolean {
   if (pathname.startsWith("/api/webhooks/")) return true;
   if (pathname.startsWith("/api/cron/")) return true;
 
-  const selfOrigin = getInboundOrigin(req);
+  const trustedHosts = collectTrustedHosts(req);
+
   const origin = req.headers.get("origin");
+  if (origin && origin !== "null") {
+    const h = hostFromClientSource(origin);
+    return h !== null && trustedHosts.has(h);
+  }
+
   const referer = req.headers.get("referer");
-
-  const allowed = new Set<string>([selfOrigin]);
-  for (const base of [getAppBaseUrl(), getPublicAppUrl()]) {
-    try {
-      allowed.add(new URL(base).origin);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  if (origin) return allowed.has(origin);
   if (referer) {
-    try { return allowed.has(new URL(referer).origin); } catch { return false; }
+    const h = hostFromClientSource(referer);
+    return h !== null && trustedHosts.has(h);
   }
-  // Niti Origin niti Referer → odbij (moderni browseri uvijek šalju barem jedno).
+
   return false;
 }
 
