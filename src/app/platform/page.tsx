@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requirePlatformSession } from "@/lib/platformAuth";
+
+/** Bez DB na buildu — ne pokušavaj statički prerender (npr. Railway/CI bez DATABASE_URL). */
+export const dynamic = "force-dynamic";
 
 export default async function PlatformIndexPage() {
+  await requirePlatformSession();
+
   const now = new Date();
   const inSevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

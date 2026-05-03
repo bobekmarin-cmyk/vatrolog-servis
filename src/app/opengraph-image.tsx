@@ -54,6 +54,10 @@ export default async function OGImage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div
             style={{
+              display: "flex",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "baseline",
               fontSize: "72px",
               fontWeight: 800,
               lineHeight: 1.05,
@@ -63,9 +67,9 @@ export default async function OGImage() {
               flexWrap: "wrap",
             }}
           >
-            Digitalni servis{" "}
-            <span style={{ color: "#dc2626" }}>vatrogasnih aparata</span>, bez
-            papira i Excela.
+            <span>Digitalni servis </span>
+            <span style={{ color: "#dc2626" }}>vatrogasnih aparata</span>
+            <span>, bez papira i Excela.</span>
           </div>
           <div
             style={{
