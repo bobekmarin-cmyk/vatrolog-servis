@@ -18,6 +18,7 @@ export default function PlatformLoginForm() {
         method: "POST",
         body: formData,
         redirect: "follow",
+        headers: { Accept: "application/json" },
       });
 
       if (res.status === 401) {
@@ -74,7 +75,12 @@ export default function PlatformLoginForm() {
         </div>
       )}
 
-      <form className="space-y-3" onSubmit={handleSubmit}>
+      <form
+        className="space-y-3"
+        onSubmit={handleSubmit}
+        method="post"
+        action="/api/platform/auth/login"
+      >
         <div>
           <label className="label" htmlFor="username">
             Korisničko ime

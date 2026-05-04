@@ -56,9 +56,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  // JSON + Set-Cookie: fetch()+redirect:follow nekad ne zakači httpOnly cookie pri chain redirecta
-  // (ostane /platform/login iako je sesija valjana nakon ručnog /platform).
-  const res = NextResponse.json({ ok: true as const, redirect: "/platform/companies" });
+  // Dva puta:
+  //   - Fetch (Accept: application/json) → vraćamo JSON, klijent radi window.location.assign.
+  //   - Klasičan HTML form post (bez JS / fallback) → 303 redirect.
+  // Razlog: fetch + redirect: "follow" nekad ne zakači httpOnly cookie pri chain redirecta.
+  const wantsJson = (req.headers.get("accept") ?? "").toLowerCase().includes("application/json");
+  const target = "/platform/companies";
+  const res = wantsJson
+    ? NextResponse.json({ ok: true as const, redirect: target })
+    : NextResponse.redirect(new URL(target, req.url), 303);
   res.cookies.set("vb_platform_session", token, {
     httpOnly: true,
     sameSite: "lax",

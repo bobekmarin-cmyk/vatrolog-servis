@@ -116,14 +116,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  // 303: nakon POST-a uvijek prebaci na GET (izbjegava POST redirect probleme)
   const afterLogin =
     !setupComplete
       ? account.role === "ADMIN"
         ? "/admin/settings"
         : "/setup-required"
       : "/dashboard";
-  const res = NextResponse.redirect(new URL(afterLogin, req.url), 303);
+  // Dva puta:
+  //   - Fetch (Accept: application/json) → JSON; klijent radi window.location.assign.
+  //   - HTML form (bez JS / fallback) → 303 redirect.
+  const wantsJson = (req.headers.get("accept") ?? "").toLowerCase().includes("application/json");
+  const res = wantsJson
+    ? NextResponse.json({ ok: true as const, redirect: afterLogin })
+    : NextResponse.redirect(new URL(afterLogin, req.url), 303);
   res.cookies.set("vb_session", token, {
     httpOnly: true,
     sameSite: "lax",

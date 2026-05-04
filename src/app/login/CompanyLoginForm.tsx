@@ -18,6 +18,7 @@ export default function CompanyLoginForm() {
         method: "POST",
         body: formData,
         redirect: "follow",
+        headers: { Accept: "application/json" },
       });
 
       if (res.status === 401) {
@@ -48,11 +49,18 @@ export default function CompanyLoginForm() {
         return;
       }
 
-      if (res.ok && res.url) {
-        const path = new URL(res.url).pathname;
-        if (path !== "/login") {
-          window.location.href = res.url;
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; redirect?: string };
+        if (data.ok && data.redirect?.startsWith("/")) {
+          window.location.assign(data.redirect);
           return;
+        }
+        if (res.url) {
+          const path = new URL(res.url).pathname;
+          if (path !== "/login") {
+            window.location.href = res.url;
+            return;
+          }
         }
       }
 
@@ -84,7 +92,12 @@ export default function CompanyLoginForm() {
         </div>
       )}
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form
+        className="space-y-4"
+        onSubmit={handleSubmit}
+        method="post"
+        action="/api/auth/login"
+      >
         <div>
           <label className="label" htmlFor="username">
             Korisničko ime
