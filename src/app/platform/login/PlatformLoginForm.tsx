@@ -38,10 +38,12 @@ export default function PlatformLoginForm() {
         return;
       }
 
-      // Uspjeh: API vraća 303 → preglednik prati redirect → dobijemo 200 s URL-om platforme
-      if (res.ok && res.url && res.url.includes("/platform/")) {
-        window.location.href = res.url;
-        return;
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; redirect?: string };
+        if (data.ok && data.redirect?.startsWith("/")) {
+          window.location.assign(data.redirect);
+          return;
+        }
       }
 
       setError("Došlo je do greške. Pokušajte ponovno.");

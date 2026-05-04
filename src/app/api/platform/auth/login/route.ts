@@ -56,8 +56,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  // 303: nakon POST-a uvijek prebaci na GET (izbjegava POST redirect probleme)
-  const res = NextResponse.redirect(new URL("/platform/companies", req.url), 303);
+  // JSON + Set-Cookie: fetch()+redirect:follow nekad ne zakači httpOnly cookie pri chain redirecta
+  // (ostane /platform/login iako je sesija valjana nakon ručnog /platform).
+  const res = NextResponse.json({ ok: true as const, redirect: "/platform/companies" });
   res.cookies.set("vb_platform_session", token, {
     httpOnly: true,
     sameSite: "lax",
