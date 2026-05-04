@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function CompanyLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -12,6 +13,7 @@ export default function CompanyLoginForm() {
     const form = e.currentTarget;
     const formData = new FormData(form);
     setIsPending(true);
+    let willRedirect = false;
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -52,12 +54,20 @@ export default function CompanyLoginForm() {
       if (res.ok) {
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; redirect?: string };
         if (data.ok && data.redirect?.startsWith("/")) {
+          // Drži formu disabled dok preglednik dovrši navigaciju.
+          // Bez toga `finally` ispod resetira `isPending` prije nego što
+          // window.location.assign uspije promijeniti stranicu, pa korisnik
+          // vidi "Prijava…" -> "Prijavi se" -> redirect (zbunjujuće).
+          willRedirect = true;
+          setIsRedirecting(true);
           window.location.assign(data.redirect);
           return;
         }
         if (res.url) {
           const path = new URL(res.url).pathname;
           if (path !== "/login") {
+            willRedirect = true;
+            setIsRedirecting(true);
             window.location.href = res.url;
             return;
           }
@@ -66,9 +76,12 @@ export default function CompanyLoginForm() {
 
       setError("Došlo je do greške. Pokušajte ponovno.");
     } finally {
-      setIsPending(false);
+      if (!willRedirect) setIsPending(false);
     }
   }
+
+  const busy = isPending || isRedirecting;
+  const buttonLabel = isRedirecting ? "Preusmjeravanje…" : isPending ? "Prijava…" : "Prijavi se";
 
   return (
     <>
@@ -108,7 +121,7 @@ export default function CompanyLoginForm() {
             autoComplete="username"
             className="input"
             required
-            disabled={isPending}
+            disabled={busy}
           />
         </div>
 
@@ -123,12 +136,17 @@ export default function CompanyLoginForm() {
             autoComplete="current-password"
             className="input"
             required
-            disabled={isPending}
+            disabled={busy}
           />
         </div>
 
-        <button className="btn btn-primary h-10 w-full" type="submit" disabled={isPending}>
-          {isPending ? "Prijava…" : "Prijavi se"}
+        <button
+          className="btn btn-primary h-10 w-full"
+          type="submit"
+          disabled={busy}
+          aria-busy={busy}
+        >
+          {buttonLabel}
         </button>
       </form>
     </>
