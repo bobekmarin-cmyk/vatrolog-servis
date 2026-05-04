@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { signPlatformSessionToken } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
+import { redirectRelative } from "@/lib/httpRedirect";
 import bcrypt from "bcryptjs";
 import { checkLoginRateLimit, clearLoginFailures, clientKeyFromRequest, recordLoginFailure } from "@/lib/rateLimit";
 
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
   const target = "/platform/companies";
   const res = wantsJson
     ? NextResponse.json({ ok: true as const, redirect: target })
-    : NextResponse.redirect(new URL(target, req.url), 303);
+    : redirectRelative(target);
   res.cookies.set("vb_platform_session", token, {
     httpOnly: true,
     sameSite: "lax",

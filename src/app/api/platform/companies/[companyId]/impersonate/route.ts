@@ -3,6 +3,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { prisma } from "@/lib/prisma";
 import { signSessionToken } from "@/lib/auth";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 const SESSION_COOKIE = "vb_session";
 const IMPERSONATION_COOKIE = "vb_impersonation_mode";
 
@@ -65,7 +66,7 @@ export async function POST(
     },
   });
 
-  const res = NextResponse.redirect(new URL("/dashboard", req.url), 303);
+  const res = redirectRelative("/dashboard", 303);
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

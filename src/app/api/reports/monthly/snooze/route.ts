@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { FEATURE_KEYS, getCompanyFeatures, isFeatureEnabledForRole } from "@/lib/companyFeatures";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function isValidYm(ym: string): boolean {
   if (!/^\d{4}-\d{2}$/.test(ym)) return false;
   const [y, m] = ym.split("-").map((x) => Number(x));
@@ -80,5 +81,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.redirect(new URL(`/reports/monthly?month=${month}`, req.url), 303);
+  return redirectRelative(`/reports/monthly?month=${month}`, 303);
 }

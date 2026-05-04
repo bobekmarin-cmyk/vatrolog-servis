@@ -1,18 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { exchangePlatformCode, fetchGmailEmail, saveVendorTokens } from "@/lib/platformGmail";
 import { verifyOauthState } from "@/lib/platformOauthState";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function redirectErr(req: NextRequest, reason: string) {
-  return NextResponse.redirect(
-    new URL(`/platform/settings?tab=email&gmail=error&reason=${encodeURIComponent(reason)}`, req.url),
-  );
+  return redirectRelative(`/platform/settings?tab=email&gmail=error&reason=${encodeURIComponent(reason)}`, 307);
 }
 
 export async function GET(req: NextRequest) {
   const ps = await getPlatformSession();
-  if (!ps) return NextResponse.redirect(new URL("/platform/login", req.url));
+  if (!ps) return redirectRelative("/platform/login", 307);
 
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
@@ -47,9 +46,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(
-      new URL("/platform/settings?tab=email&gmail=connected", req.url),
-    );
+    return redirectRelative("/platform/settings?tab=email&gmail=connected", 307);
   } catch (e: any) {
     console.error("Platform Gmail callback error:", e);
     return redirectErr(req, (e?.message ?? "unknown").toString().slice(0, 100));

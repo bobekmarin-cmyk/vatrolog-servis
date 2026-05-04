@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { generateToken } from "@/lib/authTokens";
 import { sendSystemMail, subaccountSetupEmail } from "@/lib/systemMail";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 /**
  * Pošalji setup mail za postojeći sub-račun (XX-usrN) — koristi se kad
  * admin nije primio prvi setup mail (npr. spam folder) ili kad treba
@@ -113,5 +114,5 @@ export async function POST(
     );
   }
 
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}`, req.url), 303);
+  return redirectRelative(`/platform/companies/${companyId}`, 303);
 }

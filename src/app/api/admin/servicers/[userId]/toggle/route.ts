@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { FEATURE_KEYS, getCompanyFeatures, isFeatureEnabledForRole } from "@/lib/companyFeatures";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ userId: string }> }
@@ -25,5 +26,5 @@ export async function POST(
     data: { active: !user.active },
   });
 
-  return NextResponse.redirect(new URL("/admin/settings/servicers", req.url));
+  return redirectRelative("/admin/settings/servicers", 307);
 }

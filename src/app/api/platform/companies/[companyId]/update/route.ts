@@ -9,6 +9,7 @@ import {
 } from "@/lib/companyAccountNaming";
 import { logAudit } from "@/lib/auditLog";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ companyId: string }> },
@@ -150,5 +151,5 @@ export async function POST(
     return NextResponse.json({ error: "Greška pri spremanju." }, { status: 500 });
   }
 
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}`, req.url), 303);
+  return redirectRelative(`/platform/companies/${companyId}`, 303);
 }

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ manufacturerId: string }> }
@@ -25,5 +26,5 @@ export async function POST(
   }
 
   await prisma.manufacturer.delete({ where: { id: manufacturerId } });
-  return NextResponse.redirect(new URL("/platform/manufacturers", req.url), 303);
+  return redirectRelative("/platform/manufacturers", 303);
 }

@@ -3,6 +3,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ companyId: string; accountUserId: string }> }
@@ -27,6 +28,6 @@ export async function POST(
     data: { passwordHash },
   });
 
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}`, req.url));
+  return redirectRelative(`/platform/companies/${companyId}`, 307);
 }
 

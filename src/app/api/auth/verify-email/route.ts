@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashToken } from "@/lib/authTokens";
 import { logInfo, logWarn } from "@/lib/logger";
 import { apiHandler } from "@/lib/apiHandler";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export const runtime = "nodejs";
 
 /**
@@ -14,7 +14,7 @@ export const GET = apiHandler(async (req: Request) => {
   const url = new URL(req.url);
   const token = url.searchParams.get("token") ?? "";
   if (!token) {
-    return NextResponse.redirect(new URL("/verify-email?status=invalid", req.url), 303);
+    return redirectRelative("/verify-email?status=invalid", 303);
   }
 
   const hash = hashToken(token);
@@ -29,7 +29,7 @@ export const GET = apiHandler(async (req: Request) => {
 
   if (!record?.accountUserId) {
     logWarn("verify_email_invalid_token");
-    return NextResponse.redirect(new URL("/verify-email?status=invalid", req.url), 303);
+    return redirectRelative("/verify-email?status=invalid", 303);
   }
 
   await prisma.$transaction([
@@ -44,5 +44,5 @@ export const GET = apiHandler(async (req: Request) => {
   ]);
 
   logInfo("verify_email_success", { accountUserId: record.accountUserId });
-  return NextResponse.redirect(new URL("/verify-email?status=ok", req.url), 303);
+  return redirectRelative("/verify-email?status=ok", 303);
 });

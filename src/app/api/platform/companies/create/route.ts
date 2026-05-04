@@ -13,6 +13,7 @@ import {
 } from "@/lib/companyAccountNaming";
 import crypto from "crypto";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function badRequest(msg: string) {
   return NextResponse.json({ error: msg }, { status: 400 });
 }
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
       return created;
     });
 
-    return NextResponse.redirect(new URL(`/platform/companies/${company.id}`, req.url), 303);
+    return redirectRelative(`/platform/companies/${company.id}`, 303);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "";
     if (msg.includes("Unique constraint") || msg.includes("unique")) {

@@ -11,6 +11,7 @@ import {
 } from "@/lib/companyAccountNaming";
 import { sendSystemMail, subaccountSetupEmail } from "@/lib/systemMail";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 const MAX_LOCATIONS_PER_KIND = 20;
 
 /**
@@ -219,5 +220,5 @@ export async function POST(
   if (ct.includes("application/json")) {
     return NextResponse.json({ ok: true, accountId: createdAccountId, username });
   }
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}`, req.url), 303);
+  return redirectRelative(`/platform/companies/${companyId}`, 303);
 }

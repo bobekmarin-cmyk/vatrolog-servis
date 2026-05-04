@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { calcValidUntil } from "@/lib/validity";
 import { computeUpInterval } from "@/lib/internalUpRule";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 /** Zadnji dan istog mjeseca kao referenceDate, ali u danoj godini (npr. za usklađivanje UP roka s PP mjesecom). */
 function sameMonthEndAs(referenceDate: Date, year: number): Date {
   const month = referenceDate.getMonth();
@@ -96,7 +97,7 @@ export async function POST(
       await tx.workOrderItemPart.deleteMany({ where: { workOrderItemId: itemId } });
       await tx.workOrderItemCustomService.deleteMany({ where: { workOrderItemId: itemId } });
     });
-    return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+    return redirectRelative(`/work-orders/${id}`, 307);
   }
 
   // ——— NORMALNI SERVIS ———
@@ -306,5 +307,5 @@ export async function POST(
     });
   });
 
-  return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+  return redirectRelative(`/work-orders/${id}`, 307);
 }

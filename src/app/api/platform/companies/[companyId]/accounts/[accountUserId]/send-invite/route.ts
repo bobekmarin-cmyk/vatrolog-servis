@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { generateToken } from "@/lib/authTokens";
 import { adminOnboardingEmail, sendSystemMail } from "@/lib/systemMail";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 /**
  * Pošalji ADMIN onboarding pozivnicu — koristi se samo za XX-adm račun
  * (workshop računi nemaju ovaj gumb; oni se aktiviraju kroz bulk setup
@@ -121,5 +122,5 @@ export async function POST(
     },
   });
 
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}`, req.url), 303);
+  return redirectRelative(`/platform/companies/${companyId}`, 303);
 }

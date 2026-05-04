@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { signSessionToken } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { redirectRelative } from "@/lib/httpRedirect";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { checkLoginRateLimit, clearLoginFailures, clientKeyFromRequest, recordLoginFailure } from "@/lib/rateLimit";
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
   const wantsJson = (req.headers.get("accept") ?? "").toLowerCase().includes("application/json");
   const res = wantsJson
     ? NextResponse.json({ ok: true as const, redirect: afterLogin })
-    : NextResponse.redirect(new URL(afterLogin, req.url), 303);
+    : redirectRelative(afterLogin);
   res.cookies.set("vb_session", token, {
     httpOnly: true,
     sameSite: "lax",

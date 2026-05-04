@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function badRequest(msg: string) {
   return NextResponse.json({ error: msg }, { status: 400 });
 }
@@ -42,10 +43,7 @@ export async function POST(
         contactEmail,
       },
     });
-    return NextResponse.redirect(
-      new URL(`/platform/manufacturers/${manufacturerId}`, req.url),
-      303,
-    );
+    return redirectRelative(`/platform/manufacturers/${manufacturerId}`, 303);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "";
     if (msg.includes("Unique constraint") || msg.includes("unique")) {

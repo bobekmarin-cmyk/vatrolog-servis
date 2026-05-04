@@ -6,6 +6,7 @@ import { ReceiptDeliveryMode } from "@prisma/client";
 import { apiErrorMessage } from "@/lib/apiErrors";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function parseDate(value: string | null) {
   if (!value) return null;
   const v = String(value).trim();
@@ -280,5 +281,5 @@ export async function POST(req: Request) {
   if (wantsJson) {
     return NextResponse.json({ ok: true, redirectTo, deduplicated: result.deduplicated });
   }
-  return NextResponse.redirect(new URL(redirectTo, req.url), { status: 303 });
+  return redirectRelative(redirectTo, 303);
 }

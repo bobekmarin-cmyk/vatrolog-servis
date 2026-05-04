@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { allocateNextInternalCodeTx, getWeightCodeForType } from "@/lib/internalCode";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; itemId: string }> }
@@ -67,7 +68,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+    return redirectRelative(`/work-orders/${id}`, 307);
   }
 
   // Ručni unos (bez internog broja)
@@ -178,5 +179,5 @@ export async function POST(
     },
   });
 
-  return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+  return redirectRelative(`/work-orders/${id}`, 307);
 }

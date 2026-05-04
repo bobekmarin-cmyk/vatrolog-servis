@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ companyId: string; accountUserId: string }> }
@@ -24,6 +25,6 @@ export async function POST(
       : { active: false, currentSessionId: null, sessionsValidAfter: new Date() },
   });
 
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}`, req.url));
+  return redirectRelative(`/platform/companies/${companyId}`, 307);
 }
 

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { redirectRelative } from "@/lib/httpRedirect";
 
-export async function POST(req: Request) {
+export async function POST() {
   // 303: nakon POST-a uvijek prebaci na GET
-  const res = NextResponse.redirect(new URL("/platform/login", req.url), 303);
+  const res = redirectRelative("/platform/login");
   res.cookies.set("vb_platform_session", "", {
     httpOnly: true,
     sameSite: "lax",

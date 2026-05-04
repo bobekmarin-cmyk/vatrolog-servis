@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { FEATURE_KEYS, getCompanyFeatures, isFeatureEnabledForRole } from "@/lib/companyFeatures";
 import bcrypt from "bcryptjs";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Niste prijavljeni." }, { status: 401 });
@@ -35,5 +36,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.redirect(new URL("/admin/settings/servicers", req.url));
+  return redirectRelative("/admin/settings/servicers", 307);
 }

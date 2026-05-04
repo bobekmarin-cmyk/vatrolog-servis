@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; itemId: string }> }
@@ -33,5 +34,5 @@ export async function POST(
 
   await prisma.workOrderItem.delete({ where: { id: itemId } });
 
-  return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+  return redirectRelative(`/work-orders/${id}`, 307);
 }

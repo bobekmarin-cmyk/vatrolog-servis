@@ -1,24 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { exchangeCode, fetchGmailEmail, encryptToken } from "@/lib/gmail";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return redirectRelative("/login", 307);
   }
 
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
 
   if (!code || !state) {
-    return NextResponse.redirect(new URL("/admin/settings/mail?gmail=error&reason=missing_params", req.url));
+    return redirectRelative("/admin/settings/mail?gmail=error&reason=missing_params", 307);
   }
 
   const companyId = state.split(":")[0];
   if (companyId !== session.companyId) {
-    return NextResponse.redirect(new URL("/admin/settings/mail?gmail=error&reason=invalid_state", req.url));
+    return redirectRelative("/admin/settings/mail?gmail=error&reason=invalid_state", 307);
   }
 
   try {
@@ -35,11 +36,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.redirect(new URL("/admin/settings/mail?gmail=connected", req.url));
+    return redirectRelative("/admin/settings/mail?gmail=connected", 307);
   } catch (e: any) {
     console.error("Gmail callback error:", e);
-    return NextResponse.redirect(
-      new URL(`/admin/settings/mail?gmail=error&reason=${encodeURIComponent(e.message?.slice(0, 100) ?? "unknown")}`, req.url),
-    );
+    return redirectRelative(`/admin/settings/mail?gmail=error&reason=${encodeURIComponent(e.message?.slice(0, 100) ?? "unknown")}`, 307);
   }
 }

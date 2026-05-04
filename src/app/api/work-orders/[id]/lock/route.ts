@@ -5,6 +5,7 @@ import { decrementStockForWorkOrder } from "@/lib/partStock";
 import { consumeLabelsOnLock } from "@/lib/serviceLabels";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +23,7 @@ export async function POST(
 
   // Ako već zaključan — idempotentno
   if (order.status === "LOCKED") {
-    return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+    return redirectRelative(`/work-orders/${id}`, 307);
   }
 
   // Po želji: upozorenje o mismatch primka≠nalog (dozvoljavamo zaključavanje)
@@ -95,5 +96,5 @@ export async function POST(
     userAgent: audit.userAgent,
   });
 
-  return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+  return redirectRelative(`/work-orders/${id}`, 307);
 }

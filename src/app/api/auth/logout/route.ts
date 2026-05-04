@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redirectRelative } from "@/lib/httpRedirect";
 
 function clearSessionCookie(res: NextResponse) {
   res.cookies.set("vb_session", "", {
@@ -24,15 +25,15 @@ function clearSessionCookie(res: NextResponse) {
   });
 }
 
-export async function POST(req: Request) {
-  const res = NextResponse.redirect(new URL("/login", req.url), 303);
+export async function POST() {
+  const res = redirectRelative("/login");
   clearSessionCookie(res);
   return res;
 }
 
 /** GET: odjava nakon isteka sesije / obrisanog računa (redirect iz layouta). */
-export async function GET(req: Request) {
-  const res = NextResponse.redirect(new URL("/login", req.url), 303);
+export async function GET() {
+  const res = redirectRelative("/login");
   clearSessionCookie(res);
   return res;
 }

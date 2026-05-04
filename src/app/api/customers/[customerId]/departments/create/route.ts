@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function badRequest(msg: string) {
   return NextResponse.json({ error: msg }, { status: 400 });
 }
@@ -39,7 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ custome
       },
     });
 
-    return NextResponse.redirect(new URL(`/customers/${customerId}`, req.url), 303);
+    return redirectRelative(`/customers/${customerId}`, 303);
   } catch {
     return NextResponse.json({ error: "Greška kod kreiranja odjeljenja." }, { status: 400 });
   }

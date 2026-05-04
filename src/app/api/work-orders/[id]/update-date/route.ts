@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 function parseDateOnly(value: string | null) {
   if (!value) return null;
   const v = String(value).trim();
@@ -58,6 +59,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: { receivedAt },
   });
 
-  return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url), { status: 303 });
+  return redirectRelative(`/work-orders/${id}`, 303);
 }
 

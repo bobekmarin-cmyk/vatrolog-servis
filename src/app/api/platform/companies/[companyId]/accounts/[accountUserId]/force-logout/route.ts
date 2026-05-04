@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ companyId: string; accountUserId: string }> },
@@ -41,5 +42,5 @@ export async function POST(
   if (req.headers.get("accept")?.includes("application/json")) {
     return NextResponse.json({ ok: true, cutoff: cutoff.toISOString() });
   }
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}?forceLogout=ok`, req.url), 303);
+  return redirectRelative(`/platform/companies/${companyId}?forceLogout=ok`, 303);
 }

@@ -5,6 +5,7 @@ import { restoreStockForWorkOrder } from "@/lib/partStock";
 import { revertLabelConsumptionOnUnlock } from "@/lib/serviceLabels";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +23,7 @@ export async function POST(
   }
 
   if (order.status !== "LOCKED") {
-    return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+    return redirectRelative(`/work-orders/${id}`, 307);
   }
 
   const { labelResult, stockResult } = await prisma.$transaction(async (tx) => {
@@ -65,5 +66,5 @@ export async function POST(
     userAgent: audit.userAgent,
   });
 
-  return NextResponse.redirect(new URL(`/work-orders/${id}`, req.url));
+  return redirectRelative(`/work-orders/${id}`, 307);
 }

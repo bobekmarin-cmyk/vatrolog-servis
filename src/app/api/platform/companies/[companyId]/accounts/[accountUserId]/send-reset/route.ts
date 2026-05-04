@@ -5,6 +5,7 @@ import { generateToken } from "@/lib/authTokens";
 import { passwordResetEmail, sendSystemMail } from "@/lib/systemMail";
 import { checkRateLimit } from "@/lib/rateLimit";
 
+import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ companyId: string; accountUserId: string }> },
@@ -106,5 +107,5 @@ export async function POST(
   if (req.headers.get("accept")?.includes("application/json")) {
     return NextResponse.json({ ok: true, transport: sent.transport });
   }
-  return NextResponse.redirect(new URL(`/platform/companies/${companyId}?reset=sent`, req.url), 303);
+  return redirectRelative(`/platform/companies/${companyId}?reset=sent`, 303);
 }
