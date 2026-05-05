@@ -32,6 +32,15 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: "Neispravan OIB." }, { status: 400 });
         case "SUBJECT_NOT_FOUND":
           return NextResponse.json({ found: false, message: "OIB nije pronađen u registru." });
+        case "SUDREG_NOT_CONFIGURED":
+          return NextResponse.json(
+            {
+              found: false,
+              message:
+                "Sudski registar nije konfiguriran na poslužitelju (nedostaju SUDREG_CLIENT_ID / SUDREG_CLIENT_SECRET).",
+            },
+            { status: 503 },
+          );
         case "SUDREG_BAD_REQUEST":
           return NextResponse.json(
             { found: false, message: "Neispravan zahtjev prema Sudskom registru." },
@@ -51,6 +60,7 @@ export async function POST(req: Request) {
           break;
       }
     }
+    console.error("[platform/oib-lookup] sudreg error:", e);
 
     return NextResponse.json(
       { found: false, message: "Greška pri dohvaćanju podataka iz Sudskog registra." },

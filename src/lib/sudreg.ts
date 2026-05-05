@@ -15,7 +15,11 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 
 function getRequiredEnv(name: "SUDREG_CLIENT_ID" | "SUDREG_CLIENT_SECRET"): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`Missing required env var: ${name}`);
+  if (!value) {
+    // Distinct error code so route handlers mogu vratiti jasnu poruku
+    // umjesto generic "Greška pri dohvaćanju podataka".
+    throw new Error("SUDREG_NOT_CONFIGURED");
+  }
   return value;
 }
 

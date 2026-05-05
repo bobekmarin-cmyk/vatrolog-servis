@@ -26,6 +26,14 @@ export async function GET(req: Request) {
           return NextResponse.json({ error: "Neispravan OIB." }, { status: 400 });
         case "SUBJECT_NOT_FOUND":
           return NextResponse.json({ error: "Subjekt nije pronađen u Sudskom registru." }, { status: 404 });
+        case "SUDREG_NOT_CONFIGURED":
+          return NextResponse.json(
+            {
+              error:
+                "Sudski registar nije konfiguriran na poslužitelju (nedostaju SUDREG_CLIENT_ID / SUDREG_CLIENT_SECRET). Kontaktirajte vendora.",
+            },
+            { status: 503 },
+          );
         case "SUDREG_BAD_REQUEST":
           return NextResponse.json(
             { error: "Neispravan zahtjev prema Sudskom registru." },
@@ -45,6 +53,7 @@ export async function GET(req: Request) {
           break;
       }
     }
+    console.error("[registry-lookup] sudreg error:", e);
 
     return NextResponse.json(
       { error: "Greška pri dohvaćanju podataka iz Sudskog registra." },
