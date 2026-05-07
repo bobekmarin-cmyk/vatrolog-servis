@@ -136,6 +136,10 @@ export async function checkRateLimit(
 }
 
 export function clientKeyFromRequest(req: Request): string {
+  // Cloudflare proxy: pravi client IP dolazi u CF-Connecting-IP
+  // (X-Forwarded-For sadrži cijeli lanac proxyja).
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf?.trim()) return cf.trim();
   const xf = req.headers.get("x-forwarded-for");
   const first = xf?.split(",")[0]?.trim();
   if (first) return first;
