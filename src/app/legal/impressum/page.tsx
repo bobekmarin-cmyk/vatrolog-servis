@@ -25,9 +25,7 @@ export default function ImpressumPage() {
 
       <h2>Kontakt</h2>
       <p>
-        Email: <a href="mailto:info@vatrolog.hr">info@vatrolog.hr</a><br />
-        Podrška: <a href="mailto:podrska@vatrolog.hr">podrska@vatrolog.hr</a><br />
-        DPO: <a href="mailto:dpo@vatrolog.hr">dpo@vatrolog.hr</a>
+        Email / podrška / DPO: <a href="mailto:marin@vatrolog.com">marin@vatrolog.com</a>
       </p>
 
       <h2>Registarski podaci</h2>

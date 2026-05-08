@@ -1,5 +1,6 @@
 import VatroLogLogo from "@/components/VatroLogLogo";
 import VerifyEmailResendForm from "./VerifyEmailResendForm";
+import Link from "next/link";
 
 export const metadata = { title: "Potvrda email adrese" };
 
@@ -24,13 +25,19 @@ export default async function VerifyEmailPage({ searchParams }: Props) {
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-sm surface p-6 shadow-lg">
         <div className="flex justify-center mb-4">
-          <VatroLogLogo size="lg" />
+          <Link href="/landing" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
+            <VatroLogLogo size="lg" />
+          </Link>
         </div>
         <h1 className="text-2xl font-bold">Potvrda email adrese</h1>
         <div className="mt-6">{content}</div>
         {showResend && <VerifyEmailResendForm />}
-        <div className="mt-6 text-center">
-          <a href="/login" className="text-sm text-red-600 hover:underline">Idi na prijavu</a>
+        <div className="mt-6 text-center text-sm space-x-3">
+          <a href="/login" className="text-red-600 hover:underline">Idi na prijavu</a>
+          <span aria-hidden className="text-slate-400">·</span>
+          <a href="/landing" className="text-slate-600 hover:text-red-600 hover:underline">
+            ← Opis proizvoda
+          </a>
         </div>
       </div>
     </main>

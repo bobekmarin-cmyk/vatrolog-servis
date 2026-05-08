@@ -88,7 +88,7 @@ export default async function SettingsBillingPage() {
               <div className="mt-4">
                 {plan.id === "enterprise" ? (
                   <a
-                    href="mailto:podrska@vatrolog.hr"
+                    href="mailto:marin@vatrolog.com"
                     className="block w-full rounded-md bg-slate-800 py-2 text-center font-medium text-white hover:bg-slate-900"
                   >
                     Kontaktirajte nas
@@ -115,8 +115,8 @@ export default async function SettingsBillingPage() {
           <ul className="ml-5 mt-2 list-disc text-sm text-slate-700">
             <li>
               Email:{" "}
-              <a href="mailto:podrska@vatrolog.hr" className="text-red-600 hover:underline">
-                podrska@vatrolog.hr
+              <a href="mailto:marin@vatrolog.com" className="text-red-600 hover:underline">
+                marin@vatrolog.com
               </a>
             </li>
             <li>Generirat ćemo Vam predračun i nakon plaćanja aktivirati pretplatu.</li>

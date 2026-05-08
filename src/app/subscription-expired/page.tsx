@@ -5,7 +5,9 @@ export default function SubscriptionExpiredPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-md surface p-8 shadow-lg text-center space-y-6">
-        <VatroLogLogo size="lg" />
+        <Link href="/landing" aria-label="Natrag na početnu" className="inline-block rounded-md transition hover:opacity-80">
+          <VatroLogLogo size="lg" />
+        </Link>
 
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-slate-900">Pristup onemogućen</h1>
@@ -16,7 +18,7 @@ export default function SubscriptionExpiredPage() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <a href="mailto:podrska@vatrolog.hr?subject=Obnova%20VatroLog%20pretplate" className="btn btn-primary w-full">
+          <a href="mailto:marin@vatrolog.com?subject=Obnova%20VatroLog%20pretplate" className="btn btn-primary w-full">
             Zatraži obnovu pretplate
           </a>
           <form action="/api/auth/logout" method="post">

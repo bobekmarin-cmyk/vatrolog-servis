@@ -67,7 +67,7 @@ export default function TermsPage() {
       <p>Za sve sporove nadležan je stvarno nadležni sud u mjestu sjedišta Pružatelja.</p>
 
       <h2>10. Kontakt</h2>
-      <p>Za pitanja vezana uz ove Uvjete kontaktirajte <a href="mailto:podrska@vatrolog.hr">podrska@vatrolog.hr</a>.</p>
+      <p>Za pitanja vezana uz ove Uvjete kontaktirajte <a href="mailto:marin@vatrolog.com">marin@vatrolog.com</a>.</p>
     </article>
   );
 }

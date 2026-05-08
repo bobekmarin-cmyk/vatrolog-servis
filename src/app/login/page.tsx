@@ -1,12 +1,15 @@
 import CompanyLoginForm from "./CompanyLoginForm";
 import VatroLogLogo from "@/components/VatroLogLogo";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-sm surface p-6 shadow-lg">
         <div className="flex justify-center mb-4">
-          <VatroLogLogo size="lg" />
+          <Link href="/landing" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
+            <VatroLogLogo size="lg" />
+          </Link>
         </div>
         <h1 className="text-2xl font-bold">Prijava</h1>
         <p className="mt-1 text-sm text-slate-600">Prijavi se svojim korisničkim računom tvrtke.</p>

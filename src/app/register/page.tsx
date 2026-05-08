@@ -1,5 +1,6 @@
 import RegisterForm from "./RegisterForm";
 import VatroLogLogo from "@/components/VatroLogLogo";
+import Link from "next/link";
 
 export const metadata = {
   title: "Zahtjev za probni pristup",
@@ -12,7 +13,9 @@ export default function RegisterPage() {
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-lg surface p-6 shadow-lg">
         <div className="flex justify-center mb-4">
-          <VatroLogLogo size="lg" />
+          <Link href="/landing" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
+            <VatroLogLogo size="lg" />
+          </Link>
         </div>
         <h1 className="text-2xl font-bold">Zahtjev za probni pristup</h1>
         <p className="mt-1 text-sm text-slate-600">

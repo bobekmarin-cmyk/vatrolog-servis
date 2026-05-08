@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { IconArrowRight, IconMail, IconPhone } from "./icons";
 
-const CONTACT_EMAIL = "info@vatrolog.hr";
+const CONTACT_EMAIL = "marin@vatrolog.com";
 
 export default function Contact() {
   return (

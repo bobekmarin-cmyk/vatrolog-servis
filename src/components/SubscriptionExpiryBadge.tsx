@@ -73,7 +73,7 @@ export default function SubscriptionExpiryBadge({ daysUntilExpiry, activeUntilIs
         </div>
         <div className="flex flex-col justify-end gap-2 rounded-b-xl border-t border-black/10 bg-slate-50 px-5 py-3 sm:flex-row">
           <a
-            href="mailto:podrska@vatrolog.hr?subject=Obnova%20VatroLog%20pretplate"
+            href="mailto:marin@vatrolog.com?subject=Obnova%20VatroLog%20pretplate"
             className="rounded-md bg-indigo-600 px-4 py-1.5 text-center text-sm font-medium text-white hover:bg-indigo-500"
           >
             Zatraži obnovu
