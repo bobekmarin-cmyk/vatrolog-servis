@@ -54,7 +54,7 @@ export default function LandingNav() {
           </Link>
           <Link
             href="/register"
-            className="hidden items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:inline-flex"
+            className="hidden items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500 sm:inline-flex"
           >
             Zatraži probni pristup
           </Link>
@@ -129,7 +129,7 @@ export default function LandingNav() {
               <Link
                 href="/register"
                 onClick={() => setOpen(false)}
-                className="block rounded-lg bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                className="block rounded-lg bg-red-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500"
               >
                 Zatraži probni pristup
               </Link>

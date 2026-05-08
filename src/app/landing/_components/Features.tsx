@@ -92,9 +92,13 @@ export default function Features() {
           {features.map(({ title, description, Icon }) => (
             <div
               key={title}
-              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden rounded-2xl border border-slate-200 border-t-2 border-t-red-500/70 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:shadow-lg hover:shadow-red-500/10"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 ring-1 ring-red-100">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-red-500/0 blur-2xl transition group-hover:bg-red-500/15"
+              />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-50 to-red-100 text-red-600 ring-1 ring-red-200/80 transition group-hover:from-red-100 group-hover:to-red-200">
                 <Icon className="h-5 w-5" />
               </div>
               <h3 className="mt-4 text-base font-semibold text-slate-900">{title}</h3>

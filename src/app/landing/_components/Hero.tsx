@@ -16,7 +16,7 @@ export default function Hero() {
 
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 md:py-24 lg:grid-cols-2 lg:gap-10">
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white/70 px-3 py-1 text-xs font-semibold text-red-700 shadow-sm backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-red-300/80 bg-white/80 px-3 py-1 text-xs font-semibold text-red-700 shadow-sm ring-1 ring-red-200/60 backdrop-blur">
             <IconFireExt className="h-3.5 w-3.5" />
             Za servisere vatrogasnih aparata u Hrvatskoj
           </span>
@@ -35,14 +35,14 @@ export default function Hero() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/register"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-red-600/25 ring-1 ring-red-500/40 transition hover:bg-red-500 hover:shadow-red-500/30"
             >
               Zatraži probni pristup
               <IconArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="#kako-radi"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-3 text-base font-semibold text-white shadow-sm ring-1 ring-slate-900 transition hover:bg-slate-800"
             >
               Pogledaj kako radi
             </a>
@@ -63,12 +63,18 @@ export default function Hero() {
         </div>
 
         <div className="relative">
-          <BrowserFrame url="app.vatrolog.hr/work-orders">
-            <HeroMock />
-          </BrowserFrame>
+          <div className="relative rounded-[1.75rem] bg-slate-950 p-2 shadow-2xl shadow-red-900/20 ring-1 ring-slate-900/80">
+            <BrowserFrame url="app.vatrolog.hr/work-orders">
+              <HeroMock />
+            </BrowserFrame>
+          </div>
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-tr from-red-200/40 via-orange-200/30 to-transparent blur-2xl"
+            className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-tr from-red-400/40 via-orange-300/20 to-transparent blur-2xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-10 -left-10 -z-10 h-40 w-40 rounded-full bg-red-500/30 blur-3xl"
           />
         </div>
       </div>
@@ -78,14 +84,14 @@ export default function Hero() {
 
 function HeroMock() {
   const rows = [
-    { id: "RN-2026-0142", customer: "Vatrospas d.o.o.", status: "U servisu", tone: "indigo" },
+    { id: "RN-2026-0142", customer: "Vatrospas d.o.o.", status: "U servisu", tone: "red" },
     { id: "RN-2026-0141", customer: "HŠ Nastavni centar", status: "Spremno", tone: "emerald" },
     { id: "RN-2026-0140", customer: "OŠ Antuna Mihanovića", status: "Na čekanju", tone: "amber" },
     { id: "RN-2026-0139", customer: "Dom zdravlja Split", status: "Dostavljeno", tone: "slate" },
   ] as const;
 
   const toneCls = {
-    indigo: "bg-indigo-50 text-indigo-700",
+    red: "bg-red-50 text-red-700",
     emerald: "bg-emerald-50 text-emerald-700",
     amber: "bg-amber-50 text-amber-800",
     slate: "bg-slate-100 text-slate-700",
