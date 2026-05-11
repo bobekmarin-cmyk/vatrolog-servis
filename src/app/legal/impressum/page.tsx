@@ -1,4 +1,7 @@
-export const metadata = { title: "Impressum — VatroLog" };
+export const metadata = {
+  title: "Impressum — VatroLog",
+  alternates: { canonical: "/legal/impressum" },
+};
 
 export default function ImpressumPage() {
   return (

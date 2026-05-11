@@ -2,6 +2,11 @@ import CompanyLoginForm from "./CompanyLoginForm";
 import VatroLogLogo from "@/components/VatroLogLogo";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Prijava",
+  alternates: { canonical: "/login" },
+};
+
 export default function LoginPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Postavi novu lozinku",
+  alternates: { canonical: "/reset-password" },
 };
 
 type Props = { searchParams: Promise<{ token?: string }> };

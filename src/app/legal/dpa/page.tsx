@@ -1,4 +1,7 @@
-export const metadata = { title: "Ugovor o obradi podataka (DPA) — VatroLog" };
+export const metadata = {
+  title: "Ugovor o obradi podataka (DPA) — VatroLog",
+  alternates: { canonical: "/legal/dpa" },
+};
 
 export default function DpaPage() {
   return (

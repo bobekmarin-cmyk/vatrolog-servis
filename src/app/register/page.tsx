@@ -6,6 +6,7 @@ export const metadata = {
   title: "Zahtjev za probni pristup",
   description:
     "Pošaljite zahtjev za 14-dnevni probni rad u VatroLogu. Pregledamo zahtjev i odobravamo ga ručno — bez kartice, bez automatske aktivacije.",
+  alternates: { canonical: "/register" },
 };
 
 export default function RegisterPage() {

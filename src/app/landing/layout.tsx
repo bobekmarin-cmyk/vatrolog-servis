@@ -4,12 +4,16 @@ export const metadata: Metadata = {
   title: "VatroLog — Digitalni servis vatrogasnih aparata",
   description:
     "Servisni nalozi, evidencija aparata, skladište, upisnici i izvještaji na jednom mjestu. Za servisere vatrogasnih aparata u Hrvatskoj.",
+  alternates: {
+    canonical: "/landing",
+  },
   openGraph: {
     title: "VatroLog — Digitalni servis vatrogasnih aparata",
     description:
       "Vodi servis vatrogasnih aparata bez papira i Excela. Nalozi, evidencija, upisnici i izvještaji u jednom alatu.",
     locale: "hr_HR",
     type: "website",
+    url: "/landing",
   },
 };
 

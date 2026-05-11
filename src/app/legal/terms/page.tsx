@@ -1,4 +1,7 @@
-export const metadata = { title: "Uvjeti korištenja — VatroLog" };
+export const metadata = {
+  title: "Uvjeti korištenja — VatroLog",
+  alternates: { canonical: "/legal/terms" },
+};
 
 export default function TermsPage() {
   return (

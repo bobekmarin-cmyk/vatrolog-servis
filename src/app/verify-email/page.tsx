@@ -2,7 +2,10 @@ import VatroLogLogo from "@/components/VatroLogLogo";
 import VerifyEmailResendForm from "./VerifyEmailResendForm";
 import Link from "next/link";
 
-export const metadata = { title: "Potvrda email adrese" };
+export const metadata = {
+  title: "Potvrda email adrese",
+  alternates: { canonical: "/verify-email" },
+};
 
 type Props = { searchParams: Promise<{ status?: string }> };
 

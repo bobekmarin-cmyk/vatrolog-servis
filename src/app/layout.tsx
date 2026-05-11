@@ -33,9 +33,6 @@ export const metadata: Metadata = {
     "evidencija aparata",
     "Hrvatska",
   ],
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     title: "VatroLog — Digitalni servis vatrogasnih aparata",
     description:

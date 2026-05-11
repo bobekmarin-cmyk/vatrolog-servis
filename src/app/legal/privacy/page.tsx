@@ -1,4 +1,7 @@
-export const metadata = { title: "Politika privatnosti — VatroLog" };
+export const metadata = {
+  title: "Politika privatnosti — VatroLog",
+  alternates: { canonical: "/legal/privacy" },
+};
 
 export default function PrivacyPage() {
   return (
