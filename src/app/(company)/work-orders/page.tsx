@@ -149,22 +149,26 @@ export default async function WorkOrdersPage({
           <div className="flex flex-wrap items-end justify-between gap-2">
             <form method="get" action="/work-orders" className="flex flex-wrap items-end gap-2">
               <div>
-                <label className="label text-xs">Od</label>
+                <label htmlFor="wo-filter-from" className="label text-xs">Od</label>
                 <input
+                  id="wo-filter-from"
                   className="input h-9 text-xs"
                   type="date"
                   name="from"
                   defaultValue={fmtDateInput(fromPicker)}
+                  aria-label="Datum od"
                 />
               </div>
               <div>
-                <label className="label text-xs">Do</label>
+                <label htmlFor="wo-filter-to" className="label text-xs">Do</label>
                 <input
+                  id="wo-filter-to"
                   className="input h-9 text-xs"
                   type="date"
                   name="to"
                   defaultValue={toPicker ? fmtDateInput(toPicker) : ""}
                   title="Ostavi prazno za prikaz svih naloga od odabranog datuma nadalje (uključuje buduće)"
+                  aria-label="Datum do"
                 />
               </div>
               <button

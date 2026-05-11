@@ -2,8 +2,17 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import VatroLogLogo from "@/components/VatroLogLogo";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Portal kupca otvara se preko tajnog linka — ako Google/Bing ikako dođu do njega,
+ * ne smije ga indeksirati ni pratiti. noarchive sprjecava cache snapshot.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
 
 type PageProps = { params: Promise<{ secret: string }> };
 

@@ -7,7 +7,7 @@ export default function VatroLogLogo({ size = "md" }: { size?: "sm" | "md" | "lg
   return (
     <span className={`${classes[size]} font-extrabold tracking-tight`}>
       <span className="text-slate-900">Vatro</span>
-      <span className="text-red-600">Log</span>
+      <span className="text-red-700">Log</span>
     </span>
   );
 }

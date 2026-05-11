@@ -123,12 +123,12 @@ export default function EmailLogClient({ companies }: { companies: Company[] }) 
             <input className="input mt-1 w-full" value={q} onChange={(e) => setQ(e.target.value)} placeholder="dio email-a ili subjecta" />
           </div>
           <div>
-            <label className="text-xs uppercase text-slate-500">Od</label>
-            <input type="date" className="input mt-1 w-full" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <label htmlFor="emaillog-from" className="text-xs uppercase text-slate-500">Od</label>
+            <input id="emaillog-from" type="date" className="input mt-1 w-full" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Datum od" />
           </div>
           <div>
-            <label className="text-xs uppercase text-slate-500">Do</label>
-            <input type="date" className="input mt-1 w-full" value={to} onChange={(e) => setTo(e.target.value)} />
+            <label htmlFor="emaillog-to" className="text-xs uppercase text-slate-500">Do</label>
+            <input id="emaillog-to" type="date" className="input mt-1 w-full" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Datum do" />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

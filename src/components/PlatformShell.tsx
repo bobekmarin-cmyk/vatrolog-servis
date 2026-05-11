@@ -66,7 +66,7 @@ export default function PlatformShell(props: {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <NowDateTime className="hidden text-xs text-slate-500 sm:inline" />
+            <NowDateTime className="hidden text-xs text-slate-700 sm:inline" />
             <PlatformLogoutButton
               className="btn btn-outline"
               label="Odjava"

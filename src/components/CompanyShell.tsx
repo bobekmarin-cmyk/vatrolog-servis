@@ -41,7 +41,7 @@ function NavItem(item: CompanyNavItem & { disabled?: boolean }) {
   if (disabled) {
     return (
       <span
-        className="flex cursor-not-allowed items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/35"
+        className="flex cursor-not-allowed items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/55"
         title="Modul prodaje još nije aktivan — uskoro."
         aria-disabled="true"
       >
@@ -71,7 +71,7 @@ function SectionHeader({ title, isActive, muted }: { title: string; isActive: bo
     <div
       className={[
         "px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider",
-        muted ? "text-white/25" : isActive ? "text-white/70" : "text-white/40",
+        muted ? "text-white/45" : isActive ? "text-white/85" : "text-white/65",
       ].join(" ")}
     >
       {title}
@@ -120,7 +120,7 @@ export default function CompanyShell(props: {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <NowDateTime className="hidden text-xs text-slate-500 sm:inline" />
+            <NowDateTime className="hidden text-xs text-slate-700 sm:inline" />
             {topBarExtra}
             <ServicerActivationDropdown />
             <LogoutButton
@@ -197,7 +197,7 @@ export default function CompanyShell(props: {
             </nav>
 
             {/* Sidebar footer s app verzijom */}
-            <div className="px-4 pb-4 pt-2 text-[10px] text-white/40">
+            <div className="px-4 pb-4 pt-2 text-[10px] text-white/60">
               {APP_NAME} v{APP_VERSION}
             </div>
           </aside>
@@ -209,25 +209,25 @@ export default function CompanyShell(props: {
         </div>
 
         {/* Global app footer sa legal linkovima */}
-        <footer className="mt-4 px-2 text-xs text-slate-500">
+        <footer className="mt-4 px-2 text-xs text-slate-600">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               {APP_NAME} v{APP_VERSION}
             </div>
             <nav className="flex flex-wrap gap-3">
-              <Link href="/admin/privacy" className="hover:text-slate-800">
+              <Link href="/admin/privacy" className="hover:text-slate-900">
                 Privatnost i GDPR
               </Link>
-              <Link href="/legal/terms" className="hover:text-slate-800">
+              <Link href="/legal/terms" className="hover:text-slate-900">
                 Uvjeti
               </Link>
-              <Link href="/legal/privacy" className="hover:text-slate-800">
+              <Link href="/legal/privacy" className="hover:text-slate-900">
                 Politika privatnosti
               </Link>
-              <Link href="/legal/dpa" className="hover:text-slate-800">
+              <Link href="/legal/dpa" className="hover:text-slate-900">
                 DPA
               </Link>
-              <Link href="/legal/impressum" className="hover:text-slate-800">
+              <Link href="/legal/impressum" className="hover:text-slate-900">
                 Impressum
               </Link>
             </nav>

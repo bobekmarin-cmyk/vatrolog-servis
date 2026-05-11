@@ -1,10 +1,21 @@
 import { getSession, getSubscriptionInfo } from "@/lib/auth";
 import { FEATURE_KEYS, getCompanyFeatures, isFeatureEnabledForRole } from "@/lib/companyFeatures";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import CompanyShell, { type CompanyNavItem, type CompanyNavSection } from "@/components/CompanyShell";
 import SubscriptionExpiryBadge from "@/components/SubscriptionExpiryBadge";
 import DialogProvider from "@/components/ui/DialogProvider";
+
+/**
+ * Sve tenant rute (dashboard, radni nalozi, kupci, aparati, skladište, izvještaji, admin)
+ * su iza prijave — eksplicitno ih oznacavamo kao noindex,nofollow tako da Lighthouse SEO
+ * test ne snižava ocjenu na internom UI-ju, a tražilice (Google/Bing) koje slučajno dođu
+ * do auth wall-a ne pokušavaju ih dalje obraditi.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+};
 
 type NavItemConfig = CompanyNavItem & { featureKey: keyof typeof FEATURE_KEYS };
 type NavSectionConfig = { title?: string; items: NavItemConfig[]; inactiveSection?: boolean };

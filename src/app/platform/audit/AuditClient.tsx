@@ -80,12 +80,12 @@ export default function AuditClient({ companies }: { companies: Company[] }) {
             <input className="input mt-1 w-full" value={action} onChange={(e) => setAction(e.target.value)} placeholder="npr. company.impersonate" />
           </div>
           <div>
-            <label className="text-xs uppercase text-slate-500">Od</label>
-            <input type="date" className="input mt-1 w-full" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <label htmlFor="audit-from" className="text-xs uppercase text-slate-500">Od</label>
+            <input id="audit-from" type="date" className="input mt-1 w-full" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Datum od" />
           </div>
           <div>
-            <label className="text-xs uppercase text-slate-500">Do</label>
-            <input type="date" className="input mt-1 w-full" value={to} onChange={(e) => setTo(e.target.value)} />
+            <label htmlFor="audit-to" className="text-xs uppercase text-slate-500">Do</label>
+            <input id="audit-to" type="date" className="input mt-1 w-full" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Datum do" />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
