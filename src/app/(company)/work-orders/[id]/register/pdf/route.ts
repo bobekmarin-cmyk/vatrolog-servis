@@ -37,7 +37,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       items: {
         orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
         include: {
-          parts: { include: { part: { select: { code: true, name: true } } } },
+          parts: { include: { part: { select: { code: true, name: true, manufacturerCode: true } } } },
           extinguisher: {
             include: { manufacturer: true, type: { include: { agent: true, construction: true } } },
           },
@@ -63,13 +63,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
       const internalDone = !!i.internalDone;
 
+      // Upisnik: u stupcu "Dijelovi" prikazujemo isključivo naziv artikla
+      // (bez ikakvih šifara — ni tenantovih ni tvorničkih). Snapshot polja
+      // imaju prednost zbog povijesne stabilnosti.
       const structuredParts = (i.parts ?? [])
-        .map((p) => p.part?.code)
-        .filter((c): c is string => !!c && c.length > 0);
-      const uniqueCodes = Array.from(new Set(structuredParts));
+        .map((p) => (p.snapshotName ?? p.part?.name ?? "").trim())
+        .filter((s) => s.length > 0);
+      const uniqueNames = Array.from(new Set(structuredParts));
       const partsLabel =
-        uniqueCodes.length > 0
-          ? uniqueCodes.join(", ")
+        uniqueNames.length > 0
+          ? uniqueNames.join(", ")
           : (i.partsText ?? "").trim();
 
       return {

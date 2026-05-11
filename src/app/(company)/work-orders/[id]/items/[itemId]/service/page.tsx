@@ -18,6 +18,7 @@ import {
   computeFirstUpYear,
   computeNextUpYear,
 } from "@/lib/internalUpRule";
+import { listAvailablePartsForCompany } from "@/lib/partsCatalog";
 
 export default async function ServiceItemPage({
   params,
@@ -86,35 +87,24 @@ export default async function ServiceItemPage({
 
   // Globalni dijelovi filtrirani po proizvođaču + tipu aparata
   const typeLabel = ex.type ? formatExtinguisherTypeName(ex.type) : "—";
-  const [commonParts, otherParts, selectedRows, customServicesDb, selectedCustomRows] =
-    await Promise.all([
-    prisma.part.findMany({
-      where: {
-        active: true,
-        common: true,
-        manufacturerId: ex.manufacturerId,
-        types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
-        OR: [{ companyId: null }, { companyId: session.companyId }],
-        NOT: { stocks: { some: { companyId: session.companyId, hidden: true } } },
-      },
-      orderBy: [{ code: "asc" }, { name: "asc" }],
-      select: { id: true, code: true, name: true },
-    }),
-    prisma.part.findMany({
-      where: {
-        active: true,
-        common: false,
-        manufacturerId: ex.manufacturerId,
-        types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
-        OR: [{ companyId: null }, { companyId: session.companyId }],
-        NOT: { stocks: { some: { companyId: session.companyId, hidden: true } } },
-      },
-      orderBy: [{ code: "asc" }, { name: "asc" }],
-      select: { id: true, code: true, name: true },
-    }),
+
+  const [selectedRows, customServicesDb, selectedCustomRows] = await Promise.all([
     prisma.workOrderItemPart.findMany({
       where: { workOrderItemId: item.id, companyId: session.companyId },
-      include: { part: { select: { id: true, code: true, name: true, active: true } } },
+      include: {
+        part: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            active: true,
+            companyId: true,
+            manufacturerId: true,
+            manufacturerCode: true,
+            defaultPrice: true,
+          },
+        },
+      },
     }),
     prisma.companyCustomService.findMany({
       where: { companyId: session.companyId, deletedAt: null, isActive: true },
@@ -140,6 +130,35 @@ export default async function ServiceItemPage({
 
   const initialSelectedIds = Array.from(new Set(selectedRows.map((r) => r.partId)));
 
+  // Dohvati dostupne dijelove (i seed već odabranih) prema novim pravilima.
+  const availableParts = await listAvailablePartsForCompany(prisma, {
+    companyId: session.companyId,
+    manufacturerId: ex.manufacturerId,
+    extinguisherTypeId: ex.extinguisherTypeId,
+    seedPartIds: initialSelectedIds,
+  });
+  // Posebno common = true (dohvat za picker treba tražiti zasebno: filtriramo iz availableParts).
+  // Pošto helper ne čuva common bit, dohvatimo common id-jeve odvojeno.
+  const commonIds = new Set(
+    (
+      await prisma.part.findMany({
+        where: {
+          manufacturerId: ex.manufacturerId,
+          common: true,
+          types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
+          OR: [{ companyId: null }, { companyId: session.companyId }],
+        },
+        select: { id: true },
+      })
+    ).map((x) => x.id),
+  );
+  const commonParts = availableParts
+    .filter((p) => commonIds.has(p.part.id))
+    .map((p) => ({ id: p.part.id, code: p.displayCode, name: p.part.name }));
+  const otherParts = availableParts
+    .filter((p) => !commonIds.has(p.part.id))
+    .map((p) => ({ id: p.part.id, code: p.displayCode, name: p.part.name }));
+
   const initialSelectedCustomServiceIds = Array.from(
     new Set(selectedCustomRows.map((r) => r.customServiceId)),
   );
@@ -164,9 +183,12 @@ export default async function ServiceItemPage({
       });
     }
   }
+  // Sigurnosni dodatak: ako je već odabran dio koji više nije u availableParts (npr. obrisan),
+  // dodaj ga sa snapshotom iz live Part zapisa kako ne bi nestao iz selekcije.
+  const availableIdSet = new Set(availableParts.map((a) => a.part.id));
   const extraSelected = selectedRows
     .map((r) => r.part)
-    .filter((p) => !!p && !p.active)
+    .filter((p): p is NonNullable<typeof p> => !!p && !availableIdSet.has(p.id))
     .map((p) => ({ id: p.id, code: p.code, name: p.name }));
 
   const upRule = ex.type

@@ -72,9 +72,9 @@ enum ServiceKind {
 /// Tip servisne naljepnice koja se troši pri periodičnom pregledu aparata.
 /// Svaki proizvođač ima točno ova tri tipa naljepnica.
 enum ServiceLabelKind {
-  PERIODIC        // Naljepnica periodičnog pregleda
-  APPARATUS_MASS  // Naljepnica mase aparata (STORED_PRESSURE + CO2)
-  CYLINDER_MASS   // Naljepnica mase bočice (CARTRIDGE)
+  PERIODIC // Naljepnica periodičnog pregleda
+  APPARATUS_MASS // Naljepnica mase aparata (STORED_PRESSURE + CO2)
+  CYLINDER_MASS // Naljepnica mase bočice (CARTRIDGE)
 }
 
 /**
@@ -251,16 +251,22 @@ model Company {
   /// Vlastiti (tenant-specific) dijelovi koje je ova tvrtka dodala izvan platform kataloga.
   customParts Part[]
 
+  /// Postavke korištenja preddefiniranog (platform) kataloga dijelova po proizvođaču.
+  partCatalogSettings CompanyPartCatalogSetting[]
+
+  /// Tenantov override (vlastita šifra/cijena/aktivacija) za platform dio.
+  partOverrides CompanyPartOverride[]
+
   /// Tenant-specific katalog usluga (šifre za računovodstvo, opcionalna cijena).
   serviceCatalog CompanyServiceCatalog[]
 
   /// Vlastite (slobodne) usluge tenanta — neovisne o varijanti aparata.
-  customServices             CompanyCustomService[]
+  customServices              CompanyCustomService[]
   workOrderItemCustomServices WorkOrderItemCustomService[]
 
-  authorizations      CompanyManufacturerAuthorization[]
-  serviceLabelStocks  ServiceLabelStock[]
-  serviceLabelReceipts ServiceLabelReceipt[]
+  authorizations          CompanyManufacturerAuthorization[]
+  serviceLabelStocks      ServiceLabelStock[]
+  serviceLabelReceipts    ServiceLabelReceipt[]
   serviceLabelAdjustments ServiceLabelAdjustment[]
 
   @@index([deletedAt])
@@ -292,7 +298,7 @@ model AccountUser {
   /// (`iat < sessionsValidAfter`) tretiraju se kao nevažeće.
   sessionsValidAfter DateTime?
   /// Trenutno važeći session id za WORKSHOP račune. Novi login zamjenjuje staru sesiju.
-  currentSessionId  String?
+  currentSessionId   String?
 
   lastLoginAt DateTime?
 
@@ -434,11 +440,12 @@ model Manufacturer {
 
   createdAt DateTime @default(now())
 
-  extinguishers  Extinguisher[]
-  supportedTypes ManufacturerExtinguisherType[]
-  parts          Part[]
-  serviceLabels  ServiceLabel[]
-  authorizations CompanyManufacturerAuthorization[]
+  extinguishers       Extinguisher[]
+  supportedTypes      ManufacturerExtinguisherType[]
+  parts               Part[]
+  serviceLabels       ServiceLabel[]
+  authorizations      CompanyManufacturerAuthorization[]
+  partCatalogSettings CompanyPartCatalogSetting[]
 }
 
 model ManufacturerExtinguisherType {
@@ -588,7 +595,15 @@ model Part {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  code   String
+  /// Tehnička/legacy šifra. Za platform dijelove zadržava se zbog backward
+  /// kompatibilnosti, ali poslovna šifra se vodi u `manufacturerCode` (platform)
+  /// odnosno u `CompanyPartOverride.code` (tenant). Za vlastite (tenant) dijelove
+  /// `code` je tenant-editabilna i koristi se kao prikazna šifra.
+  code             String
+  /// Šifra proizvođača (službena šifra pod kojom proizvođač vodi dio).
+  /// Popunjava se na platform dijelovima; null kod vlastitih (tenant) dijelova.
+  manufacturerCode String?
+
   name   String
   common Boolean @default(false)
   active Boolean @default(true)
@@ -599,6 +614,7 @@ model Part {
   types        PartExtinguisherType[]
   usedIn       WorkOrderItemPart[]
   stocks       PartStock[]
+  overrides    CompanyPartOverride[]
   receiptItems StockReceiptItem[]
   adjustments  StockAdjustment[]
 
@@ -608,6 +624,55 @@ model Part {
   @@unique([manufacturerId, companyId, code])
   @@index([manufacturerId])
   @@index([companyId])
+}
+
+/// Postavka tenant-a koja kaže koristi li se preddefinirani (platform) katalog
+/// dijelova za pojedinog proizvođača. Default je TRUE — ako zapis ne postoji,
+/// platform katalog je uključen.
+model CompanyPartCatalogSetting {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+
+  usePlatformCatalog Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, manufacturerId])
+  @@index([companyId])
+}
+
+/// Tenantov override za platform dio: vlastita računovodstvena šifra, cijena
+/// i mogućnost individualne deaktivacije neovisno o `usePlatformCatalog` toggle-u.
+/// Koristi se samo za platform dijelove (Part.companyId IS NULL); za vlastite
+/// dijelove polja žive izravno na `Part`.
+model CompanyPartOverride {
+  id String @id @default(cuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  partId String
+  part   Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  /// Tenantova interna (računovodstvena) šifra. Null = koristi se šifra proizvođača.
+  code   String?
+  /// Tenantov default cijena u EUR (override `Part.defaultPrice`).
+  price  Decimal? @db.Decimal(10, 2)
+  /// Aktivacija pojedinog dijela na razini tenanta. Default TRUE.
+  active Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, partId])
+  @@index([companyId])
+  @@index([partId])
 }
 
 /// Zaliha dijela po tvrtki (multi-tenant stock). Dijeli se od globalnog kataloga Part-a.
@@ -923,6 +988,17 @@ model WorkOrderItemPart {
   /// Jedinična cijena u EUR u trenutku ugradnje (snapshot, ne referencira Part.defaultPrice).
   unitPrice Decimal? @db.Decimal(10, 2)
 
+  /// Snapshot prikazne šifre dijela u trenutku servisa (tenantova šifra ili
+  /// šifra proizvođača — ovisno o izvoru). Čuva se da povijesni servisi ostanu
+  /// stabilni i nakon kasnijih promjena u katalogu.
+  snapshotCode             String?
+  /// Snapshot službene šifre proizvođača (samo za platform dijelove).
+  snapshotManufacturerCode String?
+  /// Snapshot naziva dijela u trenutku servisa.
+  snapshotName             String?
+  /// Snapshot izvora dijela: true = vlastiti tenant dio, false = platform dio.
+  snapshotIsCustom         Boolean?
+
   createdAt DateTime @default(now())
 
   @@id([workOrderItemId, partId])
@@ -934,7 +1010,6 @@ model WorkOrderItemPart {
  * =======================
  * VLASTITE (SLOBODNE) USLUGE TENANTA
  * =======================
- *
  * Neovisne od varijante aparata — ne vežu se uz `ExtinguisherType`. Tenant ih
  * sam definira u 'Šifre usluga' (naziv, šifra, cijena) i može ih dodati uz
  * pojedinu stavku radnog naloga preko boxa 'Dodatne usluge' (qty = 1).
@@ -961,8 +1036,8 @@ model CompanyCustomService {
 }
 
 model WorkOrderItemCustomService {
-  companyId       String
-  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   workOrderItemId String
   workOrderItem   WorkOrderItem @relation(fields: [workOrderItemId], references: [id], onDelete: Cascade)
@@ -1046,9 +1121,9 @@ model EmailLog {
   accountUserId String?
   accountUser   AccountUser? @relation("EmailLogAccountUser", fields: [accountUserId], references: [id], onDelete: SetNull)
 
-  toEmail   String
-  subject   String
-  htmlBody  String?
+  toEmail  String
+  subject  String
+  htmlBody String?
 
   /// Tip maila: "CUSTOMER_NOTIFICATION" | "PASSWORD_RESET" | "ACCOUNT_INVITE" |
   /// "EMAIL_VERIFY" | "SUBSCRIPTION_EXPIRY" | "MONTHLY_REMINDER" | "VENDOR_TEST" | "OTHER".
@@ -1216,7 +1291,6 @@ model UserInvite {
  * =======================
  * ZAHTJEVI ZA TRIAL PRISTUP
  * =======================
- *
  * Javni zahtjev za probni pristup. Ne kreira tvrtku ni račune sve dok
  * platform OWNER ne odobri. Po odobrenju se kreira Company + ADMIN/WORKSHOP
  * neaktivni računi i šalje se onboarding pozivnica adminu.
@@ -1388,7 +1462,6 @@ model ApiKey {
  * =======================
  * SERVISNE NALJEPNICE
  * =======================
- *
  * Svaki proizvođač ima 3 naljepnice (PERIODIC, APPARATUS_MASS, CYLINDER_MASS).
  * Platform automatski kreira 3 reda po proizvođaču. Tenant (servis) vodi svoje
  * stanje, dodjeljuje interne šifre u okviru `CompanyManufacturerAuthorization`

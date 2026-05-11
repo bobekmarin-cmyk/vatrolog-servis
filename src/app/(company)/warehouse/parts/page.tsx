@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
+import { getEnabledPlatformManufacturers, getCompanyPartOverridesByPartIds, partActiveForCompany } from "@/lib/partsCatalog";
 
 export const dynamic = "force-dynamic";
 
@@ -22,27 +23,28 @@ export default async function WarehousePartsIndexPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [auths, stocks, recentReceipts] = await Promise.all([
+  const [auths, allParts, stocks, recentReceipts] = await Promise.all([
     prisma.companyManufacturerAuthorization.findMany({
       where: { companyId: session.companyId, active: true },
       include: {
         manufacturer: {
-          select: {
-            id: true,
-            name: true,
-            displayName: true,
-            _count: {
-              select: {
-                parts: {
-                  where: {
-                    active: true,
-                    OR: [{ companyId: null }, { companyId: session.companyId }],
-                  },
-                },
-              },
-            },
-          },
+          select: { id: true, name: true, displayName: true },
         },
+      },
+    }),
+    prisma.part.findMany({
+      where: {
+        OR: [{ companyId: null }, { companyId: session.companyId }],
+      },
+      select: {
+        id: true,
+        manufacturerId: true,
+        companyId: true,
+        code: true,
+        manufacturerCode: true,
+        name: true,
+        active: true,
+        defaultPrice: true,
       },
     }),
     prisma.partStock.findMany({
@@ -50,6 +52,7 @@ export default async function WarehousePartsIndexPage() {
       select: {
         stockQty: true,
         minStockQty: true,
+        partId: true,
         part: { select: { manufacturerId: true } },
       },
     }),
@@ -69,9 +72,34 @@ export default async function WarehousePartsIndexPage() {
     .map((a) => a.manufacturer)
     .sort((a, b) => displayManufacturer(a).localeCompare(displayManufacturer(b), "hr"));
 
+  const manufacturerIds = manufacturers.map((m) => m.id);
+  const enabledPlatform = await getEnabledPlatformManufacturers(prisma, {
+    companyId: session.companyId,
+    manufacturerIds,
+  });
+  const overrides = await getCompanyPartOverridesByPartIds(prisma, {
+    companyId: session.companyId,
+    partIds: allParts.map((p) => p.id),
+  });
+
+  // Pripremi set partId-jeva koji su trenutno DOSTUPNI tenantu (po novim pravilima).
+  const availablePartIds = new Set<string>();
+  const availableCountByManu = new Map<string, number>();
+  for (const p of allParts) {
+    const isCustom = p.companyId !== null;
+    const isPlatform = !isCustom;
+    const inCatalog = isCustom || enabledPlatform.has(p.manufacturerId);
+    const ov = overrides.get(p.id) ?? null;
+    if (!inCatalog) continue;
+    if (!partActiveForCompany(p, ov)) continue;
+    availablePartIds.add(p.id);
+    availableCountByManu.set(p.manufacturerId, (availableCountByManu.get(p.manufacturerId) ?? 0) + (isPlatform || isCustom ? 1 : 0));
+  }
+
   const statsByManu = new Map<string, { low: number; negative: number; tracked: number }>();
   const qtySumByManu = new Map<string, number>();
   for (const s of stocks) {
+    if (!availablePartIds.has(s.partId)) continue;
     const mId = s.part.manufacturerId;
     const entry = statsByManu.get(mId) ?? { low: 0, negative: 0, tracked: 0 };
     entry.tracked++;
@@ -121,6 +149,7 @@ export default async function WarehousePartsIndexPage() {
             const title = displayManufacturer(m);
             const totalKom = qtySumByManu.get(m.id) ?? 0;
             const alertN = stats.low + stats.negative;
+            const catCount = availableCountByManu.get(m.id) ?? 0;
             return (
               <Link
                 key={m.id}
@@ -139,7 +168,7 @@ export default async function WarehousePartsIndexPage() {
                       Kat.
                     </div>
                     <div className="mt-0.5 text-lg font-bold tabular-nums leading-none text-slate-900">
-                      {m._count.parts}
+                      {catCount}
                     </div>
                   </div>
                   <div className="min-w-0 text-center">

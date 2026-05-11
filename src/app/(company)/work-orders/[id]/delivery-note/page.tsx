@@ -58,14 +58,35 @@ export default async function DeliveryNotePage({ params }: { params: Promise<{ i
   // Sekcija: unutarnji pregledi (lista)
   const internals = realItems.filter((i) => i.internalDone);
 
-  // Sekcija: ugrađeni dijelovi (šifre iz kataloga)
+  // Sekcija: ugrađeni dijelovi
+  // Pravila prikaza:
+  //  · Stupac koji ovdje renderiramo zajedno (`codes`) prikazuje
+  //    "RAČUNOVODSTVENA_ŠIFRA NAZIV (TVORNIČKA)" — tvornička je u zagradi
+  //    samo za platform dijelove kao referenca. Ako nema računovodstvene
+  //    šifre, pokazujemo samo naziv.
   const partsCodes = realItems
     .filter((i) => (i.parts ?? []).length > 0)
     .map((i) => ({
       type: i.extinguisher?.type ? formatExtinguisherTypeName(i.extinguisher.type) : "-",
       agent: agentLabel(i.extinguisher?.type?.agent ?? null),
       serial: i.extinguisher?.serialNumber ?? "-",
-      codes: (i.parts ?? []).map((x) => x.part.code).join(", "),
+      codes: (i.parts ?? [])
+        .map((x) => {
+          const isCustom = x.snapshotIsCustom ?? !!x.part.companyId;
+          const name = (x.snapshotName ?? x.part.name ?? "").trim();
+          const manuCode = isCustom
+            ? null
+            : ((x.snapshotManufacturerCode ?? x.part.manufacturerCode ?? "").trim() || null);
+          const display = (x.snapshotCode ?? x.part.code ?? "").trim();
+          let accountingCode = "";
+          if (isCustom) accountingCode = display;
+          else if (display && display !== manuCode) accountingCode = display;
+
+          const head = accountingCode ? `${accountingCode} ${name}` : name;
+          return manuCode ? `${head}  ${manuCode}` : head;
+        })
+        .filter((s) => s.length > 0)
+        .join(", "),
     }));
 
   // Backward compatibility: slobodan tekst

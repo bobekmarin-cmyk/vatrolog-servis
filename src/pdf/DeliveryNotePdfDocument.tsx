@@ -16,12 +16,17 @@ export type DeliveryNoteServiceRow = {
   quantity: number;
 };
 
-/** Agregirani red tablice dijelova (jedan red po šifri dijela, zbrojena količina). */
+/** Agregirani red tablice dijelova (jedan red po dijelu, zbrojena količina). */
 export type DeliveryNotePartAggregated = {
-  /** Šifra dijela iz kataloga; za manualne unose (bez šifre) proslijedi "—". */
+  /** Računovodstvena (tenantova) šifra; "—" ako nema. Za vlastite dijelove je njihova šifra. */
   code: string;
   /** Naziv dijela ili tekstualni opis manualnog unosa. */
   name: string;
+  /**
+   * Tvornička šifra (samo za platform dijelove); prikazuje se zasivljeno
+   * uz naziv. Null/undefined za vlastite ili manualne unose.
+   */
+  manufacturerCode?: string | null;
   /** Zbrojena količina ili null kad nije mjerljiva (manualni tekst). */
   quantity: number | null;
 };
@@ -512,7 +517,15 @@ export default function DeliveryNotePdfDocument({ data }: { data: DeliveryNotePd
                 <Text style={[styles.td, styles.colPartCode, styles.colCodeMono]}>
                   {p.code && p.code.length > 0 ? p.code : "—"}
                 </Text>
-                <Text style={[styles.td, styles.colPartName]}>{p.name}</Text>
+                <Text style={[styles.td, styles.colPartName]}>
+                  {p.name}
+                  {p.manufacturerCode ? (
+                    <>
+                      {"  "}
+                      <Text style={styles.colCodeMono}>{p.manufacturerCode}</Text>
+                    </>
+                  ) : null}
+                </Text>
                 <Text style={[styles.td, styles.colPartQty]}>
                   {p.quantity == null ? "—" : p.quantity}
                 </Text>

@@ -6,9 +6,14 @@ import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 import AdjustStockButton from "./AdjustStockButton";
 import MinStockEditor from "./MinStockEditor";
 import BackButton from "./BackButton";
-import VisibilityToggle from "./VisibilityToggle";
-import DeleteCustomPartButton from "./DeleteCustomPartButton";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
+import {
+  getCompanyPartOverridesByPartIds,
+  getEnabledPlatformManufacturers,
+  partActiveForCompany,
+  partDisplayCode,
+  partManufacturerCode,
+} from "@/lib/partsCatalog";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +54,31 @@ export default async function PartStockCardPage({
   const stock = part.stocks[0];
   const stockQty = stock?.stockQty ?? 0;
   const minStockQty = stock?.minStockQty ?? 0;
-  const isHidden = stock?.hidden ?? false;
   const isCustom = part.companyId === session.companyId;
+
+  const overrides = await getCompanyPartOverridesByPartIds(prisma, {
+    companyId: session.companyId,
+    partIds: [part.id],
+  });
+  const override = overrides.get(part.id) ?? null;
+  const enabled = await getEnabledPlatformManufacturers(prisma, {
+    companyId: session.companyId,
+    manufacturerIds: [part.manufacturerId],
+  });
+  const platformEnabled = isCustom || enabled.has(part.manufacturerId);
+  const partLite = {
+    id: part.id,
+    manufacturerId: part.manufacturerId,
+    companyId: part.companyId,
+    code: part.code,
+    manufacturerCode: part.manufacturerCode,
+    name: part.name,
+    active: part.active,
+    defaultPrice: part.defaultPrice,
+  };
+  const displayCode = partDisplayCode(partLite, override);
+  const mfrCode = partManufacturerCode(partLite);
+  const isCatalogActive = platformEnabled && partActiveForCompany(partLite, override);
 
   const [receiptItems, adjustments] = await Promise.all([
     prisma.stockReceiptItem.findMany({
@@ -121,19 +149,31 @@ export default async function PartStockCardPage({
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h1 className="text-3xl font-bold">{part.name}</h1>
-          {isCustom && (
+          {isCustom ? (
             <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">
               Vlastiti dio
             </span>
+          ) : (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+              Preddefinirani
+            </span>
           )}
-          {isHidden && (
+          {!isCatalogActive && (
             <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
-              Neaktivan
+              Neaktivan u katalogu
             </span>
           )}
         </div>
         <p className="mt-1 text-sm text-slate-600">
-          Šifra: <span className="font-mono">{part.code}</span> · Proizvođač: {displayManufacturer(part.manufacturer)}
+          Šifra: <span className="font-mono">{displayCode}</span>
+          {!isCustom && mfrCode && mfrCode !== displayCode ? (
+            <>
+              {" "}
+              · Šifra proizvođača: <span className="font-mono">{mfrCode}</span>
+            </>
+          ) : null}
+          {" "}
+          · Proizvođač: {displayManufacturer(part.manufacturer)}
         </p>
       </div>
 
@@ -177,13 +217,14 @@ export default async function PartStockCardPage({
           >
             + Nova primka s ovim dijelom
           </Link>
-          <VisibilityToggle partId={part.id} hidden={isHidden} />
-          {isCustom && (
-            <DeleteCustomPartButton
-              partId={part.id}
-              manufacturerId={part.manufacturer.id}
-            />
-          )}
+          <Link
+            href={`/admin/settings/parts?manufacturerId=${part.manufacturer.id}&returnTo=${encodeURIComponent(
+              `/warehouse/parts/${part.id}`,
+            )}`}
+            className="btn btn-outline h-10 text-center"
+          >
+            {isCustom ? "Uredi dio u postavkama" : "Postavke kataloga"}
+          </Link>
         </div>
       </section>
 

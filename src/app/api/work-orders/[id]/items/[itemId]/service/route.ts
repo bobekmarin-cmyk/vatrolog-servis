@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { calcValidUntil } from "@/lib/validity";
 import { computeUpInterval } from "@/lib/internalUpRule";
+import {
+  buildWorkOrderPartSnapshot,
+  getCompanyPartOverridesByPartIds,
+  getEnabledPlatformManufacturers,
+  partActiveForCompany,
+} from "@/lib/partsCatalog";
 
 import { redirectRelative } from "@/lib/httpRedirect";
 /** Zadnji dan istog mjeseca kao referenceDate, ali u danoj godini (npr. za usklađivanje UP roka s PP mjesecom). */
@@ -143,19 +149,73 @@ export async function POST(
     );
   }
 
+  // Dohvati Part zapise (i njihove overrideove) za sve odabrane partIds.
+  // Validiramo:
+  //  - dio postoji i pripada ovom proizvođaču + tipu aparata
+  //  - tenant ima pristup tom dijelu (vlastiti ili platform s uključenim katalogom)
+  //  - dio je aktivan ILI je već odabran ranije (čuva se povijest)
+  const partsInDb =
+    partIds.length > 0
+      ? await prisma.part.findMany({
+          where: {
+            id: { in: partIds },
+            manufacturerId: ex.manufacturerId,
+            types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
+            OR: [{ companyId: null }, { companyId: session.companyId }],
+          },
+          select: {
+            id: true,
+            companyId: true,
+            manufacturerId: true,
+            code: true,
+            manufacturerCode: true,
+            name: true,
+            active: true,
+            defaultPrice: true,
+          },
+        })
+      : [];
+
+  const overrides = await getCompanyPartOverridesByPartIds(prisma, {
+    companyId: session.companyId,
+    partIds: partsInDb.map((p) => p.id),
+  });
+
+  const enabledPlatform = await getEnabledPlatformManufacturers(prisma, {
+    companyId: session.companyId,
+    manufacturerIds: [ex.manufacturerId],
+  });
+  const platformEnabledForManu = enabledPlatform.has(ex.manufacturerId);
+
+  // Pre-postojeća selekcija — ti dijelovi smiju ostati i kad više nisu dostupni.
+  const previouslySelected = await prisma.workOrderItemPart.findMany({
+    where: { workOrderItemId: itemId, companyId: session.companyId },
+    select: { partId: true },
+  });
+  const previouslySelectedIds = new Set(previouslySelected.map((p) => p.partId));
+
   if (partIds.length > 0) {
-    const okParts = await prisma.part.findMany({
-      where: {
-        id: { in: partIds },
-        manufacturerId: ex.manufacturerId,
-        types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
-      },
-      select: { id: true },
-    });
-    const okSet = new Set(okParts.map((x) => x.id));
+    const okSet = new Set(partsInDb.map((x) => x.id));
     const invalid = partIds.filter((id) => !okSet.has(id));
     if (invalid.length > 0) {
-      return NextResponse.json({ error: "Odabrani dijelovi nisu validni za ovaj aparat." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Odabrani dijelovi nisu validni za ovaj aparat." },
+        { status: 400 },
+      );
+    }
+
+    for (const p of partsInDb) {
+      const ov = overrides.get(p.id) ?? null;
+      const isCustom = p.companyId !== null;
+      const inCatalog = isCustom || platformEnabledForManu;
+      const active = partActiveForCompany(p, ov);
+      const wasAlreadySelected = previouslySelectedIds.has(p.id);
+      if ((!inCatalog || !active) && !wasAlreadySelected) {
+        return NextResponse.json(
+          { error: `Dio "${p.name}" više nije dostupan u katalogu — uključite ga u Postavke → Rezervni dijelovi.` },
+          { status: 400 },
+        );
+      }
     }
   }
 
@@ -260,15 +320,34 @@ export async function POST(
       },
     });
 
-    // 2) sync parts (structured)
+    // 2) sync parts (structured + snapshot)
     await tx.workOrderItemPart.deleteMany({ where: { workOrderItemId: itemId } });
     if (partIds.length > 0) {
+      const partById = new Map(partsInDb.map((p) => [p.id, p]));
       await tx.workOrderItemPart.createMany({
-        data: partIds.map((partId) => ({
-          companyId: session.companyId,
-          workOrderItemId: itemId,
-          partId,
-        })),
+        data: partIds.map((partId) => {
+          const p = partById.get(partId);
+          if (!p) {
+            // Defensive — već smo validirali, ali ostavimo siguran fallback.
+            return {
+              companyId: session.companyId,
+              workOrderItemId: itemId,
+              partId,
+            };
+          }
+          const ov = overrides.get(partId) ?? null;
+          const snap = buildWorkOrderPartSnapshot(p, ov);
+          return {
+            companyId: session.companyId,
+            workOrderItemId: itemId,
+            partId,
+            unitPrice: snap.unitPrice,
+            snapshotCode: snap.snapshotCode,
+            snapshotManufacturerCode: snap.snapshotManufacturerCode,
+            snapshotName: snap.snapshotName,
+            snapshotIsCustom: snap.snapshotIsCustom,
+          };
+        }),
         skipDuplicates: true,
       });
     }

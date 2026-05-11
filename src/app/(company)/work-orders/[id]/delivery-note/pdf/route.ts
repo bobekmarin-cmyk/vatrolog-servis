@@ -265,28 +265,65 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     });
   }
 
-  // ── 4) Agregacija dijelova po Part.code ─────────────────────────────────
-  type PartAgg = { code: string; name: string; quantity: number };
-  const partsByCode = new Map<string, PartAgg>();
+  // ── 4) Agregacija dijelova po identitetu dijela ────────────────────────
+  // Pravila prikaza (otpremnica):
+  //  · Stupac "Šifra" = isključivo tenantova računovodstvena šifra. Za
+  //    platform dijelove to je tenantov override (snapshotCode ako se
+  //    razlikuje od snapshotManufacturerCode), za vlastite dijelove je to
+  //    snapshotCode (inače part.code). Ako ne postoji tenantova šifra,
+  //    pokazujemo "—".
+  //  · Stupac "Naziv" = naziv dijela; za platform dijelove uz naziv stoji
+  //    zasivljena tvornička šifra (renderirano u PDF komponenti).
+  //  · Snapshot polja imaju prednost (povijesna stabilnost).
+  type PartAgg = {
+    code: string;
+    name: string;
+    manufacturerCode: string | null;
+    quantity: number;
+  };
+  const partsByKey = new Map<string, PartAgg>();
   for (const it of realItems) {
     for (const p of it.parts ?? []) {
-      const code = p.part.code;
-      const existing = partsByCode.get(code);
+      const isCustom = p.snapshotIsCustom ?? !!p.part.companyId;
+      const name = (p.snapshotName ?? p.part.name).trim();
+      const manuCode = isCustom
+        ? null
+        : ((p.snapshotManufacturerCode ?? p.part.manufacturerCode ?? "").trim() || null);
+      const display = (p.snapshotCode ?? p.part.code).trim();
+      let accountingCode = "—";
+      if (isCustom) {
+        accountingCode = display || "—";
+      } else if (display && display !== manuCode) {
+        accountingCode = display;
+      }
+      const key = `${p.partId}|${accountingCode}|${manuCode ?? ""}|${name}`;
+      const existing = partsByKey.get(key);
       if (existing) {
         existing.quantity += p.quantity;
       } else {
-        partsByCode.set(code, {
-          code,
-          name: p.part.name,
+        partsByKey.set(key, {
+          code: accountingCode,
+          name,
+          manufacturerCode: manuCode,
           quantity: p.quantity,
         });
       }
     }
   }
   const partsAggregated: DeliveryNotePartAggregated[] = [
-    ...[...partsByCode.values()]
-      .sort((a, b) => a.code.localeCompare(b.code, "hr"))
-      .map((v) => ({ code: v.code, name: v.name, quantity: v.quantity })),
+    ...[...partsByKey.values()]
+      .sort(
+        (a, b) =>
+          (a.manufacturerCode ?? "").localeCompare(b.manufacturerCode ?? "", "hr") ||
+          a.code.localeCompare(b.code, "hr") ||
+          a.name.localeCompare(b.name, "hr"),
+      )
+      .map((v) => ({
+        code: v.code,
+        name: v.name,
+        manufacturerCode: v.manufacturerCode,
+        quantity: v.quantity,
+      })),
     ...realItems
       .filter(
         (i) =>
@@ -296,6 +333,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       .map((i) => ({
         code: "—",
         name: i.partsText!.trim(),
+        manufacturerCode: null as string | null,
         quantity: null as number | null,
       })),
   ];

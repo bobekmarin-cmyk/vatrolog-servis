@@ -126,7 +126,9 @@ export default async function WorkOrderReportPage({ params }: { params: Promise<
     });
 
     if (item.servicedAt) {
-      const partsList = item.parts.map((p) => `${p.part.code} ${p.part.name}`).join(", ");
+      const partsList = item.parts
+        .map((p) => `${p.snapshotCode ?? p.part.code} ${p.snapshotName ?? p.part.name}`)
+        .join(", ");
 
       const details: string[] = [];
       if (item.servicer) details.push(`Serviser: ${item.servicer.fullName}`);
@@ -301,7 +303,7 @@ export default async function WorkOrderReportPage({ params }: { params: Promise<
           const ex = item.extinguisher;
           const anyItem: any = ex;
           const isScrapped = anyItem && (anyItem.status === "SCRAPPED" || anyItem.scrapReason || anyItem.scrappedAt);
-          const parts = item.parts.map((p) => `${p.part.code} ${p.part.name}`);
+          const parts = item.parts.map((p) => `${p.snapshotCode ?? p.part.code} ${p.snapshotName ?? p.part.name}`);
 
           return (
             <div key={item.id} className={`rounded-lg border p-3 text-sm ${isScrapped ? "border-red-200 bg-red-50/50" : item.servicedAt ? "border-emerald-200 bg-emerald-50/30" : "border-slate-200"}`}>
