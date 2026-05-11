@@ -251,7 +251,7 @@ model Company {
   /// Vlastiti (tenant-specific) dijelovi koje je ova tvrtka dodala izvan platform kataloga.
   customParts Part[]
 
-  /// Postavke korištenja preddefiniranog (platform) kataloga dijelova po proizvođaču.
+  /// Postavke korištenja kataloga dijelova proizvođača (platform) po proizvođaču.
   partCatalogSettings CompanyPartCatalogSetting[]
 
   /// Tenantov override (vlastita šifra/cijena/aktivacija) za platform dio.
@@ -626,8 +626,8 @@ model Part {
   @@index([companyId])
 }
 
-/// Postavka tenant-a koja kaže koristi li se preddefinirani (platform) katalog
-/// dijelova za pojedinog proizvođača. Default je TRUE — ako zapis ne postoji,
+/// Postavka tenant-a koja kaže koristi li se katalog dijelova proizvođača (platform)
+/// za pojedinog proizvođača. Default je TRUE — ako zapis ne postoji,
 /// platform katalog je uključen.
 model CompanyPartCatalogSetting {
   id String @id @default(cuid())
@@ -1011,7 +1011,7 @@ model WorkOrderItemPart {
  * VLASTITE (SLOBODNE) USLUGE TENANTA
  * =======================
  * Neovisne od varijante aparata — ne vežu se uz `ExtinguisherType`. Tenant ih
- * sam definira u 'Šifre usluga' (naziv, šifra, cijena) i može ih dodati uz
+ * sam definira u 'Usluge' (naziv, šifra, cijena) i može ih dodati uz
  * pojedinu stavku radnog naloga preko boxa 'Dodatne usluge' (qty = 1).
  */
 model CompanyCustomService {

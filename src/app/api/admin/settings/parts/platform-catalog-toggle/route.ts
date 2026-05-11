@@ -14,7 +14,7 @@ const schema = z.object({
 });
 
 /**
- * Uključi/isključi preddefinirani (platform) katalog rezervnih dijelova
+ * Uključi/isključi katalog dijelova proizvođača (platform) po proizvođaču.
  * za jednog proizvođača. Tenant mora imati aktivno ovlaštenje za tog
  * proizvođača (CompanyManufacturerAuthorization.active = true).
  */

@@ -19,7 +19,8 @@
     "db:reset": "docker compose down -v && docker compose up -d",
     "db:migrate": "prisma migrate deploy && prisma generate",
     "db:setup": "docker compose up -d && prisma migrate deploy && prisma generate && prisma db seed",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "version:bump": "node scripts/bump-app-version.mjs"
   },
   "prisma": {
     "seed": "ts-node -P tsconfig.seed.json prisma/seed.ts"

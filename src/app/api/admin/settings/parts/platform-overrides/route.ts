@@ -50,7 +50,7 @@ export const POST = apiHandler(async (req: Request) => {
   });
   if (!part) throw new AppValidationError("Dio ne postoji.");
   if (part.companyId !== null) {
-    throw new AppValidationError("Override se može postaviti samo za preddefinirane dijelove.");
+    throw new AppValidationError("Override se može postaviti samo za dijelove iz kataloga proizvođača.");
   }
 
   // Pripremi podatke za upsert. Ako `active` nije proslijeđen, zadrži postojeći.

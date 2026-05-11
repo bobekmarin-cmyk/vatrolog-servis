@@ -158,7 +158,7 @@ export default function WorkOrderCustomServicesPicker(props: {
       </div>
       <div className="help">
         Odaberi uslugu iz padajućeg izbornika i klikni „Dodaj“. Vlastite usluge dodaješ u{" "}
-        <i>Postavke → Šifre usluga → Vlastite usluge</i>.
+        <i>Postavke → Usluge → Vlastite usluge</i>.
       </div>
     </div>
   );

@@ -2,6 +2,12 @@
 
 import { useRef, useState } from "react";
 import { useDialog } from "@/components/ui/useDialog";
+import {
+  MIN_TABLE_TD,
+  MIN_TABLE_TH,
+  MinimalSearchInput,
+  MinimalTableShell,
+} from "@/components/admin/minimalSettingsTable";
 
 export type AuthorizationRow = {
   manufacturerId: string;
@@ -191,20 +197,18 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="search"
-          className="input max-w-sm"
-          placeholder="Pretraga proizvođača..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-        <div className="subtle">
-          Proizvođači: {rows.length} · Aktivnih ovlaštenja: {activeCount}
-        </div>
-      </div>
+      <MinimalSearchInput
+        value={filter}
+        onChange={setFilter}
+        placeholder="Pretraži proizvođača…"
+        endSlot={
+          <div className="subtle shrink-0">
+            Proizvođači: {rows.length} · Aktivnih ovlaštenja: {activeCount}
+          </div>
+        }
+      />
 
-      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-3">
           <div className="text-sm font-semibold text-slate-900">Cijene naljepnica</div>
           <div className="text-xs text-slate-500">
@@ -245,26 +249,26 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-        <table className="table">
-          <thead className="table-head">
+      <MinimalTableShell>
+        <table className="w-full text-sm">
+          <thead className="border-b border-slate-200 text-left text-[11px] font-medium uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="table-cell w-[200px]">Proizvođač</th>
-              <th className="table-cell w-[110px]">Aktivno</th>
-              <th className="table-cell w-[170px]">Vrijedi do</th>
-              <th className="table-cell w-[180px]">Šifra PP naljepnice</th>
-              <th className="table-cell w-[200px]">Šifra mase aparata</th>
-              <th className="table-cell w-[200px]">Šifra mase bočice</th>
-              <th className="table-cell w-[100px]">Status</th>
+              <th className={MIN_TABLE_TH + " w-[200px]"}>Proizvođač</th>
+              <th className={MIN_TABLE_TH + " w-[110px]"}>Aktivno</th>
+              <th className={MIN_TABLE_TH + " w-[170px]"}>Vrijedi do</th>
+              <th className={MIN_TABLE_TH + " w-[180px]"}>Šifra PP naljepnice</th>
+              <th className={MIN_TABLE_TH + " w-[200px]"}>Šifra mase aparata</th>
+              <th className={MIN_TABLE_TH + " w-[200px]"}>Šifra mase bočice</th>
+              <th className={MIN_TABLE_TH + " w-[100px]"}>Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100">
             {visible.map((r) => {
               const expired = r.active && isExpired(r.expiresAt);
               return (
-                <tr key={r.manufacturerId} className="hover:bg-slate-50">
-                  <td className="table-cell font-medium text-slate-900">{r.manufacturerName}</td>
-                  <td className="table-cell">
+                <tr key={r.manufacturerId} className="hover:bg-slate-50/60">
+                  <td className={MIN_TABLE_TD + " font-medium text-slate-900"}>{r.manufacturerName}</td>
+                  <td className={MIN_TABLE_TD}>
                     <div className="inline-flex overflow-hidden rounded-md ring-1 ring-slate-200">
                       <button
                         type="button"
@@ -298,7 +302,7 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
                       </button>
                     </div>
                   </td>
-                  <td className="table-cell">
+                  <td className={MIN_TABLE_TD}>
                     <div className="flex items-center gap-1">
                       <input
                         type="date"
@@ -327,7 +331,7 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
                     const locked = r.locks[field];
                     const key = `${r.manufacturerId}|${field}`;
                     return (
-                      <td className="table-cell" key={key}>
+                      <td className={MIN_TABLE_TD} key={key}>
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
@@ -398,7 +402,7 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
                       </td>
                     );
                   })}
-                  <td className="table-cell">
+                  <td className={MIN_TABLE_TD}>
                     <StatusIndicator s={r.status} />
                   </td>
                 </tr>
@@ -406,14 +410,14 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
             })}
             {visible.length === 0 && (
               <tr>
-                <td className="table-cell text-center text-slate-500" colSpan={7}>
+                <td className="p-6 text-center text-sm text-slate-500" colSpan={7}>
                   Nema proizvođača za prikaz.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
+      </MinimalTableShell>
 
       <p className="text-xs text-slate-500">
         Savjet: jednom spremljena šifra naljepnice se zaključa. Za promjenu kliknite ikonu lokota i

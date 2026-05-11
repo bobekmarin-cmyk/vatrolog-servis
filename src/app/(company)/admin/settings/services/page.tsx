@@ -94,7 +94,7 @@ export default async function ServicesCatalogPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <div className="h1">Šifre usluga</div>
+        <div className="h1">Usluge</div>
         <p className="subtle mt-1 max-w-3xl">
           Računovodstvene šifre za katalog usluga po varijanti aparata i vlastite dodatne usluge.
         </p>

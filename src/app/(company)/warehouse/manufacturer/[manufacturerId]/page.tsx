@@ -131,7 +131,7 @@ export default async function ManufacturerWarehousePage({
 
       {!platformEnabled ? (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Preddefinirani katalog je isključen za ovog proizvođača — prikazuju se samo vaši vlastiti
+          Katalog dijelova proizvođača je isključen za ovog proizvođača — prikazuju se samo vaši vlastiti
           dijelovi. Možete ga uključiti u{" "}
           <Link
             href={`/admin/settings/parts?manufacturerId=${manufacturerId}`}

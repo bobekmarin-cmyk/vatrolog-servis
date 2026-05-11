@@ -1,3 +1,9 @@
+/**
+ * Semver (MAJOR.MINOR.PATCH), prikaz u shellu i PDF podnožju.
+ *
+ * • Prije git pusha na main/produkciju pokreni: `npm run version:bump`
+ *   (povećava PATCH). Za veće releaseove ručno uredi ovu konstantu.
+ */
 export const APP_VERSION = "1.0.0";
 export const APP_NAME = "VatroLog";
 

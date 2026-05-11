@@ -4,6 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 import { useDialog } from "@/components/ui/useDialog";
+import {
+  MIN_TABLE_TD,
+  MIN_TABLE_TH,
+  MinimalRowAction,
+  MinimalSearchInput,
+  MinimalTableShell,
+} from "@/components/admin/minimalSettingsTable";
 
 export type ServiceCatalogRow = {
   id: string;
@@ -28,39 +35,6 @@ function parsePriceInput(raw: string): number | null {
   const n = Number(t);
   if (!Number.isFinite(n) || n < 0) return null;
   return Math.round(n * 100) / 100;
-}
-
-function SearchRow({
-  filter,
-  onFilterChange,
-  total,
-  placeholder,
-}: {
-  filter: string;
-  onFilterChange: (v: string) => void;
-  total: number;
-  placeholder: string;
-}) {
-  return (
-    <div className="flex min-h-10 flex-wrap items-center gap-2">
-      <input
-        type="search"
-        className="input min-h-9 min-w-[12rem] flex-1"
-        placeholder={placeholder}
-        value={filter}
-        onChange={(e) => onFilterChange(e.target.value)}
-      />
-      <span className="subtle shrink-0 tabular-nums">Ukupno: {total}</span>
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-hidden
-        className="btn btn-primary pointer-events-none h-9 shrink-0 px-4 text-sm invisible"
-      >
-        + Dodaj uslugu
-      </button>
-    </div>
-  );
 }
 
 export default function ServiceCatalogTable({ rows }: { rows: ServiceCatalogRow[] }) {
@@ -135,46 +109,46 @@ export default function ServiceCatalogTable({ rows }: { rows: ServiceCatalogRow[
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <SearchRow
-        filter={filter}
-        onFilterChange={setFilter}
-        total={rows.length}
-        placeholder="Pretraga (šifra, usluga, aparat…)"
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <MinimalSearchInput
+        value={filter}
+        onChange={setFilter}
+        placeholder="Pretraži po šifri, usluzi ili aparatu…"
+        endSlot={
+          <span className="subtle shrink-0 tabular-nums">
+            Ukupno: {rows.length}
+          </span>
+        }
       />
 
-      <div className="max-h-[28rem] overflow-x-auto overflow-y-auto rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-        <table className="table">
-          <thead className="table-head sticky top-0 z-[1] shadow-[0_1px_0_0_rgb(15_23_42_/_0.08)]">
+      <MinimalTableShell className="max-h-[28rem] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-[1] border-b border-slate-200 bg-white text-left text-[11px] font-medium uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="table-cell w-[140px] align-middle">Šifra</th>
-              <th className="table-cell align-middle">Usluga</th>
-              <th className="table-cell align-middle">Aparat</th>
-              <th className="table-cell w-[120px] align-middle text-right">Cijena</th>
-              <th className="table-cell w-[100px] align-middle" />
+              <th className={MIN_TABLE_TH + " w-[140px]"}>Šifra</th>
+              <th className={MIN_TABLE_TH}>Usluga</th>
+              <th className={MIN_TABLE_TH}>Aparat</th>
+              <th className={MIN_TABLE_TH + " w-[120px] text-right"}>Cijena</th>
+              <th className={MIN_TABLE_TH + " w-[100px] text-right"}>Akcije</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100">
             {visible.map((r) => (
-              <tr key={r.id} className="hover:bg-slate-50">
-                <td className="table-cell align-middle font-mono text-sm text-slate-800">
+              <tr key={r.id} className="hover:bg-slate-50/60">
+                <td className={MIN_TABLE_TD + " font-mono text-xs text-slate-900"}>
                   {(r.code ?? "").length > 0 ? r.code : <span className="text-slate-400">—</span>}
                 </td>
-                <td className="table-cell align-middle whitespace-nowrap font-medium text-slate-900">
+                <td className={MIN_TABLE_TD + " whitespace-nowrap font-medium text-slate-900"}>
                   {r.kindLabel}
                 </td>
-                <td className="table-cell align-middle text-slate-700">{r.itemLabel}</td>
-                <td className="table-cell align-middle text-right tabular-nums text-slate-700">
+                <td className={MIN_TABLE_TD + " text-slate-700"}>{r.itemLabel}</td>
+                <td className={MIN_TABLE_TD + " text-right tabular-nums text-slate-700"}>
                   {formatHrPrice(r.price)}
                 </td>
-                <td className="table-cell align-middle text-right">
-                  <button
-                    type="button"
-                    className="btn btn-outline h-8 px-3 text-xs"
-                    onClick={() => setEditingId(r.id)}
-                  >
-                    Uredi
-                  </button>
+                <td className={MIN_TABLE_TD + " text-right"}>
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <MinimalRowAction onClick={() => setEditingId(r.id)}>Uredi</MinimalRowAction>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -187,7 +161,7 @@ export default function ServiceCatalogTable({ rows }: { rows: ServiceCatalogRow[
             )}
           </tbody>
         </table>
-      </div>
+      </MinimalTableShell>
 
       <p className="text-xs text-slate-500">
         Savjet: ista šifra može se koristiti za više medija (npr. prah i pjena) kod istog aparata — ali

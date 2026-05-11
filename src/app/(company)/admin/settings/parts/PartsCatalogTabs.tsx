@@ -163,12 +163,12 @@ export default function PartsCatalogTabs(props: {
 
       {!selectedManu ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">
-          Odaberite proizvođača iznad za prikaz preddefiniranih i vlastitih dijelova.
+          Odaberite proizvođača iznad za prikaz dijelova proizvođača i vlastitih dijelova.
         </div>
       ) : (
         <>
           <CatalogSection
-            title={`Preddefinirani dijelovi — ${selectedManu.name}`}
+            title={`Dijelovi proizvođača — ${selectedManu.name}`}
             tone={
               selectedManu.platformPartsCount > 0 && !selectedManu.usePlatformCatalog
                 ? "danger"
@@ -195,8 +195,8 @@ export default function PartsCatalogTabs(props: {
                     onChange={(next) => togglePlatformCatalog(selectedManu.id, next)}
                     srLabel={
                       selectedManu.usePlatformCatalog
-                        ? "Isključi preddefinirani katalog za ovog proizvođača"
-                        : "Uključi preddefinirani katalog za ovog proizvođača"
+                        ? "Isključi katalog dijelova proizvođača za ovog proizvođača"
+                        : "Uključi katalog dijelova proizvođača za ovog proizvođača"
                     }
                   />
                 </div>
@@ -205,7 +205,7 @@ export default function PartsCatalogTabs(props: {
           >
             {selectedManu.platformPartsCount === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
-                Za ovog proizvođača još nema preddefiniranih rezervnih dijelova.
+                Za ovog proizvođača još nema dijelova u katalogu proizvođača.
               </div>
             ) : (
               <PlatformPartsTable

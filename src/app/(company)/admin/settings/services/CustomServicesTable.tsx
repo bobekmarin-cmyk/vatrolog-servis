@@ -5,6 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 import { useDialog } from "@/components/ui/useDialog";
+import {
+  MIN_TABLE_TD,
+  MIN_TABLE_TH,
+  MinimalRowAction,
+  MinimalSearchInput,
+  MinimalTableShell,
+} from "@/components/admin/minimalSettingsTable";
 
 export type CustomServiceRow = {
   id: string;
@@ -28,34 +35,6 @@ function parsePriceInput(raw: string): number | null {
   const n = Number(t);
   if (!Number.isFinite(n) || n < 0) return null;
   return Math.round(n * 100) / 100;
-}
-
-function SearchRow({
-  filter,
-  onFilterChange,
-  total,
-  placeholder,
-  addButton,
-}: {
-  filter: string;
-  onFilterChange: (v: string) => void;
-  total: number;
-  placeholder: string;
-  addButton: ReactNode;
-}) {
-  return (
-    <div className="flex min-h-10 flex-wrap items-center gap-2">
-      <input
-        type="search"
-        className="input min-h-9 min-w-[12rem] flex-1"
-        placeholder={placeholder}
-        value={filter}
-        onChange={(e) => onFilterChange(e.target.value)}
-      />
-      <span className="subtle shrink-0 tabular-nums">Ukupno: {total}</span>
-      {addButton}
-    </div>
-  );
 }
 
 export default function CustomServicesTable({ initialRows }: { initialRows: CustomServiceRow[] }) {
@@ -218,64 +197,61 @@ export default function CustomServicesTable({ initialRows }: { initialRows: Cust
 
   const modalBusy = saving;
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <SearchRow
-        filter={filter}
-        onFilterChange={setFilter}
-        total={initialRows.length}
-        placeholder="Pretraga (šifra, naziv…)"
-        addButton={
-          <button
-            type="button"
-            className="btn btn-primary h-9 shrink-0 px-4 text-sm"
-            onClick={() => setCreateOpen(true)}
-          >
-            + Dodaj uslugu
-          </button>
-        }
-      />
+  const addBtn: ReactNode = (
+    <button
+      type="button"
+      className="btn btn-primary h-9 shrink-0 px-4 text-sm"
+      onClick={() => setCreateOpen(true)}
+    >
+      + Dodaj uslugu
+    </button>
+  );
 
-      <div className="max-h-[28rem] overflow-x-auto overflow-y-auto rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-        <table className="table">
-          <thead className="table-head sticky top-0 z-[1] shadow-[0_1px_0_0_rgb(15_23_42_/_0.08)]">
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex min-h-9 flex-wrap items-center gap-2">
+        <MinimalSearchInput
+          value={filter}
+          onChange={setFilter}
+          placeholder="Pretraži po šifri ili nazivu…"
+          endSlot={
+            <>
+              <span className="subtle shrink-0 tabular-nums">Ukupno: {initialRows.length}</span>
+              {addBtn}
+            </>
+          }
+        />
+      </div>
+
+      <MinimalTableShell className="max-h-[28rem] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-[1] border-b border-slate-200 bg-white text-left text-[11px] font-medium uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="table-cell w-[140px] align-middle">Šifra</th>
-              <th className="table-cell align-middle">Usluga</th>
-              <th className="table-cell w-[120px] align-middle text-right">Cijena</th>
-              <th className="table-cell w-[200px] align-middle text-right">Akcije</th>
+              <th className={MIN_TABLE_TH + " w-[140px]"}>Šifra</th>
+              <th className={MIN_TABLE_TH}>Usluga</th>
+              <th className={MIN_TABLE_TH + " w-[120px] text-right"}>Cijena</th>
+              <th className={MIN_TABLE_TH + " w-[200px] text-right"}>Akcije</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-100">
             {visible.map((r) => (
-              <tr key={r.id} className={"hover:bg-slate-50 " + (!r.isActive ? "opacity-60" : "")}>
-                <td className="table-cell align-middle font-mono text-sm text-slate-800">
+              <tr
+                key={r.id}
+                className={"hover:bg-slate-50/60 " + (!r.isActive ? "opacity-60" : "")}
+              >
+                <td className={MIN_TABLE_TD + " font-mono text-xs text-slate-900"}>
                   {(r.code ?? "").length > 0 ? r.code : <span className="text-slate-400">—</span>}
                 </td>
-                <td className="table-cell align-middle font-medium text-slate-900">{r.name}</td>
-                <td className="table-cell align-middle text-right tabular-nums text-slate-700">
+                <td className={MIN_TABLE_TD + " font-medium text-slate-900"}>{r.name}</td>
+                <td className={MIN_TABLE_TD + " text-right tabular-nums text-slate-700"}>
                   {formatHrPrice(r.price)}
                 </td>
-                <td className="table-cell align-middle">
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => quickToggleActive(r)}
-                      className={`h-8 rounded-md border px-2.5 text-xs font-medium ${
-                        r.isActive
-                          ? "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                          : "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                      }`}
-                    >
+                <td className={MIN_TABLE_TD}>
+                  <div className="flex flex-wrap items-center justify-end gap-3">
+                    <MinimalRowAction onClick={() => quickToggleActive(r)}>
                       {r.isActive ? "Deaktiviraj" : "Aktiviraj"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline h-8 px-3 text-xs"
-                      onClick={() => setEditRow(r)}
-                    >
-                      Uredi
-                    </button>
+                    </MinimalRowAction>
+                    <MinimalRowAction onClick={() => setEditRow(r)}>Uredi</MinimalRowAction>
                   </div>
                 </td>
               </tr>
@@ -296,7 +272,7 @@ export default function CustomServicesTable({ initialRows }: { initialRows: Cust
             )}
           </tbody>
         </table>
-      </div>
+      </MinimalTableShell>
 
       <p className="text-xs text-slate-500">
         Savjet: <b>Uredi</b> otvara prozor za naziv, šifru, cijenu i status. Deaktivirana usluga se više

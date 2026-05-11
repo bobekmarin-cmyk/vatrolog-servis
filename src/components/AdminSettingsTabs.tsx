@@ -20,7 +20,7 @@ const GROUPS: TabGroup[] = [
     label: "Šifrarnici",
     accent: "code",
     tabs: [
-      { href: "/admin/settings/services", label: "Šifre usluga" },
+      { href: "/admin/settings/services", label: "Usluge" },
       { href: "/admin/settings/parts", label: "Rezervni dijelovi" },
       { href: "/admin/settings/authorizations", label: "Ovlaštenja" },
     ],
@@ -30,7 +30,6 @@ const GROUPS: TabGroup[] = [
     tabs: [
       { href: "/admin/settings/billing", label: "Pretplata" },
       { href: "/admin/settings/audit", label: "Audit log" },
-      { href: "/admin/settings/account", label: "Moj račun" },
     ],
   },
 ];
@@ -56,13 +55,15 @@ export default function AdminSettingsTabs() {
               <div
                 className={
                   "flex flex-col " +
-                  (isCodeGroup ? "rounded-t-md bg-amber-50/50 px-1 pt-1" : "")
+                  (isCodeGroup
+                    ? "rounded-t-md border-l-2 border-l-red-600 bg-slate-50 px-2 pt-1.5 shadow-sm ring-1 ring-slate-200/80"
+                    : "")
                 }
               >
                 <div
                   className={
                     "px-2 text-[10px] font-semibold uppercase tracking-wider " +
-                    (isCodeGroup ? "text-amber-700" : "text-slate-400")
+                    (isCodeGroup ? "text-slate-600" : "text-slate-400")
                   }
                 >
                   {group.label}
@@ -78,10 +79,10 @@ export default function AdminSettingsTabs() {
                           "px-3 py-2 text-sm font-medium -mb-px transition-colors whitespace-nowrap",
                           active
                             ? isCodeGroup
-                              ? "border-b-2 border-amber-600 text-amber-900"
+                              ? "border-b-2 border-red-600 text-slate-900"
                               : "border-b-2 border-slate-900 text-slate-900"
                             : isCodeGroup
-                              ? "text-amber-800/80 hover:text-amber-900"
+                              ? "text-slate-600 hover:text-slate-900"
                               : "text-slate-500 hover:text-slate-700",
                         ].join(" ")}
                         aria-current={active ? "page" : undefined}

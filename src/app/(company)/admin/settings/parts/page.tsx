@@ -60,7 +60,7 @@ export default async function PartsCatalogSettingsPage({
         <div>
           <div className="h1">Rezervni dijelovi</div>
           <div className="subtle max-w-3xl">
-            Upravljanje preddefiniranim (platform) i vlastitim katalogom rezervnih dijelova.
+            Upravljanje dijelovima proizvođača (platform katalog) i vlastitim katalogom rezervnih dijelova.
           </div>
         </div>
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">
@@ -90,7 +90,7 @@ export default async function PartsCatalogSettingsPage({
       usePlatformCatalog: settingsMap.has(m.id) ? !!settingsMap.get(m.id) : true,
     }))
     .sort((a, b) => {
-      // Proizvođači s preddef. dijelovima idu prvi (relevantniji za korisnika).
+      // Proizvođači s dijelovima u katalogu proizvođača idu prvi (relevantniji za korisnika).
       const aHas = a.platformPartsCount > 0 ? 0 : 1;
       const bHas = b.platformPartsCount > 0 ? 0 : 1;
       if (aHas !== bHas) return aHas - bHas;
@@ -168,8 +168,8 @@ export default async function PartsCatalogSettingsPage({
         <div className="h1">Rezervni dijelovi</div>
         <p className="subtle max-w-3xl">
           Za svakog proizvođača postoje dva kataloga rezervnih dijelova:{" "}
-          <b>preddefinirani</b> (platform) — koje za vas održavamo i možete ih isključiti ako ne
-          želite koristiti — i <b>vlastiti</b> dijelovi koje slobodno dodajete, šifrirate i
+          <b>dijelovi proizvođača</b> (platform katalog) — koje za vas održavamo i možete isključiti ako
+          ne želite koristiti — i <b>vlastiti</b> dijelovi koje slobodno dodajete, šifrirate i
           uređujete.
         </p>
       </div>
