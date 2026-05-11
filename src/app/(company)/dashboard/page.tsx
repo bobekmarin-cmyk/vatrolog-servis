@@ -177,7 +177,7 @@ export default async function DashboardPage() {
               const allDone = o.remaining === 0 && o.total > 0;
               return (
                 <Link key={o.id} href={`/work-orders/${o.id}`} className="flex items-center gap-3 px-4 py-1.5 hover:bg-slate-50 transition-colors">
-                  <span className="text-xs text-slate-400 shrink-0">{o.orderNumber}</span>
+                  <span className="text-xs text-slate-600 shrink-0">{o.orderNumber}</span>
                   <WorkOrderStatusBadge status={o.status} />
                   <span className="text-sm font-medium text-slate-800 truncate min-w-0 flex-1">
                     {customerDisplayName(o.customer)}{o.department?.name ? ` · ${o.department.name}` : ""}
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
             <div>Ukupno (7 dana): <b className="text-indigo-700">{weekTotal}</b></div>
           </div>
           <WeeklyChart data={chartData} />
-          <div className="mt-2 flex items-center gap-3 text-[10px] text-slate-400">
+          <div className="mt-2 flex items-center gap-3 text-[10px] text-slate-600">
             <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-indigo-500" /> Prethodni dani</span>
             <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-500" /> Danas</span>
           </div>
