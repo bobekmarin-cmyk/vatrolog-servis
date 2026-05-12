@@ -5,7 +5,7 @@ export default function SubscriptionExpiredPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-md surface p-8 shadow-lg text-center space-y-6">
-        <Link href="/landing" aria-label="Natrag na početnu" className="inline-block rounded-md transition hover:opacity-80">
+        <Link href="/" aria-label="Natrag na početnu" className="inline-block rounded-md transition hover:opacity-80">
           <VatroLogLogo size="lg" />
         </Link>
 

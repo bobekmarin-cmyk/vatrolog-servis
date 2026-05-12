@@ -106,7 +106,7 @@ export default function RegisterForm() {
           </ul>
         </div>
         <Link
-          href="/landing"
+          href="/"
           className="block text-center rounded-md bg-red-600 text-white py-2 font-medium hover:bg-red-700"
         >
           Natrag na početnu

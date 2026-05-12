@@ -61,7 +61,7 @@ lokalno s prod env-om kao smoke test.
 
 ## 8. SEO i public flow
 
-- [ ] `/` redirecta anonimne korisnike na `/landing`.
+- [ ] `/` prikazuje landing (s "Otvori aplikaciju" za prijavljene, "Prijava" za anonimne); stari `/landing` URL vraća 308 na `/`.
 - [ ] `/sitemap.xml` i `/robots.txt` vraćaju ispravan sadržaj.
 - [ ] Open Graph slika se generira na `/opengraph-image` (1200x630) i prikazuje u Slack/Twitter/LinkedIn unfurl-u.
 - [ ] Pravne stranice (`/legal/terms`, `/legal/privacy`, `/legal/dpa`, `/legal/impressum`) redovne i pristupačne s landing footera.

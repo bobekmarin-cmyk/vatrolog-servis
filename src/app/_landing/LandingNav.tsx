@@ -12,7 +12,7 @@ const navLinks = [
   { href: "#kontakt", label: "Kontakt" },
 ];
 
-export default function LandingNav() {
+export default function LandingNav({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const [open, setOpen] = useState(false);
 
   // Close mobile menu on viewport resize to desktop.
@@ -46,18 +46,29 @@ export default function LandingNav() {
         </ul>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 sm:inline-flex"
-          >
-            Prijava
-          </Link>
-          <Link
-            href="/register"
-            className="hidden items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500 sm:inline-flex"
-          >
-            Zatraži probni pristup
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              href="/dashboard"
+              className="hidden items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500 sm:inline-flex"
+            >
+              Otvori aplikaciju
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 sm:inline-flex"
+              >
+                Prijava
+              </Link>
+              <Link
+                href="/register"
+                className="hidden items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500 sm:inline-flex"
+              >
+                Zatraži probni pristup
+              </Link>
+            </>
+          )}
 
           {/* Mobile menu toggle */}
           <button
@@ -116,24 +127,38 @@ export default function LandingNav() {
                 </a>
               </li>
             ))}
-            <li className="pt-2">
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                Prijava
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/register"
-                onClick={() => setOpen(false)}
-                className="block rounded-lg bg-red-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500"
-              >
-                Zatraži probni pristup
-              </Link>
-            </li>
+            {isAuthenticated ? (
+              <li className="pt-2">
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-lg bg-red-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500"
+                >
+                  Otvori aplikaciju
+                </Link>
+              </li>
+            ) : (
+              <>
+                <li className="pt-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Prijava
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg bg-red-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm shadow-red-600/20 ring-1 ring-red-500/40 hover:bg-red-500"
+                  >
+                    Zatraži probni pristup
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       )}

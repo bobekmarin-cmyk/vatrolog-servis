@@ -93,7 +93,6 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/portal/")) return true;
   if (pathname.startsWith("/legal/")) return true;
-  if (pathname === "/landing" || pathname.startsWith("/landing/")) return true;
   return false;
 }
 

@@ -12,7 +12,7 @@ export default function LoginPage() {
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-sm surface p-6 shadow-lg">
         <div className="flex justify-center mb-4">
-          <Link href="/landing" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
+          <Link href="/" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
             <VatroLogLogo size="lg" />
           </Link>
         </div>
@@ -39,7 +39,7 @@ export default function LoginPage() {
         </p>
 
         <div className="mt-6 border-t border-slate-200 pt-4 text-center">
-          <a href="/landing" className="text-xs text-slate-500 hover:text-red-600 hover:underline">
+          <a href="/" className="text-xs text-slate-500 hover:text-red-600 hover:underline">
             ← Natrag na opis proizvoda
           </a>
         </div>

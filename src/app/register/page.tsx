@@ -14,7 +14,7 @@ export default function RegisterPage() {
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-lg surface p-6 shadow-lg">
         <div className="flex justify-center mb-4">
-          <Link href="/landing" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
+          <Link href="/" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
             <VatroLogLogo size="lg" />
           </Link>
         </div>
@@ -30,7 +30,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="mt-4 text-center text-xs text-slate-600 space-x-3">
-          <a href="/landing" className="hover:text-red-600 hover:underline">
+          <a href="/" className="hover:text-red-600 hover:underline">
             ← Natrag na opis proizvoda
           </a>
           <span aria-hidden>·</span>

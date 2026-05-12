@@ -28,7 +28,7 @@ export default async function VerifyEmailPage({ searchParams }: Props) {
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-sm surface p-6 shadow-lg">
         <div className="flex justify-center mb-4">
-          <Link href="/landing" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
+          <Link href="/" aria-label="Natrag na početnu" className="rounded-md transition hover:opacity-80">
             <VatroLogLogo size="lg" />
           </Link>
         </div>
@@ -38,7 +38,7 @@ export default async function VerifyEmailPage({ searchParams }: Props) {
         <div className="mt-6 text-center text-sm space-x-3">
           <a href="/login" className="text-red-600 hover:underline">Idi na prijavu</a>
           <span aria-hidden className="text-slate-400">·</span>
-          <a href="/landing" className="text-slate-600 hover:text-red-600 hover:underline">
+          <a href="/" className="text-slate-600 hover:text-red-600 hover:underline">
             ← Opis proizvoda
           </a>
         </div>

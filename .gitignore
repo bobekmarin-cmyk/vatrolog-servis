@@ -29,6 +29,9 @@ postgres.env
 # smoke-test artifacts
 .tmp-smoke-cookie.txt
 
+# helper files used to pass multi-line commit messages on Windows
+.commitmsg.txt
+
 # stray archives (do not commit)
 /prisma.zip
 /src.zip
