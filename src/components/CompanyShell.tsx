@@ -15,6 +15,8 @@ export type CompanyNavItem = {
   icon?: string;
   /** Ako je zadano, stavka je aktivna kad pathname odgovara nekom od prefiksa (npr. skladište dijelova + manufacturer + primke). */
   activePathPrefixes?: string[];
+  /** Crveni broj uz stavku (npr. broj nepročitanih obavijesti). 0 / undefined => bez badgea. */
+  badgeCount?: number;
 };
 
 export type CompanyNavSection = {
@@ -33,10 +35,23 @@ function isItemActive(pathname: string, item: CompanyNavItem): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function NavBadge({ count }: { count: number }) {
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <span
+      className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white tabular-nums"
+      aria-label={`${count} nepročitanih`}
+    >
+      {label}
+    </span>
+  );
+}
+
 function NavItem(item: CompanyNavItem & { disabled?: boolean }) {
-  const { href, label, icon, disabled } = item;
+  const { href, label, icon, disabled, badgeCount } = item;
   const pathname = usePathname();
   const active = !disabled && isItemActive(pathname, item);
+  const showBadge = !disabled && typeof badgeCount === "number" && badgeCount > 0;
 
   if (disabled) {
     return (
@@ -62,6 +77,7 @@ function NavItem(item: CompanyNavItem & { disabled?: boolean }) {
     >
       {icon ? <span className="w-5 text-center">{icon}</span> : null}
       <span className="font-medium">{label}</span>
+      {showBadge ? <NavBadge count={badgeCount as number} /> : null}
     </Link>
   );
 }

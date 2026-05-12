@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import CompanyShell, { type CompanyNavItem, type CompanyNavSection } from "@/components/CompanyShell";
 import SubscriptionExpiryBadge from "@/components/SubscriptionExpiryBadge";
 import DialogProvider from "@/components/ui/DialogProvider";
+import { countUnreadForAccount } from "@/lib/notifications";
 
 /**
  * Sve tenant rute (dashboard, radni nalozi, kupci, aparati, skladište, izvještaji, admin)
@@ -91,22 +92,32 @@ export default async function CompanyLayout({ children }: { children: React.Reac
       items: [
         { href: "/admin/users", label: "Korisnici", icon: "👥", featureKey: "ADMIN_SETTINGS" },
         { href: "/admin/settings", label: "Postavke", icon: "⚙️", featureKey: "ADMIN_SETTINGS" },
+        { href: "/notifications", label: "Obavijesti", icon: "🔔", featureKey: "ADMIN_SETTINGS" },
       ],
     },
   ];
+
+  const unreadNotifications = await countUnreadForAccount({
+    accountUserId: session.accountUserId,
+    role: session.role,
+  });
 
   const sections: CompanyNavSection[] = sectionsAll
     .map((section) => ({
       title: section.title,
       inactiveSection: section.inactiveSection,
       items: section.items
-        .filter((i) => isFeatureEnabledForRole(session.role, features, FEATURE_KEYS[i.featureKey]))
+        .filter((i) => {
+          if (i.href === "/notifications") return session.role === "ADMIN";
+          return isFeatureEnabledForRole(session.role, features, FEATURE_KEYS[i.featureKey]);
+        })
         .map(
           (i): CompanyNavItem => ({
             href: i.href,
             label: i.label,
             icon: i.icon,
             activePathPrefixes: i.activePathPrefixes,
+            badgeCount: i.href === "/notifications" ? unreadNotifications : undefined,
           }),
         ),
     }))

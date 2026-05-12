@@ -43,6 +43,7 @@ export async function POST(
     companyId: session.companyId,
     workOrderId: id,
     isPlaceholder: true,
+    fromInitialReceipt: false,
   }));
 
   await prisma.workOrderItem.createMany({ data });

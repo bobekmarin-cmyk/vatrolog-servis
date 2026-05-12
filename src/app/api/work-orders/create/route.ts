@@ -193,6 +193,7 @@ export async function POST(req: Request) {
           companyId: session.companyId,
           workOrderId: workOrder.id,
           isPlaceholder: true,
+          fromInitialReceipt: true,
         }));
         await tx.workOrderItem.createMany({ data: itemsData });
       }

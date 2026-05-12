@@ -96,6 +96,8 @@ model PlatformUser {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  notificationsAuthored Notification[]
 }
 
 /// Singleton (jedan red po `provider`) za vendor/platform integracije.
@@ -316,6 +318,8 @@ model AccountUser {
   serviceLabelAdjustments ServiceLabelAdjustment[]
 
   workOrdersCreated WorkOrder[] @relation("WorkOrderCreatedByAccountUser")
+
+  notificationReads NotificationRead[]
 
   @@index([companyId, role])
   @@index([email])
@@ -929,6 +933,9 @@ model WorkOrderItem {
 
   /// placeholder za primku (još nije poznat točan aparat)
   isPlaceholder Boolean @default(false)
+
+  /// Stavka je dio početnog primitka (količina = WorkOrder.receivedQty). False = naknadno dodan placeholder (Primka — po danu).
+  fromInitialReceipt Boolean @default(true)
 
   periodicDone Boolean @default(false)
   internalDone Boolean @default(false)
@@ -1607,4 +1614,111 @@ model WorkOrderLabelConsumption {
   @@id([workOrderId, serviceLabelId])
   @@index([workOrderId])
   @@index([serviceLabelId])
+}
+
+/**
+ * =======================
+ * OBAVIJESTI (PLATFORM → TENANT ADMIN)
+ * =======================
+ *
+ * Vendor (platform owner) piše obavijesti koje se distribuiraju adminima svih
+ * tvrtki. Pročitanost se vodi po (notificationId, accountUserId) — svaki admin
+ * zasebno mora otvoriti i pročitati poruku. Sidebar prikazuje crveni broj
+ * nepročitanih za trenutnog admina.
+ *
+ * Kategorije su slobodne (vendor ih dodaje), ali jedna od njih može biti
+ * `isUpdate = true` što tretiramo posebno u UI-u (release-notes layout).
+ */
+
+enum NotificationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model NotificationCategory {
+  id String @id @default(cuid())
+
+  /// Slug (npr. "obavijest-o-odrzavanju") — interni identifikator za seedove i sortiranje.
+  slug String @unique
+  /// Korisničko ime kategorije (npr. "Obavijest o održavanju").
+  name String
+
+  /// Kratki opis za vendor sučelje.
+  description String?
+
+  /// Ako je true, kategorija je rezervirana za "Ažuriranja" i UI koristi proširen layout sa sekcijama.
+  isUpdate Boolean @default(false)
+
+  /// Boja oznake u UI-u (hex, npr. "#dc2626"). Default ako je null.
+  color String?
+
+  /// Redoslijed prikaza u listama / dropdownima (manji = ranije).
+  sortOrder Int @default(0)
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notifications Notification[]
+
+  @@index([active, sortOrder])
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  categoryId String
+  category   NotificationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  /// Naslov poruke prikazan u listi i u detaljima.
+  title String
+  /// Kratki sažetak (1-2 rečenice) za listu.
+  summary String?
+
+  /// Glavni tekst (markdown / plain). Za "Ažuriranja" se koristi i `sections` JSON.
+  body String
+
+  /// Strukturirani sadržaj za "Ažuriranja" obavijesti (Novo / Poboljšano / Ispravljeno / Važno),
+  /// shape: `{ "version": "1.1.0", "releaseDate": "2026-05-12", "sections": [{ "kind": "NEW"|"IMPROVED"|"FIXED"|"IMPORTANT", "title": string?, "items": string[] }] }`.
+  /// Null za standardne (ne-update) obavijesti.
+  updatePayload Json?
+
+  status NotificationStatus @default(DRAFT)
+
+  /// Kada je objavljena (status -> PUBLISHED). Null za drafts.
+  publishedAt DateTime?
+
+  /// Tko je objavio (vendor/platform user). Null ako je vendor obrisan.
+  authorPlatformUserId String?
+  authorPlatformUser   PlatformUser? @relation(fields: [authorPlatformUserId], references: [id], onDelete: SetNull)
+
+  /// Pinned obavijesti idu na vrh liste kod admina (npr. kritična upozorenja).
+  pinned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reads NotificationRead[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+}
+
+/// Praćenje pročitanosti — jedan zapis = jedan admin pročitao jednu obavijest.
+/// Brisanje accounta ili obavijesti briše i ovaj zapis.
+model NotificationRead {
+  id String @id @default(cuid())
+
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  accountUserId String
+  accountUser   AccountUser @relation(fields: [accountUserId], references: [id], onDelete: Cascade)
+
+  readAt DateTime @default(now())
+
+  @@unique([notificationId, accountUserId])
+  @@index([accountUserId])
 }

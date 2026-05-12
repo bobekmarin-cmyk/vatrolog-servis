@@ -154,6 +154,7 @@ export async function POST(
       workOrderId: id,
       extinguisherId: extinguisher.id,
       isPlaceholder: false,
+      fromInitialReceipt: false,
       targetPeriodicMonth: extinguisher.nextPeriodicDue,
     },
     select: { id: true },

@@ -12,6 +12,7 @@ import { savePdf } from "@/lib/pdfStorage";
 import QRCode from "qrcode";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
+import { buildSubsequentDeliveryLinesByDay } from "@/lib/primkaDeliveryLines";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,15 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!order) notFound();
 
   const now = new Date();
+
+  const subsequentDeliveryLines = buildSubsequentDeliveryLinesByDay(
+    order.items.map((i) => ({
+      isPlaceholder: i.isPlaceholder,
+      fromInitialReceipt: i.fromInitialReceipt,
+      createdAt: i.createdAt,
+    })),
+  );
+  const unidentifiedPlaceholderCount = order.items.filter((i) => i.isPlaceholder).length;
 
   const rows = order.items
     .filter((i) => !i.isPlaceholder && i.extinguisher)
@@ -133,7 +143,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     appVersion: APP_VERSION,
     qrDataUrl,
     rows,
-    totalQty: order.items.length,
+    initialReceivedQty: order.receivedQty,
+    subsequentDeliveryLines,
+    unidentifiedPlaceholderCount,
     note: order.note,
   };
 

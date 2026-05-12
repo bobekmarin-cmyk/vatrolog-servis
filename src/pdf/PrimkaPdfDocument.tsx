@@ -51,7 +51,12 @@ export type PrimkaPdfData = {
   appVersion: string;
   qrDataUrl: string | null;
   rows: PrimkaItemRow[];
-  totalQty: number;
+  /** Količina s kreiranja naloga (inicijalni primitak). */
+  initialReceivedQty: number;
+  /** Jedan redak po kalendarskom danu — naknadno dodani placeholderi (još neidentificirani). */
+  subsequentDeliveryLines: string[];
+  /** Još neidentificirani aparati (inicijalni + naknadni placeholdteri). */
+  unidentifiedPlaceholderCount: number;
   note: string | null;
 };
 
@@ -217,14 +222,33 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e2e8f0",
   },
   sectionTitle: {
-    fontSize: 9.2,
-    fontWeight: 700,
+    fontSize: 9,
+    fontWeight: 400,
     color: "#0f172a",
     letterSpacing: 0.5,
     textTransform: "uppercase" as const,
   },
 
-  table: { marginTop: 2 },
+  /** Jednoličan tekst u bloku primitka / tablice (font i veličina). */
+  receiptBlockText: {
+    fontSize: 9,
+    fontFamily: "Roboto",
+    fontWeight: 400,
+    color: "#0f172a",
+  },
+
+  tableListTitle: {
+    fontSize: 9,
+    fontFamily: "Roboto",
+    fontWeight: 400,
+    color: "#0f172a",
+    letterSpacing: 0.5,
+    textTransform: "uppercase" as const,
+    marginTop: 24,
+    marginBottom: 6,
+  },
+
+  table: { marginTop: 0 },
   tableHead: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
@@ -234,15 +258,23 @@ const styles = StyleSheet.create({
   th: {
     paddingVertical: 3,
     paddingHorizontal: 4,
-    fontSize: 7.4,
-    fontWeight: 700,
+    fontSize: 9,
+    fontWeight: 400,
+    fontFamily: "Roboto",
     color: "#64748b",
     letterSpacing: 0.4,
     textTransform: "uppercase" as const,
   },
   tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#edf2f7" },
   trAlt: {},
-  td: { paddingVertical: 3, paddingHorizontal: 4, fontSize: 8.6, color: "#0f172a" },
+  td: {
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    fontSize: 9,
+    fontWeight: 400,
+    fontFamily: "Roboto",
+    color: "#0f172a",
+  },
 
   colRbr: { width: 28, textAlign: "center" as const },
   colCode: { width: 68 },
@@ -275,14 +307,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     textAlign: "left" as const,
     color: "#94a3b8",
-    fontSize: 8.5,
+    fontSize: 9,
+    fontFamily: "Roboto",
+    fontWeight: 400,
   },
   receivedSummary: {
     marginTop: 8,
-    fontSize: 10,
-    color: "#0f172a",
+    marginBottom: 3,
   },
-  receivedSummaryQty: { fontWeight: 700 },
+  subsequentLine: {
+    marginBottom: 3,
+  },
+
+  unidentifiedFooter: {
+    fontSize: 7,
+    fontFamily: "Roboto",
+    fontWeight: 400,
+    color: "#64748b",
+    marginTop: 8,
+  },
 
   sigBoxRow: {
     flexDirection: "row",
@@ -384,7 +427,9 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
     appVersion,
     qrDataUrl,
     rows,
-    totalQty,
+    initialReceivedQty,
+    subsequentDeliveryLines,
+    unidentifiedPlaceholderCount,
     note,
   } = data;
 
@@ -448,45 +493,56 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Primljeni aparati</Text>
         </View>
-        {rows.length === 0 ? (
-          <Text style={styles.receivedSummary}>
-            Na servis je primljeno{" "}
-            <Text style={styles.receivedSummaryQty}>{totalQty}</Text>
-            {" "}vatrogasnih aparata.
+        <Text style={[styles.receiptBlockText, styles.receivedSummary]} wrap={false}>
+          {dates.receiptDate} — Na servis je primljeno {initialReceivedQty}{" "}
+          {initialReceivedQty === 1 ? "vatrogasni aparat." : "vatrogasnih aparata."}
+        </Text>
+        {subsequentDeliveryLines.map((line, i) => (
+          <Text key={`sub-${i}`} style={[styles.receiptBlockText, styles.subsequentLine]} wrap={false}>
+            {line}
           </Text>
-        ) : (
-          <View style={styles.table}>
-            <View style={styles.tableHead} fixed>
-              <Text style={[styles.th, styles.colRbr]}>Rb.</Text>
-              <Text style={[styles.th, styles.colCode]}>Interni br.</Text>
-              <Text style={[styles.th, styles.colMan]}>Proizvođač</Text>
-              <Text style={[styles.th, styles.colType]}>Tip aparata</Text>
-              <Text style={[styles.th, styles.colSerial]}>Serijski br.</Text>
-              <Text style={[styles.th, styles.colYear]}>Godina</Text>
-              <Text style={[styles.th, styles.colNote]}>Napomena</Text>
-            </View>
-            {rows.map((r, idx) => (
-              <View
-                key={`r-${idx}`}
-                style={idx % 2 === 1 ? [styles.tr, styles.trAlt] : styles.tr}
-                wrap={false}
-              >
-                <Text style={[styles.td, styles.colRbr]}>{r.rbr}</Text>
-                <Text style={[styles.td, styles.colCode]}>{r.internalCode}</Text>
-                <Text style={[styles.td, styles.colMan]}>{r.manufacturer}</Text>
-                <Text style={[styles.td, styles.colType]}>{r.type}</Text>
-                <Text style={[styles.td, styles.colSerial]}>{r.serial}</Text>
-                <Text style={[styles.td, styles.colYear]}>{r.year}</Text>
-                <Text style={[styles.td, styles.colNote]}>{r.note}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        ))}
         {rows.length > 0 ? (
-          <Text style={styles.receivedSummary}>
-            Na servis je primljeno{" "}
-            <Text style={styles.receivedSummaryQty}>{totalQty}</Text>
-            {" "}vatrogasnih aparata.
+          <>
+            <Text style={styles.tableListTitle} wrap={false}>
+              POPIS PRIMLJENIH APARATA
+            </Text>
+            <View style={styles.table}>
+              <View style={styles.tableHead} fixed>
+                <Text style={[styles.th, styles.colRbr]}>Rb.</Text>
+                <Text style={[styles.th, styles.colCode]}>Interni br.</Text>
+                <Text style={[styles.th, styles.colMan]}>Proizvođač</Text>
+                <Text style={[styles.th, styles.colType]}>Tip aparata</Text>
+                <Text style={[styles.th, styles.colSerial]}>Serijski br.</Text>
+                <Text style={[styles.th, styles.colYear]}>Godina</Text>
+                <Text style={[styles.th, styles.colNote]}>Napomena</Text>
+              </View>
+              {rows.map((r, idx) => (
+                <View
+                  key={`r-${idx}`}
+                  style={idx % 2 === 1 ? [styles.tr, styles.trAlt] : styles.tr}
+                  wrap={false}
+                >
+                  <Text style={[styles.td, styles.colRbr]}>{r.rbr}</Text>
+                  <Text style={[styles.td, styles.colCode]}>{r.internalCode}</Text>
+                  <Text style={[styles.td, styles.colMan]}>{r.manufacturer}</Text>
+                  <Text style={[styles.td, styles.colType]}>{r.type}</Text>
+                  <Text style={[styles.td, styles.colSerial]}>{r.serial}</Text>
+                  <Text style={[styles.td, styles.colYear]}>{r.year}</Text>
+                  <Text style={[styles.td, styles.colNote]}>{r.note}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : unidentifiedPlaceholderCount === 0 ? (
+          <Text style={[styles.receiptBlockText, styles.empty, { marginTop: 8 }]}>
+            Nema identificiranih aparata u tablici.
+          </Text>
+        ) : null}
+        {unidentifiedPlaceholderCount > 0 ? (
+          <Text style={styles.unidentifiedFooter} wrap={false}>
+            Još nije identificirano u tablici: {unidentifiedPlaceholderCount}{" "}
+            {unidentifiedPlaceholderCount === 1 ? "aparat" : "aparata"}
           </Text>
         ) : null}
 
@@ -518,7 +574,7 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
           generatedAtLabel={generatedAtLabel}
           appVersion={appVersion}
           metaLine={serviceFooterLine}
-          note="Primka evidentira preuzete vatrogasne aparate na servis. Stavke označene internim brojem su identificirani aparati; redovi bez podataka predstavljaju placeholdere koji se popunjavaju po identifikaciji u radioni."
+          note="Inicijalni primitak odgovara količini s kreiranja naloga. Naknadno dodani aparati (još bez internog broja u tablici) navedeni su po datumu dostave (kalendarski dan). Aparati u tablici su identificirani u radionici."
           boldNote="Dokument je elektronički generiran i vrijedi bez potpisa servisera."
         />
       </Page>
