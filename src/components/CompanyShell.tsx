@@ -212,10 +212,6 @@ export default function CompanyShell(props: {
               })}
             </nav>
 
-            {/* Sidebar footer s app verzijom */}
-            <div className="px-4 pb-4 pt-2 text-[10px] text-white/60">
-              {APP_NAME} v{APP_VERSION}
-            </div>
           </aside>
 
           {/* CONTENT */}
