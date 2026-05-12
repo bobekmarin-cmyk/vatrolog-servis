@@ -70,7 +70,12 @@ export default function TermsPage() {
       <p>Za sve sporove nadležan je stvarno nadležni sud u mjestu sjedišta Pružatelja.</p>
 
       <h2>10. Kontakt</h2>
-      <p>Za pitanja vezana uz ove Uvjete kontaktirajte <a href="mailto:marin@vatrolog.com">marin@vatrolog.com</a>.</p>
+      <p>
+        Pružatelj usluge: <strong>Via Madera d.o.o.</strong>, OIB 40918539877.
+        Za pitanja vezana uz ove Uvjete kontaktirajte{" "}
+        <a href="mailto:info@vatrolog.com">info@vatrolog.com</a> ili{" "}
+        <a href="tel:+385976123983">097 612 3983</a>.
+      </p>
     </article>
   );
 }

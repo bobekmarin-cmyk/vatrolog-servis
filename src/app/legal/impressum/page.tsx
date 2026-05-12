@@ -13,36 +13,34 @@ export default function ImpressumPage() {
         u nastavku se objavljuju podaci o pružatelju usluge.
       </p>
 
-      <h2>Naziv pružatelja usluge</h2>
+      <h2>Pružatelj usluge</h2>
       <p>
-        <strong>VatroLog</strong>
+        <strong>Via Madera d.o.o.</strong>
         <br />
-        Usluga u pripremi za produkcijsko poslovanje.
-      </p>
-
-      <h2>Sjedište</h2>
-      <p>
-        Registarski podaci pružatelja usluge bit će objavljeni prije početka komercijalne
-        naplate. Za beta i early-bird pristup koristi se kontakt u nastavku.
-      </p>
-
-      <h2>Kontakt</h2>
-      <p>
-        Email / podrška / DPO: <a href="mailto:marin@vatrolog.com">marin@vatrolog.com</a>
+        Usluga: <strong>VatroLog</strong> — digitalni servis vatrogasnih aparata
       </p>
 
       <h2>Registarski podaci</h2>
-      <p>Podaci će biti dopunjeni prije javnog komercijalnog lansiranja.</p>
+      <ul>
+        <li>OIB: <strong>40918539877</strong></li>
+        <li>Pravni oblik: društvo s ograničenom odgovornošću (d.o.o.)</li>
+      </ul>
+
+      <h2>Kontakt</h2>
+      <ul>
+        <li>
+          E-mail / podrška / DPO:{" "}
+          <a href="mailto:info@vatrolog.com">info@vatrolog.com</a>
+        </li>
+        <li>
+          Telefon: <a href="tel:+385976123983">097 612 3983</a> (radnim danom 9:00 – 17:00)
+        </li>
+      </ul>
 
       <h2>Nadzorno tijelo</h2>
       <p>
         Agencija za zaštitu osobnih podataka (AZOP), Selska cesta 136, 10000 Zagreb,
         <a href="https://azop.hr" target="_blank" rel="noopener noreferrer"> azop.hr</a>.
-      </p>
-
-      <p className="text-sm text-slate-500 mt-8">
-        Napomena: ova stranica ne sadrži placeholder podatke. Prije naplate usluge potrebno je
-        upisati stvarne podatke pružatelja usluge.
       </p>
     </article>
   );

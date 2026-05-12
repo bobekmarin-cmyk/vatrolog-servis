@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { IconArrowRight, IconMail, IconPhone } from "./icons";
 
-const CONTACT_EMAIL = "marin@vatrolog.com";
+const CONTACT_EMAIL = "info@vatrolog.com";
+const CONTACT_PHONE_DISPLAY = "097 612 3983";
+const CONTACT_PHONE_TEL = "+385976123983";
 
 export default function Contact() {
   return (
@@ -56,10 +58,16 @@ export default function Contact() {
                 <IconPhone className="mt-0.5 h-5 w-5 shrink-0 text-red-100" />
                 <div>
                   <div className="text-xs uppercase tracking-wider text-red-100">
-                    Demo poziv
+                    Telefon
                   </div>
-                  <p className="mt-0.5 text-base font-semibold text-white">
-                    Termin dogovaramo e-mailom u roku 1 radnog dana.
+                  <a
+                    href={`tel:${CONTACT_PHONE_TEL}`}
+                    className="mt-0.5 block text-base font-semibold text-white hover:underline"
+                  >
+                    {CONTACT_PHONE_DISPLAY}
+                  </a>
+                  <p className="mt-1 text-xs text-red-100/90">
+                    Radnim danom 9:00 – 17:00. Termin demo poziva dogovaramo i e-mailom u roku 1 radnog dana.
                   </p>
                 </div>
               </li>

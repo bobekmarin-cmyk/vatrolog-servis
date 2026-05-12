@@ -121,7 +121,7 @@ function EmailTab({
         <div>
           <h2 className="text-lg font-semibold">Vendor Gmail</h2>
           <p className="text-sm text-slate-500">
-            Vendor mail (`marin@vatrolog.com`) za sve sistemske mailove: reset lozinki, pozivnice,
+            Vendor mail (npr. <code>info@vatrolog.com</code>) za sve sistemske mailove: reset lozinki, pozivnice,
             verifikacije, podsjetnici pretplate.
           </p>
         </div>
@@ -287,7 +287,7 @@ function BrandingTab({ initial }: { initial: Branding }) {
           type="email"
           value={form.defaultFromEmail ?? ""}
           onChange={onChange("defaultFromEmail")}
-          placeholder="marin@vatrolog.com"
+          placeholder="info@vatrolog.com"
         />
         <Field label="Logo URL" value={form.logoUrl ?? ""} onChange={onChange("logoUrl")} placeholder="https://…/logo.png" />
         <Field label="Brand color (hex)" value={form.brandColor ?? ""} onChange={onChange("brandColor")} placeholder="#dc2626" />

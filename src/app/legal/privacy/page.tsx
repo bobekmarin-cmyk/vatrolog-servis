@@ -16,7 +16,9 @@ export default function PrivacyPage() {
 
       <h2>1. Voditelj obrade</h2>
       <p>
-        Voditelj obrade je pružatelj usluge VatroLog. Za pitanja o privatnosti kontaktirajte našeg DPO-a na <a href="mailto:marin@vatrolog.com">marin@vatrolog.com</a>.
+        Voditelj obrade je <strong>Via Madera d.o.o.</strong> (OIB: 40918539877), pružatelj usluge VatroLog.
+        Za pitanja o privatnosti kontaktirajte našeg DPO-a na <a href="mailto:info@vatrolog.com">info@vatrolog.com</a>{" "}
+        ili telefonom <a href="tel:+385976123983">097 612 3983</a>.
       </p>
 
       <h2>2. Koje podatke prikupljamo</h2>
@@ -80,7 +82,10 @@ export default function PrivacyPage() {
       </p>
 
       <h2>10. Kontakt</h2>
-      <p>Za ostvarivanje prava ili pitanja: <a href="mailto:marin@vatrolog.com">marin@vatrolog.com</a>.</p>
+      <p>
+        Za ostvarivanje prava ili pitanja: <a href="mailto:info@vatrolog.com">info@vatrolog.com</a>{" "}
+        ili <a href="tel:+385976123983">097 612 3983</a>.
+      </p>
     </article>
   );
 }

@@ -63,7 +63,7 @@ export default function BillingActions({
   if (!stripeEnabled) {
     return (
       <a
-        href="mailto:marin@vatrolog.com?subject=VatroLog pretplata"
+        href="mailto:info@vatrolog.com?subject=VatroLog pretplata"
         className="block text-center w-full rounded-md bg-red-600 text-white py-2 font-medium hover:bg-red-700"
       >
         Aktiviraj
