@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { formatExtinguisherTypeName } from "@/lib/formatExtinguisherType";
 import { customerDisplayName } from "@/lib/customerDisplay";
+import { formatPartUnit } from "@/lib/partsCatalog";
 
 function agentLabel(a: { label?: string | null; symbol?: string | null; code?: string } | null | undefined) {
   if (!a) return "-";
@@ -82,8 +83,11 @@ export default async function DeliveryNotePage({ params }: { params: Promise<{ i
           if (isCustom) accountingCode = display;
           else if (display && display !== manuCode) accountingCode = display;
 
+          const unit = formatPartUnit(x.snapshotUnit ?? x.part.unit);
+          const qty = `${x.quantity} ${unit}`;
           const head = accountingCode ? `${accountingCode} ${name}` : name;
-          return manuCode ? `${head}  ${manuCode}` : head;
+          const withCode = manuCode ? `${head}  ${manuCode}` : head;
+          return `${withCode} × ${qty}`;
         })
         .filter((s) => s.length > 0)
         .join(", "),

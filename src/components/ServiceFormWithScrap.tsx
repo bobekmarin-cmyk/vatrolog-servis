@@ -1,27 +1,79 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useDialog } from "@/components/ui/useDialog";
+import Modal from "@/components/ui/Modal";
+import { ServiceScrapModeContext } from "@/components/ServiceScrapModeContext";
 
 export default function ServiceFormWithScrap(props: {
   action: string;
   workOrderId: string;
-  leftContent: React.ReactNode;
-  rightContent: React.ReactNode;
+  /** Serija/godina, proizvođač i tip aparata. */
+  extinguisherSummaryLeft?: ReactNode;
+  /** Broj naljepnice — zasivi se u načinu rashoda. */
+  labelLeft: ReactNode;
+  /** Serviser i lokacija — ostaju aktivni i u načinu rashoda. */
+  servicerLocationLeft: ReactNode;
+  /** Unutarnji pregled — zasivi se u načinu rashoda. */
+  internalInspectionLeft?: ReactNode;
+  rightContent: ReactNode;
   resetAction?: string;
   canReset?: boolean;
 }) {
-  const { action, workOrderId, leftContent, rightContent, resetAction, canReset } = props;
+  const {
+    action,
+    workOrderId,
+    extinguisherSummaryLeft,
+    labelLeft,
+    servicerLocationLeft,
+    internalInspectionLeft,
+    rightContent,
+    resetAction,
+    canReset,
+  } = props;
   const dialog = useDialog();
   const [scrap, setScrap] = useState(false);
   const [scrapReason, setScrapReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [scrapModalOpen, setScrapModalOpen] = useState(false);
+  const [modalDraftReason, setModalDraftReason] = useState("");
   const [resetting, setResetting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const submittingRef = useRef(false);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  function openScrapModal() {
+    setModalDraftReason("");
+    setScrapModalOpen(true);
+  }
+
+  function closeScrapModal() {
+    setScrapModalOpen(false);
+    setModalDraftReason("");
+  }
+
+  async function confirmScrapFromModal() {
+    const reason = modalDraftReason.trim();
+    if (!reason) {
+      await dialog.alert({
+        title: "Razlog je obavezan",
+        message: "Upišite razlog rashoda prije nastavka.",
+        variant: "warning",
+      });
+      return;
+    }
+    setScrapReason(reason);
+    setScrap(true);
+    closeScrapModal();
+  }
+
+  function cancelScrapMode() {
+    setScrap(false);
+    setScrapReason("");
+  }
 
   async function handleReset() {
-    if (!resetAction || resetting || submitting) return;
+    if (!resetAction || resetting || submittingRef.current) return;
     const ok = await dialog.confirm({
       title: "Reset servisa",
       message:
@@ -56,37 +108,41 @@ export default function ServiceFormWithScrap(props: {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current) return;
 
     const form = formRef.current;
     if (!form) return;
+    const fd = new FormData(form);
 
     if (scrap) {
       const reason = scrapReason.trim();
       if (!reason) {
         await dialog.alert({
           title: "Razlog rashoda je obavezan",
-          message: "Upiši razlog rashoda (npr. stari aparat, korozija posude, oštećenje).",
+          message: "Ponovno otvorite rashod i upišite razlog, ili poništite rashod.",
           variant: "warning",
         });
         return;
       }
-      const ok = await dialog.confirm({
-        title: "Rashod vatrogasnog aparata",
-        message: "Sigurno želite rashodovati ovaj vatrogasni aparat? Ova akcija se ne može poništiti.",
-        danger: true,
-        confirmLabel: "Rashoduj",
+    } else if (!String(fd.get("servicerId") ?? "").trim()) {
+      await dialog.alert({
+        title: "Serviser nije odabran",
+        message: "Odaberite servisera prije spremanja servisa.",
+        variant: "warning",
       });
-      if (!ok) return;
+      return;
     }
 
-    const fd = new FormData(form);
     if (scrap) {
       fd.set("scrap", "on");
       fd.set("scrapReason", scrapReason.trim());
     }
 
-    setSubmitting(true);
+    submittingRef.current = true;
+    if (submitButtonRef.current) {
+      submitButtonRef.current.disabled = true;
+      submitButtonRef.current.textContent = "Spremam...";
+    }
     try {
       const res = await fetch(action, {
         method: "POST",
@@ -112,82 +168,169 @@ export default function ServiceFormWithScrap(props: {
         variant: "error",
       });
     } finally {
-      setSubmitting(false);
+      submittingRef.current = false;
+      if (submitButtonRef.current) {
+        submitButtonRef.current.disabled = false;
+        submitButtonRef.current.textContent = scrap ? "Rashoduj aparat" : "Spremi servis";
+      }
     }
   }
 
   return (
-    <form
-      ref={formRef}
-      className="grid gap-4 xl:grid-cols-3"
-      action={action}
-      method="post"
-      onSubmit={handleSubmit}
-    >
-      <div className="xl:col-span-3 grid gap-4 xl:grid-cols-3">
-        {/* Lijevo (1/3): sadržaj + rashod na dnu */}
-        <section className="surface p-4 space-y-4 xl:col-span-1 flex flex-col">
-          <fieldset className="min-w-0 border-0 p-0 m-0" disabled={scrap} aria-hidden={scrap}>
-            {leftContent}
-          </fieldset>
-          <div className="mt-auto pt-4 rounded-2xl border-2 border-rose-200 bg-rose-50/60 p-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={scrap}
-                onChange={(e) => setScrap(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
-              />
-              <span className="text-sm font-semibold text-rose-900">
-                RASHODUJ VATROGASNI APARAT
-              </span>
-            </label>
-            {scrap && (
-              <div className="mt-3">
-                <label className="label">Razlog rashoda (obavezno)</label>
-                <textarea
-                  value={scrapReason}
-                  onChange={(e) => setScrapReason(e.target.value)}
-                  className="textarea w-full"
-                  rows={3}
-                  placeholder="npr. stari aparat, korozija posude, oštećenje..."
-                  required={scrap}
-                />
-              </div>
-            )}
-          </div>
-        </section>
-        {/* Desno (2/3) */}
-        <fieldset className="xl:col-span-2 border-0 p-0 m-0 min-w-0" disabled={scrap} aria-hidden={scrap}>
-          <section className="surface p-4 space-y-4">
-            {rightContent}
-          </section>
-        </fieldset>
-      </div>
-
-      <div className="flex flex-wrap gap-2 xl:col-span-3 pt-2">
-        <button
-          type="submit"
-          disabled={submitting || resetting}
-          className={scrap ? "btn bg-rose-600 text-white hover:bg-rose-700 px-4 disabled:opacity-60" : "btn btn-primary px-4 disabled:opacity-60"}
+    <ServiceScrapModeContext.Provider value={scrap}>
+      <form
+        ref={formRef}
+        className="grid gap-4 xl:grid-cols-3"
+        action={action}
+        method="post"
+        onSubmit={handleSubmit}
+      >
+        <Modal
+          open={scrapModalOpen}
+          title="Rashod vatrogasnog aparata"
+          variant="danger"
+          onClose={closeScrapModal}
+          closeOnBackdrop
+          size="lg"
+          footer={
+            <>
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                onClick={closeScrapModal}
+              >
+                Odustani
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-rose-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-rose-700"
+                onClick={() => {
+                  void confirmScrapFromModal();
+                }}
+              >
+                Nastavi u rashod
+              </button>
+            </>
+          }
         >
-          {submitting ? "Spremam..." : scrap ? "Rashoduj aparat" : "Spremi servis"}
-        </button>
-        <Link className="btn btn-outline px-4" href={`/work-orders/${workOrderId}`}>
-          Odustani
-        </Link>
-        {canReset && resetAction && (
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={submitting || resetting || scrap}
-            className="btn ml-auto border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-60"
-            title="Vraća aparat u stanje prije servisa"
+          <p className="text-slate-700">
+            Ovime pripremate <span className="font-semibold">rashod</span> ovog aparata na ovom nalogu. Nakon
+            spremanja aparat se označava rashodovanim — akcija se ne može poništiti. Ostaju dostupni samo{" "}
+            <span className="font-medium">serviser</span> i <span className="font-medium">lokacija/napomena</span>;
+            naljepnica, unutarnji pregled, rezervni dijelovi i dodatne usluge bit će onemogućeni, a odabir dijelova i
+            usluga uklonjen.
+          </p>
+          <div>
+            <label className="label" htmlFor="scrap-reason-modal">
+              Razlog rashoda (obavezno)
+            </label>
+            <textarea
+              id="scrap-reason-modal"
+              className="textarea w-full"
+              rows={4}
+              value={modalDraftReason}
+              onChange={(e) => setModalDraftReason(e.target.value)}
+              placeholder="npr. stari aparat, korozija posude, oštećenje…"
+              autoFocus
+            />
+          </div>
+        </Modal>
+
+        <div className="xl:col-span-3 grid gap-4 xl:grid-cols-3">
+          <div className="flex flex-col gap-6 xl:col-span-1">
+            {extinguisherSummaryLeft ? (
+              <section className="surface p-4">
+                {extinguisherSummaryLeft}
+              </section>
+            ) : null}
+
+            <section className="surface flex flex-col gap-8 p-4">
+              <fieldset
+                className="min-w-0 border-0 p-0 m-0 disabled:opacity-55"
+                disabled={scrap}
+              >
+                {labelLeft}
+              </fieldset>
+
+              <fieldset className="flex min-w-0 flex-col gap-8 border-0 p-0 m-0">
+                {servicerLocationLeft}
+              </fieldset>
+            </section>
+
+            {internalInspectionLeft ? (
+              <fieldset
+                className="min-w-0 border-0 p-0 m-0 disabled:opacity-55"
+                disabled={scrap}
+              >
+                {internalInspectionLeft}
+              </fieldset>
+            ) : null}
+          </div>
+
+          <fieldset
+            className="xl:col-span-2 min-w-0 border-0 p-0 m-0 disabled:opacity-55"
+            disabled={scrap}
           >
-            {resetting ? "Resetiram..." : "Resetiraj servis"}
+            <div className="space-y-6">{rightContent}</div>
+          </fieldset>
+        </div>
+
+        <div className="flex flex-wrap items-start gap-2 pt-2 xl:col-span-3">
+          <button
+            ref={submitButtonRef}
+            type="submit"
+            disabled={resetting}
+            className={
+              scrap
+                ? "btn bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
+                : "btn btn-primary px-4 disabled:opacity-60"
+            }
+          >
+            {scrap ? "Rashoduj aparat" : "Spremi servis"}
           </button>
-        )}
-      </div>
-    </form>
+          <Link className="btn btn-outline px-4" href={`/work-orders/${workOrderId}`}>
+            Odustani
+          </Link>
+          <div className="ml-auto flex flex-wrap justify-end gap-2">
+            {scrap ? (
+              <div className="max-w-md rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm">
+                <p className="font-semibold text-rose-900">Rashod je pripremljen</p>
+                <p className="text-slate-700">
+                  <span className="font-medium text-slate-800">Razlog: </span>
+                  <span className="whitespace-pre-wrap">{scrapReason}</span>
+                </p>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-rose-800 underline decoration-rose-400 underline-offset-2 hover:text-rose-950"
+                  onClick={cancelScrapMode}
+                >
+                  Poništi rashod
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openScrapModal}
+                disabled={resetting}
+                className="btn border-rose-300 bg-white text-rose-900 hover:bg-rose-50 disabled:opacity-60"
+              >
+                Rashod vatrogasnog aparata…
+              </button>
+            )}
+          {canReset && resetAction && (
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={resetting || scrap}
+              className="btn border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+              title="Vraća aparat u stanje prije servisa"
+            >
+              {resetting ? "Resetiram..." : "Resetiraj servis"}
+            </button>
+          )}
+          </div>
+        </div>
+      </form>
+    </ServiceScrapModeContext.Provider>
   );
 }

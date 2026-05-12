@@ -137,6 +137,9 @@ export default function EditExtinguisherForm(props: {
             type="number"
             className="input"
             required
+            min={1900}
+            max={2099}
+            pattern="(19|20)[0-9]{2}"
             defaultValue={initial.productionYear}
           />
         </div>

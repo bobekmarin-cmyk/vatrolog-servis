@@ -215,7 +215,7 @@ export default function CompanyShell(props: {
           </aside>
 
           {/* CONTENT */}
-          <div className="min-w-0 flex-1 rounded-3xl bg-slate-50 shadow-lg md:ml-4">
+          <div className="min-w-0 flex-1 rounded-3xl bg-slate-100 shadow-lg md:ml-4">
             <div className="px-4 py-6">{children}</div>
           </div>
         </div>

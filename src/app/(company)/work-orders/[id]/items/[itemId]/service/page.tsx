@@ -9,10 +9,11 @@ import WorkOrderCustomServicesPicker, {
   type CustomServiceLite,
 } from "@/components/WorkOrderCustomServicesPicker";
 import ServiceFormWithScrap from "@/components/ServiceFormWithScrap";
+import ServicerPickerGrid from "@/components/ServicerPickerGrid";
 import { formatExtinguisherTypeName } from "@/lib/formatExtinguisherType";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
-import { todayStart } from "@/lib/servicerStatus";
+import { isActiveToday } from "@/lib/servicerStatus";
 import {
   computeUpInterval,
   computeFirstUpYear,
@@ -47,9 +48,9 @@ export default async function ServiceItemPage({
         companyId: session.companyId,
         active: true,
         role: "SERVISER",
-        activatedAt: { gte: todayStart() },
       },
       orderBy: { fullName: "asc" },
+      select: { id: true, fullName: true, activatedAt: true },
     }),
   ]);
 
@@ -102,6 +103,7 @@ export default async function ServiceItemPage({
             manufacturerId: true,
             manufacturerCode: true,
             defaultPrice: true,
+            unit: true,
           },
         },
       },
@@ -152,12 +154,6 @@ export default async function ServiceItemPage({
       })
     ).map((x) => x.id),
   );
-  const commonParts = availableParts
-    .filter((p) => commonIds.has(p.part.id))
-    .map((p) => ({ id: p.part.id, code: p.displayCode, name: p.part.name }));
-  const otherParts = availableParts
-    .filter((p) => !commonIds.has(p.part.id))
-    .map((p) => ({ id: p.part.id, code: p.displayCode, name: p.part.name }));
 
   const initialSelectedCustomServiceIds = Array.from(
     new Set(selectedCustomRows.map((r) => r.customServiceId)),
@@ -186,10 +182,49 @@ export default async function ServiceItemPage({
   // Sigurnosni dodatak: ako je već odabran dio koji više nije u availableParts (npr. obrisan),
   // dodaj ga sa snapshotom iz live Part zapisa kako ne bi nestao iz selekcije.
   const availableIdSet = new Set(availableParts.map((a) => a.part.id));
-  const extraSelected = selectedRows
+  const extraSelectedRaw = selectedRows
     .map((r) => r.part)
-    .filter((p): p is NonNullable<typeof p> => !!p && !availableIdSet.has(p.id))
-    .map((p) => ({ id: p.id, code: p.code, name: p.name }));
+    .filter((p): p is NonNullable<typeof p> => !!p && !availableIdSet.has(p.id));
+
+  const partsForPicker = [
+    ...availableParts.map((a) => ({
+      id: a.part.id,
+      code: a.displayCode,
+      manufacturerCode: a.manufacturerCode,
+      name: a.part.name,
+      unit: a.part.unit,
+      isCustom: a.isCustom,
+      isCommon: commonIds.has(a.part.id),
+    })),
+    ...extraSelectedRaw.map((p) => ({
+      id: p.id,
+      code: p.code,
+      manufacturerCode: p.manufacturerCode,
+      name: p.name,
+      unit: p.unit,
+      isCustom: !!p.companyId,
+      isCommon: commonIds.has(p.id),
+    })),
+  ];
+
+  const initialSelectedParts = selectedRows.map((r) => ({
+    id: r.partId,
+    quantity: Math.max(1, Math.floor(r.quantity ?? 1)),
+  }));
+
+  const servicersForPicker = servicers.map((s) => ({
+    id: s.id,
+    fullName: s.fullName,
+    activeToday: isActiveToday(s.activatedAt),
+  }));
+
+  const storedServicer = item.servicer;
+  const staleServicerHint =
+    item.servicerId &&
+    storedServicer &&
+    !isActiveToday(storedServicer.activatedAt)
+      ? `Na stavci je bio odabran ${storedServicer.fullName}, koji danas nije prijavljen — odaberite drugog ili ga aktivirajte u izborniku „Serviseri”.`
+      : null;
 
   const upRule = ex.type
     ? computeUpInterval({
@@ -215,15 +250,33 @@ export default async function ServiceItemPage({
 
   return (
     <main className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Servisiraj aparat</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Nalog: <span className="font-medium">{order.orderNumber}</span> — {customerDisplayName(order.customer)}
-        </p>
-        <div className="mt-2">
-          <Link className="btn btn-outline px-3 py-1 text-xs" href={`/extinguishers/${ex.id}/qr-label`} target="_blank" rel="noreferrer">
-            Ispiši QR naljepnicu
-          </Link>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold leading-none">Servisiraj aparat</h1>
+            <span className="text-lg font-medium leading-none text-slate-600">{order.orderNumber}</span>
+            <span className="text-lg font-medium leading-none text-slate-600">{customerDisplayName(order.customer)}</span>
+          </div>
+          <div className="mt-2">
+            <Link className="btn btn-outline px-3 py-1 text-xs" href={`/extinguishers/${ex.id}/qr-label`} target="_blank" rel="noreferrer">
+              Ispiši QR naljepnicu
+            </Link>
+          </div>
+        </div>
+
+        <div className="surface px-4 py-3 xl:w-1/3">
+          <div className="space-y-1 text-center">
+            <div className="font-mono text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              {ex.serialNumber}/{ex.productionYear}
+            </div>
+            <div className="text-sm text-slate-700">
+              <span className="font-bold text-slate-900">
+                {ex.type ? formatExtinguisherTypeName(ex.type) : "—"}
+              </span>
+              <span className="text-slate-500"> · </span>
+              <span className="text-slate-600">{displayManufacturer(ex.manufacturer)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -232,80 +285,93 @@ export default async function ServiceItemPage({
         resetAction={`/api/work-orders/${order.id}/items/${item.id}/reset`}
         canReset={!!(item.periodicDone || item.servicedAt || item.internalDone)}
         workOrderId={order.id}
-        leftContent={
+        labelLeft={
+          <div className="space-y-3">
+            <label className="label flex flex-wrap items-center gap-2" htmlFor="labelNumber">
+              <span>Broj naljepnice (unikatan)</span>
+              <button
+                type="button"
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-[10px] font-bold leading-none text-slate-600 hover:bg-slate-100"
+                title="Naljepnica mora biti jedinstvena kroz cijelu bazu."
+                aria-label="Informacija: naljepnica mora biti jedinstvena kroz cijelu bazu."
+              >
+                i
+              </button>
+            </label>
+            <input
+              id="labelNumber"
+              name="labelNumber"
+              className="input"
+              defaultValue={item.labelNumber ?? ""}
+              required
+            />
+          </div>
+        }
+        servicerLocationLeft={
           <>
-            <div>
-              <div className="text-sm font-semibold">Aparat</div>
-              <div className="mt-2 space-y-1">
-                <div className="text-sm font-medium text-slate-900">
-                  {ex.type ? formatExtinguisherTypeName(ex.type) : "-"}{" "}
-                  <span className="text-slate-500">·</span>{" "}
-                  {displayManufacturer(ex.manufacturer)}
-                </div>
-                <div className="font-mono text-base font-semibold text-slate-900">
-                  {ex.serialNumber}/{ex.productionYear}
-                </div>
-              </div>
+            <div className="space-y-3">
+              <label className="label flex flex-wrap items-center gap-2">
+                <span>Serviser</span>
+                <button
+                  type="button"
+                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-[10px] font-bold leading-none text-slate-600 hover:bg-slate-100"
+                  title="Odaberi servisera koji je prijavljen za današnji dan. Neaktivni serviseri su zasivljeni."
+                  aria-label="Informacija: odaberi servisera koji je prijavljen za današnji dan."
+                >
+                  i
+                </button>
+              </label>
+              <ServicerPickerGrid
+                servicers={servicersForPicker}
+                initialServicerId={item.servicerId ?? ""}
+                staleServicerHint={staleServicerHint}
+              />
             </div>
 
-            <div className="h-px bg-black/10" />
-
-            <div>
-              <label className="label">Broj naljepnice (unikatan)</label>
-              <input name="labelNumber" className="input" defaultValue={item.labelNumber ?? ""} required />
-              <p className="help">Naljepnica mora biti jedinstvena kroz cijelu bazu.</p>
-            </div>
-
-            <div>
-              <label className="label">Serviser</label>
-              {servicers.length === 0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Nema aktivnih servisera za danas. Aktivirajte servisere u gornjem izborniku.
-                </div>
-              ) : (
-                <select name="servicerId" className="select" defaultValue={item.servicerId ?? ""} required>
-                  <option value="">-- odaberi --</option>
-                  {servicers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.fullName}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label className="label">Lokacija / napomena (na upisniku)</label>
+            <div className="space-y-3">
+              <label className="label flex flex-wrap items-center gap-2">
+                <span>Lokacija</span>
+                <button
+                  type="button"
+                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-slate-50 text-[10px] font-bold leading-none text-slate-600 hover:bg-slate-100"
+                  title="Opcionalna lokacija ili napomena koja se zapisuje na upisniku."
+                  aria-label="Informacija: opcionalna lokacija ili napomena koja se zapisuje na upisniku."
+                >
+                  i
+                </button>
+              </label>
               <input name="serviceLocationText" className="input" defaultValue={item.serviceLocationText ?? ""} />
             </div>
           </>
         }
+        internalInspectionLeft={
+          <InternalInspectionSection
+            agentCode={ex.type?.agent?.code ?? null}
+            manufacturerName={displayManufacturer(ex.manufacturer)}
+            productionYear={ex.productionYear}
+            serviceYear={serviceYear}
+            existingNextInternalYear={ex.nextInternalDue ? ex.nextInternalDue.getFullYear() : null}
+            defaultInternalDone={!!item.internalDone}
+            intervalYears={upRule.years}
+            ruleLabel={upRule.ruleLabel}
+            computedFirstUpYear={computedFirstUpYear}
+            computedNextIfDone={computedNextIfDone}
+          />
+        }
         rightContent={
           <>
-            <InternalInspectionSection
-              agentCode={ex.type?.agent?.code ?? null}
-              manufacturerName={displayManufacturer(ex.manufacturer)}
-              productionYear={ex.productionYear}
-              serviceYear={serviceYear}
-              existingNextInternalYear={ex.nextInternalDue ? ex.nextInternalDue.getFullYear() : null}
-              defaultInternalDone={!!item.internalDone}
-              intervalYears={upRule.years}
-              ruleLabel={upRule.ruleLabel}
-              computedFirstUpYear={computedFirstUpYear}
-              computedNextIfDone={computedNextIfDone}
-            />
-
             <WorkOrderPartsPicker
               kind={typeLabel}
-              commonParts={commonParts}
-              otherParts={[...otherParts, ...extraSelected]}
-              initialSelectedIds={initialSelectedIds}
+              parts={partsForPicker}
+              initialSelected={initialSelectedParts}
             />
 
-            <WorkOrderCustomServicesPicker
-              available={customServicesAvailable}
-              initialSelectedIds={initialSelectedCustomServiceIds}
-            />
+            <div>
+              <WorkOrderCustomServicesPicker
+                available={customServicesAvailable}
+                initialSelectedIds={initialSelectedCustomServiceIds}
+              />
+            </div>
           </>
         }
       />

@@ -101,6 +101,7 @@ export default async function PlatformManufacturerDetailPage({
     code: p.code,
     name: p.name,
     common: p.common,
+    unit: p.unit,
     active: p.active,
     typeIds: p.types.map((t) => t.extinguisherTypeId),
   }));

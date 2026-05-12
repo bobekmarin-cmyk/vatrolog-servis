@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SetPinButton({ servicerId, hasPin }: { servicerId: string; hasPin: boolean }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Optimistički flag: čim API potvrdi OK, gumb odmah piše „Promijeni PIN" (server refresh slijedi).
+  const [optimisticHasPin, setOptimisticHasPin] = useState(false);
+  const effectiveHasPin = hasPin || optimisticHasPin;
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,6 +31,8 @@ export default function SetPinButton({ servicerId, hasPin }: { servicerId: strin
       if (res.ok) {
         setMsg({ ok: true, text: "PIN spremljen" });
         setPin("");
+        setOptimisticHasPin(true);
+        router.refresh();
         setTimeout(() => { setOpen(false); setMsg(null); }, 1200);
       } else {
         const data = await res.json();
@@ -41,10 +48,10 @@ export default function SetPinButton({ servicerId, hasPin }: { servicerId: strin
     return (
       <button
         type="button"
-        className={`text-xs px-2 py-0.5 rounded-md font-medium ${hasPin ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
+        className={`text-xs px-2 py-0.5 rounded-md font-medium ${effectiveHasPin ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}
         onClick={() => setOpen(true)}
       >
-        {hasPin ? "Promijeni PIN" : "Postavi PIN"}
+        {effectiveHasPin ? "Promijeni PIN" : "Postavi PIN"}
       </button>
     );
   }

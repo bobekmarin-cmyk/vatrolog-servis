@@ -20,7 +20,8 @@ export async function POST(
   const extinguisherTypeId = String(form.get("extinguisherTypeId") || "");
   const serialNumber = String(form.get("serialNumber") || "").trim();
   const typeDescription = String(form.get("typeDescription") || "").trim();
-  const productionYear = Number(form.get("productionYear") || 0);
+  const productionYearRaw = String(form.get("productionYear") || "").trim();
+  const productionYear = Number(productionYearRaw);
   const serviceLocationText = String(form.get("serviceLocationText") || "").trim();
 
   // Ako korisnik upiše interni broj: mora postojati
@@ -75,6 +76,12 @@ export async function POST(
   if (!manufacturerId || !extinguisherTypeId || !serialNumber || !productionYear) {
     return NextResponse.json(
       { error: "Sva polja osim lokacije su obavezna." },
+      { status: 400 }
+    );
+  }
+  if (!/^(19|20)\d{2}$/.test(productionYearRaw)) {
+    return NextResponse.json(
+      { error: "Godina proizvodnje mora biti u formatu 19xx ili 20xx." },
       { status: 400 }
     );
   }

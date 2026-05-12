@@ -24,6 +24,7 @@ const schema = z.object({
       if (!Number.isFinite(num) || num < 0) return null;
       return Math.round(num * 100) / 100;
     }),
+  unit: z.enum(["KOM", "KG", "L"]).optional(),
   active: z.boolean().optional(),
   typeIds: z.array(z.string().min(5).max(60)).min(1, "Odaberite barem jedan tip aparata."),
 });
@@ -47,6 +48,7 @@ export const POST = apiHandler(async (req: Request) => {
   const { partId, manufacturerId, code, name, typeIds } = parsed.data;
   const price = parsed.data.price ?? null;
   const active = parsed.data.active ?? true;
+  const unit = parsed.data.unit ?? "KOM";
 
   const auth = await prisma.companyManufacturerAuthorization.findFirst({
     where: { companyId: session.companyId, manufacturerId, active: true },
@@ -100,6 +102,7 @@ export const POST = apiHandler(async (req: Request) => {
           name,
           active,
           defaultPrice: price,
+          unit,
           types: { create: typeIds.map((tid) => ({ extinguisherTypeId: tid })) },
         },
         select: { id: true, code: true, name: true },
@@ -147,6 +150,7 @@ export const POST = apiHandler(async (req: Request) => {
           name,
           active,
           defaultPrice: price,
+          unit,
         },
       });
       await tx.partExtinguisherType.deleteMany({ where: { partId } });

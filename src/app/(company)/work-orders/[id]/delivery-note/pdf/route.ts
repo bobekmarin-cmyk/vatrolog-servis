@@ -17,6 +17,8 @@ import DeliveryNotePdfDocument, {
   type DeliveryNoteLabelRow,
 } from "@/pdf/DeliveryNotePdfDocument";
 import { collectLabelRowsForDeliveryNote } from "@/lib/serviceLabels";
+import { formatPartUnit } from "@/lib/partsCatalog";
+import { PartUnit } from "@prisma/client";
 import React, { type ComponentProps } from "react";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
@@ -280,6 +282,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     name: string;
     manufacturerCode: string | null;
     quantity: number;
+    unit: PartUnit;
   };
   const partsByKey = new Map<string, PartAgg>();
   for (const it of realItems) {
@@ -296,7 +299,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       } else if (display && display !== manuCode) {
         accountingCode = display;
       }
-      const key = `${p.partId}|${accountingCode}|${manuCode ?? ""}|${name}`;
+      const unit: PartUnit = p.snapshotUnit ?? p.part.unit ?? PartUnit.KOM;
+      // unit ulazi u ključ kako se ne bi miješalo "6 kg" sa "1 kom".
+      const key = `${p.partId}|${accountingCode}|${manuCode ?? ""}|${name}|${unit}`;
       const existing = partsByKey.get(key);
       if (existing) {
         existing.quantity += p.quantity;
@@ -306,6 +311,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
           name,
           manufacturerCode: manuCode,
           quantity: p.quantity,
+          unit,
         });
       }
     }
@@ -323,6 +329,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         name: v.name,
         manufacturerCode: v.manufacturerCode,
         quantity: v.quantity,
+        unit: formatPartUnit(v.unit),
       })),
     ...realItems
       .filter(
@@ -335,6 +342,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         name: i.partsText!.trim(),
         manufacturerCode: null as string | null,
         quantity: null as number | null,
+        unit: null as string | null,
       })),
   ];
 

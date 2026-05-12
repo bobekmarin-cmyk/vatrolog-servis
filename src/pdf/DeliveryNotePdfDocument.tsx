@@ -29,6 +29,8 @@ export type DeliveryNotePartAggregated = {
   manufacturerCode?: string | null;
   /** Zbrojena količina ili null kad nije mjerljiva (manualni tekst). */
   quantity: number | null;
+  /** Mjerna jedinica ("kom" / "kg" / "L"). Null za tekstualne stavke bez količine. */
+  unit?: string | null;
 };
 
 /** Red tablice "Servisne naljepnice" (potrošnja pri zaključavanju naloga). */
@@ -527,7 +529,11 @@ export default function DeliveryNotePdfDocument({ data }: { data: DeliveryNotePd
                   ) : null}
                 </Text>
                 <Text style={[styles.td, styles.colPartQty]}>
-                  {p.quantity == null ? "—" : p.quantity}
+                  {p.quantity == null
+                    ? "—"
+                    : p.unit && p.unit.length > 0
+                      ? `${p.quantity} ${p.unit}`
+                      : String(p.quantity)}
                 </Text>
               </View>
             ))}

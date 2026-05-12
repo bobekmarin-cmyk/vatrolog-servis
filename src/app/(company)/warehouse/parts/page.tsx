@@ -45,6 +45,7 @@ export default async function WarehousePartsIndexPage() {
         name: true,
         active: true,
         defaultPrice: true,
+        unit: true,
       },
     }),
     prisma.partStock.findMany({

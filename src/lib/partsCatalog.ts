@@ -1,5 +1,22 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { PartUnit } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+
+/**
+ * Prikaz mjerne jedinice dijela: KOM → "kom", KG → "kg", L → "L".
+ * Koristi se u UI pickeru, otpremnici/PDF-u i tiskanim materijalima.
+ */
+export function formatPartUnit(unit: PartUnit | null | undefined): string {
+  switch (unit) {
+    case PartUnit.KG:
+      return "kg";
+    case PartUnit.L:
+      return "L";
+    case PartUnit.KOM:
+    default:
+      return "kom";
+  }
+}
 
 /**
  * =====================================================================
@@ -44,6 +61,7 @@ export type PartLite = {
   name: string;
   active: boolean;
   defaultPrice: Prisma.Decimal | null;
+  unit: PartUnit;
 };
 
 export type PartOverrideLite = {
@@ -218,6 +236,7 @@ export async function listAvailablePartsForCompany(
       name: true,
       active: true,
       defaultPrice: true,
+      unit: true,
       common: true,
     },
     orderBy: [{ active: "desc" }, { code: "asc" }, { name: "asc" }],
@@ -294,6 +313,7 @@ export async function listSettingsPartsForCompany(
       name: true,
       active: true,
       defaultPrice: true,
+      unit: true,
       types: { select: { extinguisherTypeId: true } },
     },
     orderBy: [{ companyId: "asc" }, { name: "asc" }, { code: "asc" }],
@@ -325,6 +345,7 @@ export type WorkOrderPartSnapshot = {
   snapshotManufacturerCode: string | null;
   snapshotName: string;
   snapshotIsCustom: boolean;
+  snapshotUnit: PartUnit;
   unitPrice: Prisma.Decimal | null;
 };
 
@@ -337,6 +358,7 @@ export function buildWorkOrderPartSnapshot(
     snapshotManufacturerCode: partManufacturerCode(part),
     snapshotName: part.name,
     snapshotIsCustom: part.companyId !== null,
+    snapshotUnit: part.unit,
     unitPrice: partEffectivePrice(part, override),
   };
 }
@@ -351,6 +373,7 @@ export function readPartDisplayFromUsage(
     snapshotManufacturerCode: string | null;
     snapshotName: string | null;
     snapshotIsCustom: boolean | null;
+    snapshotUnit?: PartUnit | null;
   },
   part: PartLite | null | undefined,
   override?: PartOverrideLite | null,
@@ -359,6 +382,7 @@ export function readPartDisplayFromUsage(
   manufacturerCode: string | null;
   name: string;
   isCustom: boolean;
+  unit: PartUnit;
 } {
   if (usage.snapshotCode || usage.snapshotName) {
     return {
@@ -367,6 +391,7 @@ export function readPartDisplayFromUsage(
         usage.snapshotManufacturerCode ?? (part ? partManufacturerCode(part) : null),
       name: usage.snapshotName ?? part?.name ?? "",
       isCustom: usage.snapshotIsCustom ?? (part?.companyId !== null && part?.companyId !== undefined),
+      unit: usage.snapshotUnit ?? part?.unit ?? PartUnit.KOM,
     };
   }
   if (part) {
@@ -375,9 +400,10 @@ export function readPartDisplayFromUsage(
       manufacturerCode: partManufacturerCode(part),
       name: part.name,
       isCustom: part.companyId !== null,
+      unit: part.unit,
     };
   }
-  return { code: "—", manufacturerCode: null, name: "—", isCustom: false };
+  return { code: "—", manufacturerCode: null, name: "—", isCustom: false, unit: PartUnit.KOM };
 }
 
 /**
@@ -391,4 +417,5 @@ export const partsCatalog = {
   partActiveForCompany,
   buildWorkOrderPartSnapshot,
   readPartDisplayFromUsage,
+  formatPartUnit,
 };

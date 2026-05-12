@@ -24,12 +24,15 @@ export type PlatformPartRow = {
   partActive: boolean;
 };
 
+export type PartUnitOption = "KOM" | "KG" | "L";
+
 export type CustomPartRow = {
   partId: string;
   manufacturerId: string;
   code: string;
   name: string;
   price: number | null;
+  unit: PartUnitOption;
   active: boolean;
   typeIds: string[];
 };
@@ -933,6 +936,7 @@ function CustomPartFormModal(props: {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [priceStr, setPriceStr] = useState("");
+  const [unit, setUnit] = useState<PartUnitOption>("KOM");
   const [active, setActive] = useState(true);
   const [scope, setScope] = useState<"all" | "specific">("all");
   const [typeIds, setTypeIds] = useState<string[]>([]);
@@ -950,6 +954,7 @@ function CustomPartFormModal(props: {
             )
           : "",
       );
+      setUnit(existing.unit);
       setActive(existing.active);
       const allIds = types.map((t) => t.id).sort();
       const existingIds = [...existing.typeIds].sort();
@@ -963,6 +968,7 @@ function CustomPartFormModal(props: {
       setCode("");
       setName("");
       setPriceStr("");
+      setUnit("KOM");
       setActive(true);
       setScope("all");
       setTypeIds([]);
@@ -1017,6 +1023,7 @@ function CustomPartFormModal(props: {
           code: code.trim(),
           name: name.trim(),
           price: parsePriceInput(priceStr),
+          unit,
           active,
           typeIds: finalTypeIds,
         }),
@@ -1110,6 +1117,22 @@ function CustomPartFormModal(props: {
               placeholder="npr. 12,50"
               disabled={saving}
             />
+          </div>
+          <div>
+            <label className="label" htmlFor="cp-unit">
+              Mjerna jedinica
+            </label>
+            <select
+              id="cp-unit"
+              className="select"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value as PartUnitOption)}
+              disabled={saving}
+            >
+              <option value="KOM">kom</option>
+              <option value="KG">kg</option>
+              <option value="L">L</option>
+            </select>
           </div>
           <div className="md:col-span-2 flex items-end">
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-800">

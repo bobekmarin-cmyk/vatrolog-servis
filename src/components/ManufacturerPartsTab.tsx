@@ -12,11 +12,14 @@ type ExType = {
   construction: { code: string; label: string; sortOrder: number } | null;
 };
 
+type PartUnit = "KOM" | "KG" | "L";
+
 type PartRow = {
   id: string;
   code: string;
   name: string;
   common: boolean;
+  unit: PartUnit;
   active: boolean;
   typeIds: string[];
 };
@@ -35,6 +38,7 @@ export default function ManufacturerPartsTab(props: {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [common, setCommon] = useState(false);
+  const [unit, setUnit] = useState<PartUnit>("KOM");
   const [typeIds, setTypeIds] = useState<string[]>([]);
 
   function resetForm() {
@@ -42,6 +46,7 @@ export default function ManufacturerPartsTab(props: {
     setCode("");
     setName("");
     setCommon(false);
+    setUnit("KOM");
     setTypeIds([]);
     setError(null);
   }
@@ -51,6 +56,7 @@ export default function ManufacturerPartsTab(props: {
     setCode(p.code);
     setName(p.name);
     setCommon(p.common);
+    setUnit(p.unit);
     setTypeIds([...p.typeIds]);
     setError(null);
   }
@@ -102,6 +108,7 @@ export default function ManufacturerPartsTab(props: {
           code,
           name,
           common,
+          unit,
           typeIds,
         }),
       },
@@ -163,7 +170,7 @@ export default function ManufacturerPartsTab(props: {
                 required
               />
             </div>
-            <div className="sm:col-span-6">
+            <div className="sm:col-span-5">
               <label className="label">Naziv</label>
               <input
                 className="input"
@@ -173,7 +180,19 @@ export default function ManufacturerPartsTab(props: {
                 required
               />
             </div>
-            <div className="sm:col-span-3 flex items-end">
+            <div className="sm:col-span-2">
+              <label className="label">Jedinica</label>
+              <select
+                className="select"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value as PartUnit)}
+              >
+                <option value="KOM">kom</option>
+                <option value="KG">kg</option>
+                <option value="L">L</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2 flex items-end">
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -181,7 +200,7 @@ export default function ManufacturerPartsTab(props: {
                   onChange={(e) => setCommon(e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm">Uobičajen (prikazan odmah)</span>
+                <span className="text-sm">Uobičajen</span>
               </label>
             </div>
           </div>
@@ -295,6 +314,7 @@ export default function ManufacturerPartsTab(props: {
               <tr>
                 <th className="p-3">Šifra</th>
                 <th className="p-3">Naziv</th>
+                <th className="p-3">Jed.</th>
                 <th className="p-3">Uobičajen</th>
                 <th className="p-3">Tipovi</th>
                 <th className="p-3">Status</th>
@@ -311,6 +331,9 @@ export default function ManufacturerPartsTab(props: {
                   <tr key={p.id} className="hover:bg-slate-50">
                     <td className="p-3 font-mono text-xs">{p.code}</td>
                     <td className="p-3">{p.name}</td>
+                    <td className="p-3 text-xs text-slate-600">
+                      {p.unit === "KG" ? "kg" : p.unit === "L" ? "L" : "kom"}
+                    </td>
                     <td className="p-3">
                       {p.common ? (
                         <span className="badge badge-success">DA</span>
@@ -359,7 +382,7 @@ export default function ManufacturerPartsTab(props: {
               })}
               {props.parts.length === 0 && (
                 <tr>
-                  <td className="p-6 text-slate-500 text-center" colSpan={6}>
+                  <td className="p-6 text-slate-500 text-center" colSpan={7}>
                     Nema dijelova.
                   </td>
                 </tr>

@@ -1,9 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
+import { PartUnit } from "@prisma/client";
 
 function badRequest(msg: string) {
   return NextResponse.json({ error: msg }, { status: 400 });
+}
+
+function parseUnit(value: unknown): PartUnit {
+  if (value === "KG" || value === "L" || value === "KOM") return value;
+  return PartUnit.KOM;
 }
 
 export async function POST(
@@ -19,12 +25,14 @@ export async function POST(
     code?: string;
     name?: string;
     common?: boolean;
+    unit?: string;
     typeIds?: string[];
   };
 
   const code = String(body.code ?? "").trim();
   const name = String(body.name ?? "").trim();
   const common = !!body.common;
+  const unit = parseUnit(body.unit);
   const typeIds = Array.isArray(body.typeIds) ? body.typeIds.filter((x) => !!x) : [];
 
   if (!code) return badRequest("Šifra je obavezna.");
@@ -56,7 +64,7 @@ export async function POST(
       await prisma.$transaction([
         prisma.part.update({
           where: { id: body.id },
-          data: { code, name, common },
+          data: { code, name, common, unit },
         }),
         prisma.partExtinguisherType.deleteMany({ where: { partId: body.id } }),
         prisma.partExtinguisherType.createMany({
@@ -74,6 +82,7 @@ export async function POST(
         code,
         name,
         common,
+        unit,
         active: true,
         types: {
           create: typeIds.map((tid) => ({ extinguisherTypeId: tid })),

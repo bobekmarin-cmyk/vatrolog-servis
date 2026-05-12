@@ -158,6 +158,7 @@ export default async function PartsCatalogSettingsPage({
       code: p.part.code,
       name: p.part.name,
       price: p.part.defaultPrice ? Number(p.part.defaultPrice) : null,
+      unit: p.part.unit,
       active: p.part.active,
       typeIds: p.part.types.map((t) => t.extinguisherTypeId),
     }));

@@ -25,13 +25,20 @@ export default function InternalInspectionSection(props: Props) {
 /* ----------------------------- Shared pieces ------------------------------ */
 
 function Header({ ruleLabel }: { ruleLabel: string }) {
+  const info =
+    `Pravilo: ${ruleLabel}\nRok UP-a: do kraja istog mjeseca kao periodični (PP).`;
+
   return (
-    <div className="min-w-0">
+    <div className="flex min-w-0 items-center gap-2">
       <div className="text-sm font-semibold text-slate-900">Unutarnji pregled (UP)</div>
-      <div className="mt-1 text-xs text-slate-600">
-        <span className="font-medium">Pravilo:</span> {ruleLabel}
-        <span className="mt-1 block">Rok UP-a: do kraja istog mjeseca kao periodični (PP).</span>
-      </div>
+      <button
+        type="button"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-indigo-200 bg-white text-[10px] font-bold leading-none text-indigo-700 hover:bg-indigo-50"
+        title={info}
+        aria-label={info}
+      >
+        i
+      </button>
     </div>
   );
 }
@@ -217,19 +224,18 @@ function KnownUpPanel(props: Props) {
       : (props.existingNextInternalYear ?? props.computedFirstUpYear);
 
   return (
-    <section className="rounded-2xl bg-indigo-50/60 p-4 ring-1 ring-indigo-100">
+    <section className="surface p-4">
       <Header ruleLabel={props.ruleLabel} />
 
       {internalDone ? (
-        <div className="mt-3 rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-indigo-900">
-            <span aria-hidden className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-xs">
+        <div className="mt-3 rounded-xl border border-indigo-200 bg-white px-3 py-2.5">
+          <div className="flex items-start gap-2 text-sm text-indigo-950">
+            <span aria-hidden className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs text-white">
               ✓
             </span>
-            UP je odrađen ovim servisom
-          </div>
-          <div className="mt-1 text-xs text-indigo-900">
-            Idući UP: <span className="font-semibold tabular-nums">{submittedYear}.</span>
+            <div>
+              <div className="font-semibold">UP unos potvrđen</div>
+            </div>
           </div>
         </div>
       ) : props.serviceYear >= submittedYear ? (
@@ -349,24 +355,21 @@ function FirstEntryPanel(props: Props) {
   const hiddenYearValue = confirmed ? String(yearNum) : "";
 
   return (
-    <section className="rounded-2xl bg-indigo-50/60 p-4 ring-1 ring-indigo-100">
+    <section className="surface p-4">
       <Header ruleLabel={props.ruleLabel} />
 
       {confirmed ? (
-        <div className="mt-3 rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-indigo-900">
+        <div className="mt-3 rounded-xl border border-indigo-200 bg-white px-3 py-2.5">
+          <div className="flex items-start gap-2 text-sm text-indigo-950">
             <span
               aria-hidden
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-xs"
+              className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs text-white"
             >
               ✓
             </span>
-            UP unos potvrđen
-          </div>
-          <div className="mt-1 text-xs text-indigo-900">
-            UP u ovom servisu:{" "}
-            <span className="font-semibold">{internalDone ? "DA" : "NE"}</span> · Idući UP:{" "}
-            <span className="font-semibold tabular-nums">{yearNum}.</span>
+            <div>
+              <div className="font-semibold">UP unos potvrđen</div>
+            </div>
           </div>
         </div>
       ) : (

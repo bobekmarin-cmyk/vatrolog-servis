@@ -13,7 +13,7 @@ type Props = {
   onClose?: () => void;
   closeOnBackdrop?: boolean;
   closeOnEsc?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   header?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -58,6 +58,8 @@ function sizeClasses(size: NonNullable<Props["size"]>): string {
       return "max-w-sm";
     case "lg":
       return "max-w-lg";
+    case "xl":
+      return "max-w-5xl";
     case "md":
     default:
       return "max-w-md";

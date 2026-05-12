@@ -75,6 +75,7 @@ export default async function PartStockCardPage({
     name: part.name,
     active: part.active,
     defaultPrice: part.defaultPrice,
+    unit: part.unit,
   };
   const displayCode = partDisplayCode(partLite, override);
   const mfrCode = partManufacturerCode(partLite);

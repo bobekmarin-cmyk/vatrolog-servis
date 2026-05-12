@@ -361,6 +361,9 @@ export default function AddExtinguisherForm(props: {
             type="number"
             className="input"
             required={internalCode.trim().length === 0}
+            min={1900}
+            max={2099}
+            pattern="(19|20)[0-9]{2}"
             value={productionYear}
             onChange={(e) => setProductionYear(e.target.value)}
             disabled={lookup.status === "found"}

@@ -11,6 +11,7 @@ import {
 } from "@/lib/partsCatalog";
 
 import { redirectRelative } from "@/lib/httpRedirect";
+import { todayStart } from "@/lib/servicerStatus";
 /** Zadnji dan istog mjeseca kao referenceDate, ali u danoj godini (npr. za usklađivanje UP roka s PP mjesecom). */
 function sameMonthEndAs(referenceDate: Date, year: number): Date {
   const month = referenceDate.getMonth();
@@ -76,6 +77,34 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    const servicerId = String(form.get("servicerId") || "").trim();
+    const serviceLocationText = String(form.get("serviceLocationText") || "").trim();
+
+    if (!servicerId) {
+      return NextResponse.json({ error: "Odaberite servisera i za rashod." }, { status: 400 });
+    }
+
+    const servicerOk = await prisma.user.findFirst({
+      where: {
+        id: servicerId,
+        companyId: session.companyId,
+        active: true,
+        role: "SERVISER",
+        activatedAt: { gte: todayStart() },
+      },
+      select: { id: true },
+    });
+    if (!servicerOk) {
+      return NextResponse.json(
+        {
+          error:
+            "Serviser nije valjan ili nije prijavljen za rad danas. Odaberite drugog servisera prije rashoda.",
+        },
+        { status: 400 }
+      );
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.extinguisher.update({
         where: { id: ex.id },
@@ -90,9 +119,9 @@ export async function POST(
         data: {
           servicedAt: serviceDate,
           labelNumber: null,
-          servicerId: null,
+          servicerId,
           partsText: null,
-          serviceLocationText: null,
+          serviceLocationText: serviceLocationText || null,
           periodicDone: false,
           internalDone: false,
           internalDoneAt: null,
@@ -116,6 +145,19 @@ export async function POST(
   const partIdsRaw = form.getAll("partIds").map((x) => String(x ?? "").trim()).filter(Boolean);
   const partIds = Array.from(new Set(partIdsRaw));
 
+  const partQuantities = new Map<string, number>();
+  for (const pid of partIds) {
+    const raw = String(form.get(`partQty_${pid}`) ?? "1").trim();
+    const n = Math.floor(Number(raw.replace(",", ".")));
+    if (!Number.isFinite(n) || n < 1 || n > 9999) {
+      return NextResponse.json(
+        { error: `Količina za odabrani dio mora biti cijeli broj između 1 i 9999.` },
+        { status: 400 },
+      );
+    }
+    partQuantities.set(pid, n);
+  }
+
   const customServiceIdsRaw = form
     .getAll("customServiceIds")
     .map((x) => String(x ?? "").trim())
@@ -130,11 +172,23 @@ export async function POST(
   }
 
   const servicerOk = await prisma.user.findFirst({
-    where: { id: servicerId, companyId: session.companyId, active: true },
+    where: {
+      id: servicerId,
+      companyId: session.companyId,
+      active: true,
+      role: "SERVISER",
+      activatedAt: { gte: todayStart() },
+    },
     select: { id: true },
   });
   if (!servicerOk) {
-    return NextResponse.json({ error: "Serviser nije pronađen (ili nije u tvojoj tvrtki)." }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          "Serviser nije pronađen, nije u ulozi servisera, nije prijavljen za rad danas ili nije aktivan.",
+      },
+      { status: 400 }
+    );
   }
 
   // duplikat naljepnice (baza ima @unique ali ostavimo lijep error)
@@ -172,6 +226,7 @@ export async function POST(
             name: true,
             active: true,
             defaultPrice: true,
+            unit: true,
           },
         })
       : [];
@@ -341,11 +396,13 @@ export async function POST(
             companyId: session.companyId,
             workOrderItemId: itemId,
             partId,
+            quantity: partQuantities.get(partId) ?? 1,
             unitPrice: snap.unitPrice,
             snapshotCode: snap.snapshotCode,
             snapshotManufacturerCode: snap.snapshotManufacturerCode,
             snapshotName: snap.snapshotName,
             snapshotIsCustom: snap.snapshotIsCustom,
+            snapshotUnit: snap.snapshotUnit,
           };
         }),
         skipDuplicates: true,

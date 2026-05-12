@@ -46,6 +46,12 @@ enum CapacityUnit {
   L
 }
 
+enum PartUnit {
+  KOM
+  KG
+  L
+}
+
 enum InternalRuleMode {
   FIXED // uvijek X godina (Total)
   AGE_BASED // do N godina => Y, starije => Z (Pastor)
@@ -612,6 +618,10 @@ model Part {
   common Boolean @default(false)
   active Boolean @default(true)
 
+  /// Mjerna jedinica dijela. KOM = komad (default), KG = kilogram, L = litra.
+  /// Koristi se za prikaz količine na servisu i otpremnici (npr. "6 kg", "1 kom").
+  unit PartUnit @default(KOM)
+
   /// Cijena dijela u EUR, koristi se kao default na nalogu.
   defaultPrice Decimal? @db.Decimal(10, 2)
 
@@ -1005,6 +1015,8 @@ model WorkOrderItemPart {
   snapshotName             String?
   /// Snapshot izvora dijela: true = vlastiti tenant dio, false = platform dio.
   snapshotIsCustom         Boolean?
+  /// Snapshot mjerne jedinice dijela u trenutku servisa.
+  snapshotUnit             PartUnit?
 
   createdAt DateTime @default(now())
 

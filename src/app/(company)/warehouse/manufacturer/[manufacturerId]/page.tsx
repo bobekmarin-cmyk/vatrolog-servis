@@ -57,6 +57,7 @@ export default async function ManufacturerWarehousePage({
       name: true,
       active: true,
       defaultPrice: true,
+      unit: true,
       stocks: { where: { companyId: session.companyId } },
     },
   });

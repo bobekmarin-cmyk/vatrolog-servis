@@ -15,13 +15,20 @@ export async function POST(
   const manufacturerId = String(form.get("manufacturerId") || "").trim();
   const extinguisherTypeId = String(form.get("extinguisherTypeId") || "").trim();
   const serialNumber = String(form.get("serialNumber") || "").trim();
-  const productionYear = Number(form.get("productionYear") || 0);
+  const productionYearRaw = String(form.get("productionYear") || "").trim();
+  const productionYear = Number(productionYearRaw);
   const typeDescription = String(form.get("typeDescription") || "").trim();
   const serviceLocationText = String(form.get("serviceLocationText") || "").trim();
 
   if (!manufacturerId || !extinguisherTypeId || !serialNumber || !productionYear) {
     return NextResponse.json(
       { error: "Proizvođač, tip aparata, serijski broj i godina proizvodnje su obavezni." },
+      { status: 400 }
+    );
+  }
+  if (!/^(19|20)\d{2}$/.test(productionYearRaw)) {
+    return NextResponse.json(
+      { error: "Godina proizvodnje mora biti u formatu 19xx ili 20xx." },
       { status: 400 }
     );
   }
