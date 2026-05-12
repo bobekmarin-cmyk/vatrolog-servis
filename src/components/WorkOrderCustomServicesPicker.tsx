@@ -92,54 +92,51 @@ export default function WorkOrderCustomServicesPicker(props: {
         </button>
       </div>
 
-      <div className="mt-3 max-h-[200px] overflow-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="border-b border-slate-200 px-3 py-2 text-left">Naziv</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Šifra</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Količina</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Cijena</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-right">Akcije</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selected.map((s) => (
-              <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
-                <td className="px-3 py-2 text-slate-900">{s.name}</td>
-                <td className="px-3 py-2 font-mono text-xs whitespace-nowrap text-slate-600">
-                  {s.code ?? "—"}
-                </td>
-                <td className="px-3 py-2 whitespace-nowrap text-slate-700">
-                  <span className="font-medium text-slate-900">1</span>{" "}
-                  <span className="text-xs text-slate-500">kom</span>
-                </td>
-                <td className="px-3 py-2 whitespace-nowrap">
-                  {s.price !== null ? `${s.price.toFixed(2)} €` : "—"}
-                </td>
-                <td className="px-3 py-2 text-right whitespace-nowrap">
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => remove(s.id)}
-                    aria-label={`Ukloni ${s.name}`}
-                    title="Ukloni"
-                  >
-                    <TrashIcon />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {selected.length === 0 && (
+      {selected.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-500">Nema odabranih dodatnih usluga.</p>
+      ) : (
+        <div className="mt-3 max-h-[200px] overflow-auto rounded-xl border border-slate-200 bg-white">
+          <table className="w-full border-collapse text-sm">
+            <thead className="bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <td className="p-4 text-slate-500" colSpan={5}>
-                  Nema odabranih dodatnih usluga.
-                </td>
+                <th className="border-b border-slate-200 px-3 py-2 text-left">Naziv</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Šifra</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Količina</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Cijena</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-right">Akcije</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {selected.map((s) => (
+                <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
+                  <td className="px-3 py-2 text-slate-900">{s.name}</td>
+                  <td className="px-3 py-2 font-mono text-xs whitespace-nowrap text-slate-600">
+                    {s.code ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-slate-700">
+                    <span className="font-medium text-slate-900">1</span>{" "}
+                    <span className="text-xs text-slate-500">kom</span>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {s.price !== null ? `${s.price.toFixed(2)} €` : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => remove(s.id)}
+                      aria-label={`Ukloni ${s.name}`}
+                      title="Ukloni"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <ServicesSelectionModal
         open={pickerOpen}

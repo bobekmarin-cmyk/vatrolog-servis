@@ -36,26 +36,73 @@ export default async function WorkOrderReportPage({ params }: { params: Promise<
 
   const order = await prisma.workOrder.findFirst({
     where: { id, companyId: session.companyId },
-    include: {
-      customer: true,
+    select: {
+      id: true,
+      orderNumber: true,
+      status: true,
+      receivedAt: true,
+      dueAt: true,
+      receivedQty: true,
+      note: true,
+      deliveryMode: true,
+      startedAt: true,
+      finishedAt: true,
+      lockedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      customer: { select: { shortName: true, name: true, oib: true, address: true } },
       department: { select: { name: true } },
       serviceLocation: { select: { kind: true, label: true } },
       createdByAccountUser: { select: { username: true } },
       lockedBy: { select: { fullName: true } },
       items: {
         orderBy: { createdAt: "asc" },
-        include: {
+        select: {
+          id: true,
+          isPlaceholder: true,
+          createdAt: true,
+          updatedAt: true,
+          servicedAt: true,
+          labelNumber: true,
+          internalDone: true,
+          internalDoneAt: true,
+          nextPeriodicDue: true,
+          nextInternalDue: true,
+          serviceLocationText: true,
+          partsText: true,
+          serviceNote: true,
           servicer: { select: { fullName: true } },
           extinguisher: {
-            include: { manufacturer: true, type: { include: { agent: true, construction: true } } },
+            select: {
+              internalCode: true,
+              serialNumber: true,
+              productionYear: true,
+              status: true,
+              scrapReason: true,
+              scrappedAt: true,
+              manufacturer: { select: { name: true, displayName: true } },
+              type: {
+                select: {
+                  name: true,
+                  code: true,
+                  agent: { select: { code: true, label: true, symbol: true } },
+                  construction: { select: { code: true, label: true } },
+                },
+              },
+            },
           },
           parts: {
-            include: { part: { select: { name: true, code: true } } },
+            select: {
+              snapshotCode: true,
+              snapshotName: true,
+              part: { select: { name: true, code: true } },
+            },
           },
         },
       },
       documentLogs: {
         orderBy: { createdAt: "asc" },
+        select: { docType: true, createdAt: true },
       },
     },
   });

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useDialog } from "@/components/ui/useDialog";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function ReceiptFormClient({
   action,
@@ -76,10 +77,18 @@ export default function ReceiptFormClient({
   }
 
   return (
-    <form id={formId} className={className} onSubmit={onSubmit} aria-busy={saving}>
-      <fieldset disabled={saving} className="space-y-4">
-        {children}
-      </fieldset>
-    </form>
+    <>
+      {saving ? (
+        <LoadingOverlay
+          title="Spremam radni nalog..."
+          message="Molimo pričekajte, otvara se servisni nalog."
+        />
+      ) : null}
+      <form id={formId} className={className} onSubmit={onSubmit} aria-busy={saving}>
+        <fieldset disabled={saving} className="space-y-4">
+          {children}
+        </fieldset>
+      </form>
+    </>
   );
 }

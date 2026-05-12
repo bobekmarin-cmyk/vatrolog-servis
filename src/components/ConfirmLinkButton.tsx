@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function ConfirmLinkButton({
   href,
@@ -42,6 +43,12 @@ export default function ConfirmLinkButton({
 
   return (
     <>
+      {navigating ? (
+        <LoadingOverlay
+          title="Otvaram servis..."
+          message="Molimo pričekajte, otvara se stranica za servisiranje aparata."
+        />
+      ) : null}
       <button
         type="button"
         disabled={disabled}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ExtinguisherTypeCombobox from "@/components/ExtinguisherTypeCombobox";
+import PendingSubmitForm from "@/components/PendingSubmitForm";
 import QRCode from "qrcode";
 
 type Manufacturer = {
@@ -189,10 +190,12 @@ export default function AddExtinguisherForm(props: {
   }, [extinguisherTypeId, internalCode, lookup.status]);
 
   return (
-    <form
+    <PendingSubmitForm
       className="surface space-y-4 p-4"
       action={`/api/work-orders/${orderId}/items/${itemId}/fill`}
       method="post"
+      pendingTitle="Spremam aparat..."
+      pendingMessage="Molimo pričekajte, otvara se servisni nalog."
     >
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
@@ -397,6 +400,6 @@ export default function AddExtinguisherForm(props: {
           Odustani
         </Link>
       </div>
-    </form>
+    </PendingSubmitForm>
   );
 }

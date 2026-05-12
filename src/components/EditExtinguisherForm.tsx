@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import ExtinguisherTypeCombobox from "@/components/ExtinguisherTypeCombobox";
+import PendingSubmitForm from "@/components/PendingSubmitForm";
 
 type Manufacturer = {
   id: string;
@@ -57,10 +58,12 @@ export default function EditExtinguisherForm(props: {
     : types;
 
   return (
-    <form
+    <PendingSubmitForm
       className="surface space-y-4 p-4"
       action={`/api/work-orders/${orderId}/items/${itemId}/update-extinguisher`}
       method="post"
+      pendingTitle="Spremam promjene..."
+      pendingMessage="Molimo pričekajte, otvara se servisni nalog."
     >
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
@@ -162,6 +165,6 @@ export default function EditExtinguisherForm(props: {
           Odustani
         </Link>
       </div>
-    </form>
+    </PendingSubmitForm>
   );
 }

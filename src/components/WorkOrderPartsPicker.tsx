@@ -138,67 +138,64 @@ export default function WorkOrderPartsPicker(props: {
         </div>
       </div>
 
-      <div className="mt-3 max-h-[260px] overflow-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Šifra</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Šifra proizvođača</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left">Naziv</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Količina</th>
-              <th className="border-b border-slate-200 px-3 py-2 text-right">Akcije</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selectedRows.map(({ id, qty, part }) => (
-              <tr key={id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
-                <td className="px-3 py-2 font-mono text-xs font-semibold whitespace-nowrap text-slate-900">
-                  {part.code}
-                </td>
-                <td className="px-3 py-2 font-mono text-xs whitespace-nowrap text-slate-600">
-                  {part.manufacturerCode ?? "—"}
-                </td>
-                <td className="px-3 py-2 text-slate-900">
-                  <div className="clamp-2 max-w-[520px]" title={part.name}>
-                    {part.name}
-                  </div>
-                </td>
-                <td className="px-3 py-2 whitespace-nowrap text-slate-700">
-                  <span className="font-medium text-slate-900">{qty}</span>{" "}
-                  <span className="text-xs text-slate-500">{formatPartUnit(part.unit)}</span>
-                </td>
-                <td className="px-3 py-2 text-right whitespace-nowrap">
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                    onClick={() => setEditingQty({ id, qty })}
-                    aria-label={`Uredi količinu za ${part.name}`}
-                    title="Uredi količinu"
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => remove(id)}
-                    aria-label={`Ukloni ${part.name}`}
-                    title="Ukloni"
-                  >
-                    <TrashIcon />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {selectedRows.length === 0 && (
+      {selectedRows.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-500">Nema odabranih dijelova.</p>
+      ) : (
+        <div className="mt-3 max-h-[260px] overflow-auto rounded-xl border border-slate-200 bg-white">
+          <table className="w-full border-collapse text-sm">
+            <thead className="bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <td className="p-4 text-slate-500" colSpan={5}>
-                  Nema odabranih dijelova.
-                </td>
+                <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Šifra</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Šifra proizvođača</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-left">Naziv</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-left whitespace-nowrap">Količina</th>
+                <th className="border-b border-slate-200 px-3 py-2 text-right">Akcije</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {selectedRows.map(({ id, qty, part }) => (
+                <tr key={id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
+                  <td className="px-3 py-2 font-mono text-xs font-semibold whitespace-nowrap text-slate-900">
+                    {part.code}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs whitespace-nowrap text-slate-600">
+                    {part.manufacturerCode ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 text-slate-900">
+                    <div className="clamp-2 max-w-[520px]" title={part.name}>
+                      {part.name}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-slate-700">
+                    <span className="font-medium text-slate-900">{qty}</span>{" "}
+                    <span className="text-xs text-slate-500">{formatPartUnit(part.unit)}</span>
+                  </td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                      onClick={() => setEditingQty({ id, qty })}
+                      aria-label={`Uredi količinu za ${part.name}`}
+                      title="Uredi količinu"
+                    >
+                      <EditIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => remove(id)}
+                      aria-label={`Ukloni ${part.name}`}
+                      title="Ukloni"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <PartsSelectionModal
         open={pickerOpen}
@@ -233,21 +230,28 @@ function PartsSelectionModal(props: {
   const { open, onClose, parts, commonParts, initialSelected, onSave } = props;
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState<Map<string, number>>(() => new Map(initialSelected));
+  const [quantities, setQuantities] = useState<Map<string, number>>(() => new Map(initialSelected));
   const commonIds = useMemo(() => new Set(commonParts.map((p) => p.id)), [commonParts]);
 
   useEffect(() => {
     if (open) {
       setSearch("");
       setDraft(new Map(initialSelected));
+      setQuantities(new Map(initialSelected));
     }
   }, [open, initialSelected]);
 
   function getQty(id: string): number {
-    return draft.get(id) ?? DEFAULT_QTY;
+    return quantities.get(id) ?? draft.get(id) ?? DEFAULT_QTY;
   }
 
   function setModalQty(id: string, raw: string) {
     const next = Math.max(1, Math.floor(Number(raw) || DEFAULT_QTY));
+    setQuantities((prev) => {
+      const n = new Map(prev);
+      n.set(id, next);
+      return n;
+    });
     setDraft((prev) => {
       const n = new Map(prev);
       if (n.has(id)) n.set(id, next);
@@ -259,7 +263,7 @@ function PartsSelectionModal(props: {
     setDraft((prev) => {
       if (prev.has(id)) return prev;
       const n = new Map(prev);
-      n.set(id, DEFAULT_QTY);
+      n.set(id, getQty(id));
       return n;
     });
   }
@@ -336,7 +340,6 @@ function PartsSelectionModal(props: {
                 value={getQty(p.id)}
                 onChange={(e) => setModalQty(p.id, e.target.value)}
                 className="input h-8 w-16 px-2 text-right text-sm"
-                disabled={!already}
                 aria-label={`Količina za ${p.name}`}
               />
               <span className="text-xs text-slate-500">{formatPartUnit(p.unit)}</span>

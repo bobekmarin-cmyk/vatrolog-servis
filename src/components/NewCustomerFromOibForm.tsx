@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import CustomerDepartmentsFields from "@/components/CustomerDepartmentsFields";
 import { useDialog } from "@/components/ui/useDialog";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 type RegistryResponse = {
   oib: string;
@@ -244,6 +245,17 @@ export default function NewCustomerFromOibForm({
   }
 
   return (
+    <>
+    {submitting ? (
+      <LoadingOverlay
+        title="Spremam kupca..."
+        message={
+          from === "work-order-new"
+            ? "Molimo pričekajte, vraćamo vas na novi radni nalog."
+            : "Molimo pričekajte, otvara se popis kupaca."
+        }
+      />
+    ) : null}
     <form ref={formRef} className="surface p-4 space-y-4" action="/api/customers/create" method="post" onSubmit={handleSubmit}>
       <input type="hidden" name="type" value="LEGAL" />
       {from ? <input type="hidden" name="from" value={from} /> : null}
@@ -498,5 +510,6 @@ export default function NewCustomerFromOibForm({
         </Link>
       </div>
     </form>
+    </>
   );
 }

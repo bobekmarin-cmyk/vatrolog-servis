@@ -16,7 +16,12 @@ export async function POST(
 
   const order = await prisma.workOrder.findUnique({
     where: { id },
-    include: { items: true },
+    select: {
+      id: true,
+      companyId: true,
+      status: true,
+      receivedQty: true,
+    },
   });
   if (!order) return NextResponse.json({ error: "Nalog nije pronađen." }, { status: 404 });
   if (order.companyId !== session.companyId) return NextResponse.json({ error: "Nemate ovlasti." }, { status: 403 });

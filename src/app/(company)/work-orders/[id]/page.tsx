@@ -16,6 +16,8 @@ import ScanExtinguisherModal from "@/components/ScanExtinguisherModal";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 import PdfActionButton from "@/components/PdfActionButton";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
+import PendingSubmitForm from "@/components/PendingSubmitForm";
+import PendingNavigationLink from "@/components/PendingNavigationLink";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -189,22 +191,39 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             gmailConnected={gmailConnected}
           />
           {session.role === "ADMIN" && (
-            <Link className="btn btn-outline px-4" href={`/work-orders/${order.id}/report`}>
+            <PendingNavigationLink
+              className="btn btn-outline px-4"
+              href={`/work-orders/${order.id}/report`}
+              pendingTitle="Otvaram report..."
+              pendingMessage="Molimo pričekajte, priprema se pregled radnog naloga."
+            >
               Report
-            </Link>
+            </PendingNavigationLink>
           )}
           {!isLocked ? (
-            <form action={`/api/work-orders/${order.id}/lock`} method="post" className="inline">
+            <PendingSubmitForm
+              action={`/api/work-orders/${order.id}/lock`}
+              method="post"
+              className="inline"
+              pendingTitle="Zaključavam nalog..."
+              pendingMessage="Molimo pričekajte, pripremaju se završni podaci naloga."
+            >
               <button className="btn btn-primary px-4" type="submit">
                 Zaključi nalog
               </button>
-            </form>
+            </PendingSubmitForm>
           ) : (
-            <form action={`/api/work-orders/${order.id}/unlock`} method="post" className="inline">
+            <PendingSubmitForm
+              action={`/api/work-orders/${order.id}/unlock`}
+              method="post"
+              className="inline"
+              pendingTitle="Otključavam nalog..."
+              pendingMessage="Molimo pričekajte, nalog se priprema za izmjene."
+            >
               <button className="btn btn-outline px-4 text-orange-700" type="submit">
                 Otključaj
               </button>
-            </form>
+            </PendingSubmitForm>
           )}
         </div>
       </div>

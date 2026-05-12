@@ -5,6 +5,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { useDialog } from "@/components/ui/useDialog";
 import Modal from "@/components/ui/Modal";
 import { ServiceScrapModeContext } from "@/components/ServiceScrapModeContext";
+import { showLoadingOverlay } from "@/lib/showLoadingOverlay";
 
 export default function ServiceFormWithScrap(props: {
   action: string;
@@ -141,8 +142,12 @@ export default function ServiceFormWithScrap(props: {
     submittingRef.current = true;
     if (submitButtonRef.current) {
       submitButtonRef.current.disabled = true;
-      submitButtonRef.current.textContent = "Spremam...";
+      submitButtonRef.current.textContent = scrap ? "Rashodujem..." : "Spremam i otvaram nalog...";
     }
+    const removePendingOverlay = showLoadingOverlay({
+      title: scrap ? "Rashodujem aparat..." : "Spremam servis...",
+      message: "Molimo pričekajte, otvara se servisni nalog.",
+    });
     try {
       const res = await fetch(action, {
         method: "POST",
@@ -169,6 +174,7 @@ export default function ServiceFormWithScrap(props: {
       });
     } finally {
       submittingRef.current = false;
+      removePendingOverlay();
       if (submitButtonRef.current) {
         submitButtonRef.current.disabled = false;
         submitButtonRef.current.textContent = scrap ? "Rashoduj aparat" : "Spremi servis";
