@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  decryptToken,
-  encryptToken,
-  refreshAccessToken,
-  sendGmail,
-} from "@/lib/gmail";
-import { renderTemplateHtml, renderSubject, type RenderVars, type TemplateFields } from "@/lib/emailTemplates";
+  getTenantMailStatus,
+  sendTenantMail,
+  TenantMailNotConfiguredError,
+  TenantMailSendError,
+} from "@/lib/tenantMail";
+import {
+  renderTemplateHtml,
+  renderSubject,
+  type RenderVars,
+  type TemplateFields,
+} from "@/lib/emailTemplates";
 import { customerDisplayName } from "@/lib/customerDisplay";
 
 export async function POST(req: NextRequest) {
@@ -47,27 +52,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: {
-      name: true,
-      gmailAccessToken: true,
-      gmailRefreshToken: true,
-      gmailEmail: true,
-    },
-  });
+  const [company, customer, mailStatus] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: session.companyId },
+      select: { name: true },
+    }),
+    prisma.customer.findFirst({
+      where: { id: customerId, companyId: session.companyId },
+      select: { id: true, name: true, shortName: true, email: true },
+    }),
+    getTenantMailStatus(session.companyId),
+  ]);
 
-  if (!company?.gmailAccessToken || !company.gmailRefreshToken || !company.gmailEmail) {
-    return NextResponse.json({ error: "Gmail nije povezan" }, { status: 400 });
+  if (!company) {
+    return NextResponse.json({ error: "Tvrtka ne postoji" }, { status: 404 });
   }
-
-  const customer = await prisma.customer.findFirst({
-    where: { id: customerId, companyId: session.companyId },
-    select: { id: true, name: true, shortName: true, email: true },
-  });
-
   if (!customer) {
     return NextResponse.json({ error: "Kupac ne postoji" }, { status: 404 });
+  }
+  if (!mailStatus.activeProvider) {
+    return NextResponse.json(
+      { error: "Mail nije konfiguriran. Povežite Gmail ili SMTP u Postavke → Postavke maila." },
+      { status: 400 },
+    );
   }
 
   const recipientEmail = (toEmailOverride ?? customer.email ?? "").trim();
@@ -118,64 +125,35 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  let accessToken: string;
   try {
-    accessToken = decryptToken(company.gmailAccessToken);
-  } catch {
-    return NextResponse.json({ error: "Greška dekriptiranja tokena" }, { status: 500 });
-  }
+    await sendTenantMail({
+      companyId: session.companyId,
+      to: recipientEmail,
+      subject,
+      html,
+    });
+  } catch (err) {
+    const errMsg =
+      err instanceof TenantMailSendError || err instanceof TenantMailNotConfiguredError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : String(err);
 
-  async function trySend() {
-    await sendGmail(accessToken, company!.gmailEmail!, recipientEmail, subject, html);
-  }
-
-  try {
-    await trySend();
-  } catch (e: any) {
-    if (e.message?.includes("401") || e.message?.includes("403")) {
-      try {
-        const refreshToken = decryptToken(company.gmailRefreshToken!);
-        const newTokens = await refreshAccessToken(refreshToken);
-        accessToken = newTokens.access_token;
-
-        await prisma.company.update({
-          where: { id: session.companyId },
-          data: { gmailAccessToken: encryptToken(accessToken) },
-        });
-
-        await trySend();
-      } catch (refreshErr: any) {
-        await prisma.emailLog.create({
-          data: {
-            companyId: session.companyId,
-            customerId: customer.id,
-            toEmail: recipientEmail,
-            subject,
-            htmlBody: html,
-            month,
-            itemCount,
-            status: "FAILED",
-            error: refreshErr.message?.slice(0, 500),
-          },
-        });
-        return NextResponse.json({ error: "Slanje neuspješno: " + (refreshErr.message ?? "") }, { status: 500 });
-      }
-    } else {
-      await prisma.emailLog.create({
-        data: {
-          companyId: session.companyId,
-          customerId: customer.id,
-          toEmail: recipientEmail,
-          subject,
-          htmlBody: html,
-          month,
-          itemCount,
-          status: "FAILED",
-          error: e.message?.slice(0, 500),
-        },
-      });
-      return NextResponse.json({ error: "Slanje neuspješno: " + (e.message ?? "") }, { status: 500 });
-    }
+    await prisma.emailLog.create({
+      data: {
+        companyId: session.companyId,
+        customerId: customer.id,
+        toEmail: recipientEmail,
+        subject,
+        htmlBody: html,
+        month,
+        itemCount,
+        status: "FAILED",
+        error: errMsg.slice(0, 500),
+      },
+    });
+    return NextResponse.json({ error: "Slanje neuspješno: " + errMsg }, { status: 500 });
   }
 
   await prisma.emailLog.create({

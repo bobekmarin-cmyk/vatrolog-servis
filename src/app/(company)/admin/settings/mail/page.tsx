@@ -1,9 +1,9 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import GmailConnectSection from "@/components/GmailConnectSection";
+import MailIntegrationsSection from "@/components/MailIntegrationsSection";
 import EmailTemplatesSettings from "@/components/EmailTemplatesSettings";
 import { ensureDefaultTemplates } from "@/lib/emailTemplates";
+import { getTenantMailStatus } from "@/lib/tenantMail";
 
 export default async function MailSettingsPage({
   searchParams,
@@ -18,16 +18,10 @@ export default async function MailSettingsPage({
   const gmailStatus = sp.gmail ?? null;
   const gmailReason = sp.reason ?? null;
 
-  const company = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: {
-      gmailEmail: true,
-      gmailConnectedAt: true,
-    },
-  });
-  if (!company) redirect("/");
-
-  const templates = await ensureDefaultTemplates(session.companyId);
+  const [mailStatus, templates] = await Promise.all([
+    getTenantMailStatus(session.companyId),
+    ensureDefaultTemplates(session.companyId),
+  ]);
 
   return (
     <div className="w-full space-y-6">
@@ -42,43 +36,37 @@ export default async function MailSettingsPage({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start md:gap-10">
-        <section className="min-w-0 space-y-3">
-          <div>
-            <h2 className="h1">Gmail integracija</h2>
-            <p className="subtle mt-1">
-              Povežite Gmail račun za slanje obavijesti kupcima o isteku servisa.
-            </p>
-          </div>
-          <GmailConnectSection
-            connected={!!company.gmailEmail}
-            email={company.gmailEmail}
-            connectedAt={company.gmailConnectedAt?.toISOString() ?? null}
-          />
-        </section>
+      <section className="space-y-3">
+        <div>
+          <h2 className="h1">Slanje obavijesti kupcima</h2>
+          <p className="subtle mt-1">
+            Povežite Gmail račun ili konfigurirajte vlastiti SMTP server (npr. <span className="font-medium">info@vatroservis.hr</span>) za slanje obavijesti kupcima o isteku servisa, upisnika i izvještaja.
+          </p>
+        </div>
+        <MailIntegrationsSection initial={mailStatus} />
+      </section>
 
-        <section className="min-w-0 space-y-3 border-t border-slate-200 pt-8 md:border-t-0 md:border-l md:pt-0 md:pl-10">
-          <div>
-            <h2 className="h1">Predlošci obavijesti</h2>
-            <p className="subtle mt-1">
-              Tekstovi koje sustav šalje kupcima. Uređivanje otvorite tek kad treba.
-            </p>
-          </div>
-          <EmailTemplatesSettings
-            templates={templates.map((t) => ({
-              id: t.id,
-              type: t.type,
-              label: t.label,
-              subject: t.subject,
-              greeting: t.greeting,
-              bodyText: t.bodyText,
-              calloutText: t.calloutText,
-              closingText: t.closingText,
-              footerNote: t.footerNote,
-            }))}
-          />
-        </section>
-      </div>
+      <section className="space-y-3 border-t border-slate-200 pt-8">
+        <div>
+          <h2 className="h1">Predlošci obavijesti</h2>
+          <p className="subtle mt-1">
+            Tekstovi koje sustav šalje kupcima. Uređivanje otvorite tek kad treba.
+          </p>
+        </div>
+        <EmailTemplatesSettings
+          templates={templates.map((t) => ({
+            id: t.id,
+            type: t.type,
+            label: t.label,
+            subject: t.subject,
+            greeting: t.greeting,
+            bodyText: t.bodyText,
+            calloutText: t.calloutText,
+            closingText: t.closingText,
+            footerNote: t.footerNote,
+          }))}
+        />
+      </section>
     </div>
   );
 }

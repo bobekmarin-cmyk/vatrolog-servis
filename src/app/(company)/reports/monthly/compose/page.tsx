@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { ensureDefaultTemplates } from "@/lib/emailTemplates";
 import { countRemainingForCustomer } from "@/lib/monthlyReport";
+import { getTenantMailStatus } from "@/lib/tenantMail";
 import ComposeForm from "@/components/ComposeForm";
 import Link from "next/link";
 
@@ -32,19 +33,30 @@ export default async function ComposeMailPage({
 
   if (!customer) redirect("/reports/monthly");
 
-  const company = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: { name: true, gmailEmail: true },
-  });
+  const [company, mailStatus] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: session.companyId },
+      select: { name: true },
+    }),
+    getTenantMailStatus(session.companyId),
+  ]);
 
-  if (!company?.gmailEmail) redirect("/reports/monthly");
+  if (!company) redirect("/reports/monthly");
+  if (!mailStatus.activeProvider) redirect("/reports/monthly");
+
+  // Resolve "From" prikaz adresa za korisnika.
+  let fromAddress = "";
+  if (mailStatus.activeProvider === "GMAIL") {
+    fromAddress = mailStatus.gmail.email ?? "";
+  } else {
+    fromAddress = mailStatus.smtp.fromEmail ?? mailStatus.smtp.user ?? "";
+  }
 
   const [y, m] = month.split("-").map(Number);
   const from = new Date(y, (m ?? 1) - 1, 1);
   const to = new Date(y, m ?? 1, 1);
   const monthLabel = `${MONTH_NAMES[(m ?? 1) - 1]} ${y}`;
 
-  // Broj preostalih (neservisiranih) aparata za ovog kupca — dosljedno s popisom po mjesecima.
   const itemCount = await countRemainingForCustomer(
     session.companyId,
     customerId,
@@ -91,7 +103,7 @@ export default async function ComposeMailPage({
           itemCount={itemCount}
           companyName={company.name}
           customerName={custName}
-          gmailFrom={company.gmailEmail}
+          fromAddress={fromAddress}
           monthLabel={monthLabel}
           templates={templates.map((t) => ({
             type: t.type,

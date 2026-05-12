@@ -58,7 +58,7 @@ export const POST = apiHandler(async (req: Request) => {
       }),
     ]);
     const verifyUrl = `${getAppBaseUrl()}/api/auth/verify-email?token=${encodeURIComponent(plaintext)}`;
-    const tpl = emailVerificationEmail(verifyUrl);
+    const tpl = await emailVerificationEmail(verifyUrl);
     await sendSystemMail({
       to: email,
       subject: tpl.subject,

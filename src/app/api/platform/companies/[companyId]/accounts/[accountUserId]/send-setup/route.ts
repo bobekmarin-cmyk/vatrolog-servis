@@ -74,7 +74,7 @@ export async function POST(
 
   const origin = new URL(req.url).origin;
   const setupUrl = `${origin}/admin/users/setup/${encodeURIComponent(plaintext)}`;
-  const tpl = subaccountSetupEmail({
+  const tpl = await subaccountSetupEmail({
     companyName: company.name,
     username: account.username,
     setupUrl,

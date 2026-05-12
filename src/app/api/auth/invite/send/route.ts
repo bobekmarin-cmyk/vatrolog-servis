@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     .filter((a) => a.role !== "ADMIN")
     .map((a) => a.username);
 
-  const tpl = adminOnboardingEmail({
+  const tpl = await adminOnboardingEmail({
     companyName: account.company.name,
     serviceCode: account.company.serviceCode,
     usernames: { admin: account.username, workshops },

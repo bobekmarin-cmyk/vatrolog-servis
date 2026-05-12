@@ -58,7 +58,7 @@ export const POST = apiHandler(async (req: Request) => {
   });
 
   const resetUrl = `${getAppBaseUrl()}/reset-password?token=${encodeURIComponent(plaintext)}`;
-  const mail = passwordResetEmail(resetUrl);
+  const mail = await passwordResetEmail(resetUrl);
   const sent = await sendSystemMail({ to: email, subject: mail.subject, html: mail.html, text: mail.text });
 
   if (!sent.ok) {

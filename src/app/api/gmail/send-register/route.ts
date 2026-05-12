@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  decryptToken,
-  encryptToken,
-  refreshAccessToken,
-  sendGmailWithAttachment,
-} from "@/lib/gmail";
+  getTenantMailStatus,
+  sendTenantMail,
+  TenantMailNotConfiguredError,
+  TenantMailSendError,
+} from "@/lib/tenantMail";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
 import { ensureDefaultTemplates, renderTemplateHtml, renderSubject, type RenderVars } from "@/lib/emailTemplates";
@@ -71,8 +71,13 @@ export async function POST(req: NextRequest) {
   }
 
   const company = order.company;
-  if (!company.gmailAccessToken || !company.gmailRefreshToken || !company.gmailEmail) {
-    return NextResponse.json({ error: "Gmail nije povezan" }, { status: 400 });
+
+  const mailStatus = await getTenantMailStatus(session.companyId);
+  if (!mailStatus.activeProvider) {
+    return NextResponse.json(
+      { error: "Mail nije konfiguriran. Povežite Gmail ili SMTP u Postavke → Postavke maila." },
+      { status: 400 },
+    );
   }
 
   // --- Load REGISTER template ---
@@ -175,72 +180,36 @@ export async function POST(req: NextRequest) {
   const pdfFilename = `upisnik_${order.orderNumber.replaceAll("/", "-")}.pdf`;
   const monthTag = `WO-${order.orderNumber}`;
 
-  // --- Send email with attachment ---
-  let accessToken: string;
   try {
-    accessToken = decryptToken(company.gmailAccessToken);
-  } catch {
-    return NextResponse.json({ error: "Greška dekriptiranja tokena" }, { status: 500 });
-  }
-
-  async function trySend() {
-    await sendGmailWithAttachment(
-      accessToken,
-      company.gmailEmail!,
-      recipientEmail,
+    await sendTenantMail({
+      companyId: session.companyId,
+      to: recipientEmail,
       subject,
       html,
-      { filename: pdfFilename, mimeType: "application/pdf", data: pdfBuffer },
-    );
-  }
+      attachment: { filename: pdfFilename, mimeType: "application/pdf", data: pdfBuffer },
+    });
+  } catch (err) {
+    const errMsg =
+      err instanceof TenantMailSendError || err instanceof TenantMailNotConfiguredError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : String(err);
 
-  try {
-    await trySend();
-  } catch (e: any) {
-    if (e.message?.includes("401") || e.message?.includes("403")) {
-      try {
-        const refreshToken = decryptToken(company.gmailRefreshToken!);
-        const newTokens = await refreshAccessToken(refreshToken);
-        accessToken = newTokens.access_token;
-
-        await prisma.company.update({
-          where: { id: session.companyId },
-          data: { gmailAccessToken: encryptToken(accessToken) },
-        });
-
-        await trySend();
-      } catch (refreshErr: any) {
-        await prisma.emailLog.create({
-          data: {
-            companyId: session.companyId,
-            customerId: order.customer.id,
-            toEmail: recipientEmail,
-            subject,
-            htmlBody: html,
-            month: monthTag,
-            itemCount,
-            status: "FAILED",
-            error: refreshErr.message?.slice(0, 500),
-          },
-        });
-        return NextResponse.json({ error: "Slanje neuspješno: " + (refreshErr.message ?? "") }, { status: 500 });
-      }
-    } else {
-      await prisma.emailLog.create({
-        data: {
-          companyId: session.companyId,
-          customerId: order.customer.id,
-          toEmail: recipientEmail,
-          subject,
-          htmlBody: html,
-          month: monthTag,
-          itemCount,
-          status: "FAILED",
-          error: e.message?.slice(0, 500),
-        },
-      });
-      return NextResponse.json({ error: "Slanje neuspješno: " + (e.message ?? "") }, { status: 500 });
-    }
+    await prisma.emailLog.create({
+      data: {
+        companyId: session.companyId,
+        customerId: order.customer.id,
+        toEmail: recipientEmail,
+        subject,
+        htmlBody: html,
+        month: monthTag,
+        itemCount,
+        status: "FAILED",
+        error: errMsg.slice(0, 500),
+      },
+    });
+    return NextResponse.json({ error: "Slanje neuspješno: " + errMsg }, { status: 500 });
   }
 
   await prisma.emailLog.create({

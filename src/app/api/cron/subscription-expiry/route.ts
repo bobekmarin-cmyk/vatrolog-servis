@@ -64,7 +64,7 @@ export async function GET(req: Request): Promise<Response> {
     // Pošalji svim ADMIN računima koji imaju email.
     for (const acc of company.accounts) {
       if (!acc.email) continue;
-      const mail = subscriptionExpiringEmail(company.name, daysLeft, `${getAppBaseUrl()}/admin/settings/billing`);
+      const mail = await subscriptionExpiringEmail(company.name, daysLeft, `${getAppBaseUrl()}/admin/settings/billing`);
       const res = await sendSystemMail({
         to: acc.email,
         subject: mail.subject,

@@ -174,7 +174,7 @@ export async function POST(
   if (setupEmail) {
     const origin = new URL(req.url).origin;
     const setupUrl = `${origin}/admin/users/setup/${encodeURIComponent(plaintext)}`;
-    const tpl = subaccountSetupEmail({
+    const tpl = await subaccountSetupEmail({
       companyName: company.name,
       username,
       setupUrl,

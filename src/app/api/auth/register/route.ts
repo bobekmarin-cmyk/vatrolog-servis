@@ -107,7 +107,7 @@ export const POST = apiHandler(async (req: Request) => {
   });
 
   // Confirmation mail za podnositelja.
-  const ackTpl = registrationRequestReceivedEmail({
+  const ackTpl = await registrationRequestReceivedEmail({
     companyName: parsed.companyName,
     contactName: parsed.contactName ?? null,
   });
@@ -129,7 +129,7 @@ export const POST = apiHandler(async (req: Request) => {
   const vendorInbox = resolveVendorAlertInbox();
   if (vendorInbox) {
     const reviewUrl = `${getAppBaseUrl()}/platform/registration-requests/${created.id}`;
-    const alertTpl = registrationRequestVendorAlertEmail({
+    const alertTpl = await registrationRequestVendorAlertEmail({
       reviewUrl,
       companyName: parsed.companyName,
       oib,

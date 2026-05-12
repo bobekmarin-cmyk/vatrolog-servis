@@ -18,6 +18,7 @@ import PdfActionButton from "@/components/PdfActionButton";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
 import PendingSubmitForm from "@/components/PendingSubmitForm";
 import PendingNavigationLink from "@/components/PendingNavigationLink";
+import { getTenantMailStatus } from "@/lib/tenantMail";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -130,11 +131,8 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
 
   if (!order) notFound();
 
-  const gmailStatus = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: { gmailEmail: true },
-  });
-  const gmailConnected = !!gmailStatus?.gmailEmail;
+  const mailStatus = await getTenantMailStatus(session.companyId);
+  const mailConnected = !!mailStatus.activeProvider;
 
   const total = order.items.length;
   const servicedCount = order.items.filter((i) => i.servicedAt).length;
@@ -168,7 +166,7 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             orderNumber={order.orderNumber}
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
-            gmailConnected={gmailConnected}
+            mailConnected={mailConnected}
           />
           <PdfActionButton
             label="Upisnik"
@@ -178,7 +176,7 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             orderNumber={order.orderNumber}
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
-            gmailConnected={gmailConnected}
+            mailConnected={mailConnected}
           />
           <PdfActionButton
             label="Otpremnica"
@@ -188,7 +186,7 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             orderNumber={order.orderNumber}
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
-            gmailConnected={gmailConnected}
+            mailConnected={mailConnected}
           />
           {session.role === "ADMIN" && (
             <PendingNavigationLink

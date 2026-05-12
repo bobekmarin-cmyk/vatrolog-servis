@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { renderEmailShell } from "@/lib/email/layout";
+import type { EmailBranding } from "@/lib/email/components";
 
 export const TEMPLATE_TYPES = ["BEGINNING", "BEFORE_EXPIRY", "AFTER_EXPIRY", "REGISTER"] as const;
 export type TemplateType = (typeof TEMPLATE_TYPES)[number];
@@ -115,47 +117,57 @@ export interface RenderVars {
   nalog?: string;
 }
 
+/**
+ * Renderira tenant → kupac mail koristeći zajednički `renderEmailShell` iz
+ * `src/lib/email/layout.ts`. Sva polja iz baze (greeting, bodyText, callout,
+ * closing, footer) prolaze kroz placeholder zamjenu i sklapaju se u isti
+ * vizualni shell kao i vendor mailovi (PDF-style dizajn).
+ *
+ * `vars.tvrtka` se koristi kao `branding.fromName` u headeru. Brand boja je
+ * fiksno crvena za sve obavijesti (jednako kao u PDF-u); `REGISTER` može
+ * dodatno koristiti `documentLabel` da naglasi da je u prilogu upisnik.
+ */
 export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): string {
   const greeting = replacePlaceholders(template.greeting, vars);
   const body = replacePlaceholders(template.bodyText, vars);
   const callout = replacePlaceholders(template.calloutText, vars);
   const closing = replacePlaceholders(template.closingText, vars);
-  const footer = template.footerNote
-    ? replacePlaceholders(template.footerNote, vars)
-    : "";
+  const footer = template.footerNote ? replacePlaceholders(template.footerNote, vars) : null;
 
   const isRegister = template.type === "REGISTER";
-  const accentColor = isRegister ? "#2563eb" : "#dc2626";
-  const calloutBg = isRegister ? "#eff6ff" : "#fef2f2";
-  const headerSubtitle = isRegister
+
+  const branding: EmailBranding = {
+    fromName: vars.tvrtka,
+    fromEmail: "",
+    signatureHtml: `S poštovanjem,<br/><strong>${escapeBasic(vars.tvrtka)}</strong>`,
+    logoUrl: null,
+    brandColor: "#dc2626",
+  };
+
+  const subjectForHeading = isRegister
     ? "Upisnik servisiranih vatrogasnih aparata"
     : "Obavijest o servisu vatrogasnih aparata";
 
-  return `<!DOCTYPE html>
-<html lang="hr">
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="border-bottom: 3px solid ${accentColor}; padding-bottom: 16px; margin-bottom: 24px;">
-    <h2 style="margin: 0; color: ${accentColor};">${vars.tvrtka}</h2>
-    <p style="margin: 4px 0 0; color: #666; font-size: 14px;">${headerSubtitle}</p>
-  </div>
+  const { html } = renderEmailShell({
+    subject: subjectForHeading,
+    fields: {
+      greeting,
+      bodyText: body,
+      calloutText: callout,
+      closingText: closing,
+      footerNote: footer,
+    },
+    branding,
+    documentLabel: isRegister ? "Upisnik" : "Obavijest",
+  });
 
-  <p>${greeting}</p>
+  return html;
+}
 
-  <p>${body}</p>
-
-  <div style="background: ${calloutBg}; border-left: 4px solid ${accentColor}; padding: 12px 16px; margin: 20px 0; border-radius: 4px;">
-    <strong>${callout}</strong>
-  </div>
-
-  <p>${closing}</p>
-
-  <p style="margin-top: 32px;">S poštovanjem,<br><strong>${vars.tvrtka}</strong></p>
-
-  <hr style="border: none; border-top: 1px solid #eee; margin-top: 32px;">
-  ${footer ? `<p style="font-size: 11px; color: #999;">${footer}</p>` : ""}
-</body>
-</html>`;
+function escapeBasic(s: string): string {
+  return s.replace(/[&<>"']/g, (c) =>
+    c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&#39;",
+  );
 }
 
 export function renderSubject(template: TemplateFields, vars: RenderVars): string {

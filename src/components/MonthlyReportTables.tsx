@@ -25,7 +25,8 @@ interface Props {
   customersOverdue: CustRow[];
   totalDueItems: number;
   totalOverdueItems: number;
-  gmailConnected: boolean;
+  /** Je li bilo koji mail provider (Gmail ili SMTP) konfiguriran i aktivan. */
+  mailConnected: boolean;
   sentEntries: SentEntry[];
 }
 
@@ -109,7 +110,7 @@ export default function MonthlyReportTables({
   customersOverdue,
   totalDueItems,
   totalOverdueItems,
-  gmailConnected,
+  mailConnected,
   sentEntries,
 }: Props) {
   const [filter, setFilter] = useState<"all" | "pending">("all");
@@ -232,7 +233,7 @@ export default function MonthlyReportTables({
                             {formatDate(sentAt)}
                           </span>
                         )}
-                        {c.email && gmailConnected ? (
+                        {c.email && mailConnected ? (
                           <Link
                             href={composeUrl(c, "due")}
                             className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
@@ -307,7 +308,7 @@ export default function MonthlyReportTables({
                             {formatDate(sentAt)}
                           </span>
                         )}
-                        {c.email && gmailConnected ? (
+                        {c.email && mailConnected ? (
                           <Link
                             href={composeUrl(c, "overdue")}
                             className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"

@@ -11,6 +11,10 @@
  *   3) Dev console log — ako ništa nije konfigurirano i NODE_ENV !== production.
  *
  * Sva slanja se loggiraju u `EmailLog` (transport: VENDOR_GMAIL|SMTP|DEV_LOG).
+ *
+ * Sadržaj predložaka živi u `src/lib/email/vendorTemplates.ts` (defaulti +
+ * override iz `PlatformEmailTemplate`); zajednički vizualni shell je u
+ * `src/lib/email/layout.ts`. Funkcije ovdje su tanki async wrapperi.
  */
 
 import nodemailer from "nodemailer";
@@ -19,6 +23,7 @@ import { APP_NAME } from "@/lib/appVersion";
 import { prisma } from "@/lib/prisma";
 import { isVendorConnected, sendVendorGmail } from "@/lib/platformGmail";
 import { resolveBranding, type ResolvedPlatformBranding } from "@/lib/platformSettings";
+import { renderVendorTemplate } from "@/lib/email/vendorTemplates";
 
 type Transporter = nodemailer.Transporter | null;
 
@@ -158,7 +163,7 @@ export async function sendSystemMail(input: SendMailInput): Promise<SendMailResu
   return { ok: false, error: "NO_TRANSPORT_CONFIGURED" };
 }
 
-async function resolveBrandingSafe(): Promise<ResolvedPlatformBranding> {
+export async function resolveBrandingSafe(): Promise<ResolvedPlatformBranding> {
   try {
     return await resolveBranding();
   } catch {
@@ -173,362 +178,185 @@ async function resolveBrandingSafe(): Promise<ResolvedPlatformBranding> {
 }
 
 /* =======================
-   TEMPLATE HELPERS
+   TEMPLATE HELPERS — async wrappers
 ======================= */
 
-let cachedBranding: { value: ResolvedPlatformBranding; ts: number } | null = null;
-async function brandingForTemplate(): Promise<ResolvedPlatformBranding> {
-  const now = Date.now();
-  if (cachedBranding && now - cachedBranding.ts < 60_000) return cachedBranding.value;
-  const value = await resolveBrandingSafe();
-  cachedBranding = { value, ts: now };
-  return value;
-}
-
-function syncBrandingDefaults(): ResolvedPlatformBranding {
-  return {
-    fromName: process.env.VENDOR_FROM_NAME?.trim() ?? process.env.SMTP_FROM_NAME?.trim() ?? APP_NAME,
-    fromEmail:
-      process.env.VENDOR_FROM_EMAIL?.trim() ??
-      process.env.SMTP_FROM_EMAIL?.trim() ??
-      process.env.SMTP_USER?.trim() ??
-      "no-reply@localhost",
-    signatureHtml: null,
-    logoUrl: null,
-    brandColor: "#dc2626",
-  };
-}
-
 /**
- * Dvobojni "VatroLog" naslov (Vatro u slate, Log u brand boji), s blagim
- * boldom. Za druge brandove (vendor/whitelabel) ostaje jednobojni naslov.
+ * Pomoćnik za pripremu pozdravne linije s opcionalnim imenom kontakta.
  */
-function renderBrandTitleHtml(name: string, brandColor: string): string {
-  const trimmed = name.trim();
-  if (trimmed.toLowerCase() === "vatrolog") {
-    return `<div style="font-weight:800;font-size:22px;letter-spacing:-0.01em;line-height:1;">`
-      + `<span style="color:#0f172a;">Vatro</span>`
-      + `<span style="color:${brandColor};">Log</span>`
-      + `</div>`;
-  }
-  return `<div style="font-weight:800;font-size:22px;letter-spacing:-0.01em;color:${brandColor};">${escapeHtml(trimmed)}</div>`;
+function greetingLineFor(contactName: string | null | undefined): string {
+  return contactName ? `Pozdrav ${contactName},` : "Pozdrav,";
 }
 
-function shellHtml(title: string, content: string, branding: ResolvedPlatformBranding): string {
-  const headerLogo = branding.logoUrl
-    ? `<img src="${escapeHtml(branding.logoUrl)}" alt="${escapeHtml(branding.fromName)}" style="height:32px;display:block;margin-bottom:8px"/>`
-    : "";
-  const signature = branding.signatureHtml
-    ? `<div style="font-size:12px;color:#475569;margin-top:16px;">${branding.signatureHtml}</div>`
-    : "";
-  return `<!DOCTYPE html>
-<html lang="hr"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title></head>
-<body style="font-family:Arial,sans-serif;color:#0f172a;max-width:560px;margin:0 auto;padding:24px;background:#f8fafc;">
-<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:24px;">
-<div style="border-bottom:2px solid ${branding.brandColor};padding-bottom:12px;margin-bottom:16px;">
-  ${headerLogo}
-  ${renderBrandTitleHtml(branding.fromName, branding.brandColor)}
-</div>
-${content}
-${signature}
-<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0 12px;">
-<div style="font-size:11px;color:#64748b;">Ova poruka je automatski generirana iz sustava ${escapeHtml(branding.fromName)}.</div>
-</div></body></html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
-}
-
-/**
- * Sync verzija predložaka koja koristi keširani branding ako je dostupan,
- * inače default iz env-a. Pozivatelji ostaju nepromijenjeni.
- */
-function brandingNow(): ResolvedPlatformBranding {
-  return cachedBranding?.value ?? syncBrandingDefaults();
-}
-
-export function passwordResetEmail(resetUrl: string): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const subject = `${branding.fromName} — obnova lozinke`;
-  const text = `Zatražena je obnova lozinke. Postavite novu lozinku na:\n${resetUrl}\n\nLink vrijedi 30 minuta. Ako niste tražili reset, ignorirajte ovu poruku.`;
-  const html = shellHtml(
-    "Obnova lozinke",
-    `<p>Zatražili ste obnovu lozinke za Vaš ${escapeHtml(branding.fromName)} račun.</p>
-     <p><a href="${resetUrl}" style="display:inline-block;background:${branding.brandColor};color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Postavi novu lozinku</a></p>
-     <p style="font-size:13px;color:#64748b;">Ili otvorite ovaj link u pregledniku:<br><span style="word-break:break-all;">${escapeHtml(resetUrl)}</span></p>
-     <p style="font-size:13px;color:#64748b;">Link vrijedi 30 minuta. Ako niste tražili reset, slobodno ignorirajte ovu poruku.</p>`,
+export async function passwordResetEmail(
+  resetUrl: string,
+): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "PASSWORD_RESET",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      resetUrl,
+    },
+  });
 }
 
-export function emailVerificationEmail(verifyUrl: string): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const subject = `${branding.fromName} — potvrda email adrese`;
-  const text = `Potvrdite svoju email adresu na:\n${verifyUrl}\n\nLink vrijedi 24 sata.`;
-  const html = shellHtml(
-    "Potvrda email adrese",
-    `<p>Dobrodošli u ${escapeHtml(branding.fromName)}!</p>
-     <p>Potvrdite svoju email adresu klikom na gumb:</p>
-     <p><a href="${verifyUrl}" style="display:inline-block;background:#16a34a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Potvrdi email</a></p>
-     <p style="font-size:13px;color:#64748b;">Ili otvorite ovaj link:<br><span style="word-break:break-all;">${escapeHtml(verifyUrl)}</span></p>
-     <p style="font-size:13px;color:#64748b;">Link vrijedi 24 sata.</p>`,
+export async function emailVerificationEmail(
+  verifyUrl: string,
+): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "EMAIL_VERIFICATION",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      verifyUrl,
+    },
+  });
 }
 
 /**
  * Pozivnica admin korisniku tvrtke za prvu aktivaciju VatroLog pristupa.
- *
- * - Predstavlja portal i objašnjava čemu služi.
- * - Listsa sve generirane usernames (admin + svi user/workshop računi).
- * - Glavni CTA: "Aktiviraj pristup" — vodi na bulk password setup formu.
  */
-export function adminOnboardingEmail(input: {
+export async function adminOnboardingEmail(input: {
   companyName: string;
   serviceCode: string;
   usernames: { admin: string; workshops: string[] };
   acceptUrl: string;
-}): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const { companyName, serviceCode, usernames, acceptUrl } = input;
-  const subject = `${branding.fromName} — aktivacija pristupa za ${companyName}`;
-
-  const usernamesList = [
-    `${usernames.admin} — admin`,
-    ...usernames.workshops.map((u, i) => `${u} — radno mjesto ${i + 1}`),
-  ];
-
-  const text = [
-    `Pozdrav,`,
-    ``,
-    `Vaša tvrtka ${companyName} registrirana je na ${branding.fromName} portalu.`,
-    `${branding.fromName} je SaaS platforma za upravljanje servisom vatrogasnih aparata —`,
-    `vodi evidenciju aparata, generira radne naloge, planira preglede, šalje obavijesti kupcima i`,
-    `priprema dokumentaciju za inspekciju.`,
-    ``,
-    `Šifra servisa: ${serviceCode}`,
-    `Generirani su ovi pristupni računi:`,
-    ...usernamesList.map((line) => `  • ${line}`),
-    ``,
-    `Klikom na link postavljate vlastitu admin lozinku te odmah lozinke za sve user/workshop račune:`,
-    acceptUrl,
-    ``,
-    `Link vrijedi 7 dana. Ako istekne, zatražite novi od support tima.`,
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  const usernamesText = [
+    `${input.usernames.admin} — admin`,
+    ...input.usernames.workshops.map((u, i) => `${u} — radno mjesto ${i + 1}`),
   ].join("\n");
 
-  const usernamesHtml = usernamesList
-    .map(
-      (line) => `<li style="font-family:monospace;font-size:13px;color:#0f172a;">${escapeHtml(line)}</li>`,
-    )
-    .join("");
-
-  const html = shellHtml(
-    `Aktivacija pristupa — ${escapeHtml(companyName)}`,
-    `<p>Pozdrav,</p>
-     <p>Vaša tvrtka <strong>${escapeHtml(companyName)}</strong> registrirana je na <strong>${escapeHtml(branding.fromName)}</strong> portalu.</p>
-     <p style="color:#475569;font-size:13px;">${escapeHtml(branding.fromName)} je SaaS platforma za upravljanje servisom vatrogasnih aparata — vodi evidenciju aparata, generira radne naloge, planira preglede, šalje obavijesti kupcima i priprema dokumentaciju za inspekciju.</p>
-     <div style="background:#f1f5f9;border-radius:8px;padding:12px 16px;margin:16px 0;">
-       <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Šifra servisa</div>
-       <div style="font-family:monospace;font-size:18px;font-weight:700;color:${branding.brandColor};">${escapeHtml(serviceCode)}</div>
-       <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 4px;">Pristupni računi</div>
-       <ul style="margin:0;padding-left:18px;">${usernamesHtml}</ul>
-     </div>
-     <p>Klikom na gumb postavljate <strong>vlastitu admin lozinku</strong> te odmah <strong>lozinke za sve user/workshop račune</strong> svoje tvrtke.</p>
-     <p><a href="${acceptUrl}" style="display:inline-block;background:${branding.brandColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Aktiviraj pristup</a></p>
-     <p style="font-size:13px;color:#64748b;">Ili otvorite ovaj link u pregledniku:<br><span style="word-break:break-all;">${escapeHtml(acceptUrl)}</span></p>
-     <p style="font-size:13px;color:#64748b;">Link vrijedi 7 dana. Ako istekne, zatražite novi od support tima.</p>`,
+  return renderVendorTemplate({
+    type: "ADMIN_ONBOARDING",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      companyName: input.companyName,
+      serviceCode: input.serviceCode,
+      usernamesText,
+      acceptUrl: input.acceptUrl,
+    },
+  });
 }
 
 /**
  * Email adminu kad vendor doda novi sub-račun (XX-usrN) na company page.
- * Admin prima link za postavljanje lozinke novom računu.
  */
-export function subaccountSetupEmail(input: {
+export async function subaccountSetupEmail(input: {
   companyName: string;
   username: string;
   setupUrl: string;
-}): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const { companyName, username, setupUrl } = input;
-  const subject = `${branding.fromName} — postavi lozinku za ${username}`;
-  const text = [
-    `Pozdrav,`,
-    ``,
-    `U ${branding.fromName} portalu kreiran je novi korisnički račun za vašu tvrtku ${companyName}:`,
-    `  ${username}`,
-    ``,
-    `Da bi račun mogao raditi, postavite mu lozinku ovdje:`,
-    setupUrl,
-    ``,
-    `Morate biti prijavljeni kao admin iste tvrtke. Link vrijedi 7 dana.`,
-  ].join("\n");
-
-  const html = shellHtml(
-    `Novi račun — ${escapeHtml(username)}`,
-    `<p>Pozdrav,</p>
-     <p>U <strong>${escapeHtml(branding.fromName)}</strong> portalu kreiran je novi korisnički račun za vašu tvrtku <strong>${escapeHtml(companyName)}</strong>:</p>
-     <div style="background:#f1f5f9;border-radius:8px;padding:12px 16px;margin:16px 0;">
-       <div style="font-family:monospace;font-size:18px;font-weight:700;color:${branding.brandColor};">${escapeHtml(username)}</div>
-     </div>
-     <p>Da bi se na taj račun moglo prijaviti, postavite mu lozinku:</p>
-     <p><a href="${setupUrl}" style="display:inline-block;background:${branding.brandColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Postavi lozinku</a></p>
-     <p style="font-size:13px;color:#64748b;">Ili otvorite ovaj link u pregledniku:<br><span style="word-break:break-all;">${escapeHtml(setupUrl)}</span></p>
-     <p style="font-size:13px;color:#64748b;">Morate biti prijavljeni kao admin iste tvrtke. Link vrijedi 7 dana.</p>`,
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "SUBACCOUNT_SETUP",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      companyName: input.companyName,
+      username: input.username,
+      setupUrl: input.setupUrl,
+    },
+  });
 }
 
 /**
  * Confirmation mail za korisnika koji je popunio "Zahtjev za pristup".
- * Ne obećavamo automatsku aktivaciju — samo da ćemo pregledati i javiti se.
  */
-export function registrationRequestReceivedEmail(input: {
+export async function registrationRequestReceivedEmail(input: {
   companyName: string;
   contactName: string | null;
-}): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const greeting = input.contactName ? `Pozdrav ${input.contactName},` : `Pozdrav,`;
-  const subject = `${branding.fromName} — zahtjev za probni pristup zaprimljen`;
-
-  const text = [
-    greeting,
-    ``,
-    `Hvala što ste poslali zahtjev za probni pristup ${branding.fromName}-u za`,
-    `subjekt ${input.companyName}.`,
-    ``,
-    `Pregledat ćemo podatke i javiti se u roku od 1 radnog dana. Ako odobrimo`,
-    `zahtjev, dobit ćete e-mail s pozivnicom putem koje sami postavljate korisnička`,
-    `imena i lozinke za svoju tvrtku te odmah krećete s 14-dnevnim probnim radom.`,
-    ``,
-    `Ako u međuvremenu imate pitanja, slobodno odgovorite na ovaj e-mail.`,
-  ].join("\n");
-
-  const html = shellHtml(
-    `Zahtjev je zaprimljen`,
-    `<p>${escapeHtml(greeting)}</p>
-     <p>Hvala što ste poslali zahtjev za probni pristup <strong>${escapeHtml(branding.fromName)}</strong>-u za subjekt <strong>${escapeHtml(input.companyName)}</strong>.</p>
-     <p>Pregledat ćemo podatke i javiti se u roku od <strong>1 radnog dana</strong>.</p>
-     <p>Ako odobrimo zahtjev, dobit ćete e-mail s pozivnicom putem koje sami postavljate korisnička imena i lozinke za svoju tvrtku te odmah krećete s <strong>14-dnevnim probnim radom</strong>.</p>
-     <p style="font-size:13px;color:#64748b;">Ako u međuvremenu imate pitanja, slobodno odgovorite na ovaj e-mail.</p>`,
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "REGISTRATION_REQUEST_RECEIVED",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      companyName: input.companyName,
+      greetingLine: greetingLineFor(input.contactName),
+    },
+  });
 }
 
 /**
  * Mail koji se šalje vendoru/podršci da postoji novi zahtjev za pregled.
- * Sadrži sve relevantne podatke i direktan link na platform detalj.
  */
-export function registrationRequestVendorAlertEmail(input: {
+export async function registrationRequestVendorAlertEmail(input: {
   reviewUrl: string;
   companyName: string;
   oib: string;
   contactEmail: string;
   contactPhone: string | null;
   city: string;
-}): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const subject = `[${branding.fromName}] Novi zahtjev za probni pristup — ${input.companyName}`;
-  const text = [
-    `Novi zahtjev za probni pristup čeka pregled.`,
-    ``,
-    `Tvrtka: ${input.companyName}`,
-    `OIB: ${input.oib}`,
-    `Grad: ${input.city}`,
-    `Kontakt e-mail: ${input.contactEmail}`,
-    input.contactPhone ? `Kontakt telefon: ${input.contactPhone}` : ``,
-    ``,
-    `Otvori detalje:`,
-    input.reviewUrl,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const html = shellHtml(
-    `Novi zahtjev za probni pristup`,
-    `<p>Novi zahtjev čeka pregled u platformi:</p>
-     <table style="border-collapse:collapse;font-size:14px;">
-       <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Tvrtka:</td><td style="padding:4px 0;font-weight:600;">${escapeHtml(input.companyName)}</td></tr>
-       <tr><td style="padding:4px 12px 4px 0;color:#64748b;">OIB:</td><td style="padding:4px 0;font-family:monospace;">${escapeHtml(input.oib)}</td></tr>
-       <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Grad:</td><td style="padding:4px 0;">${escapeHtml(input.city)}</td></tr>
-       <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Kontakt e-mail:</td><td style="padding:4px 0;">${escapeHtml(input.contactEmail)}</td></tr>
-       ${input.contactPhone ? `<tr><td style="padding:4px 12px 4px 0;color:#64748b;">Kontakt telefon:</td><td style="padding:4px 0;">${escapeHtml(input.contactPhone)}</td></tr>` : ""}
-     </table>
-     <p style="margin-top:16px;"><a href="${input.reviewUrl}" style="display:inline-block;background:${branding.brandColor};color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Otvori detalje</a></p>`,
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "REGISTRATION_REQUEST_VENDOR_ALERT",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      companyName: input.companyName,
+      oib: input.oib,
+      city: input.city,
+      contactEmail: input.contactEmail,
+      contactPhone: input.contactPhone ?? "",
+      reviewUrl: input.reviewUrl,
+    },
+  });
 }
 
 /**
  * Mail koji se šalje podnositelju kad vendor odbije zahtjev.
- * Razlog je opcionalan, koristi se kao kratko pojašnjenje.
  */
-export function registrationRequestRejectedEmail(input: {
+export async function registrationRequestRejectedEmail(input: {
   companyName: string;
   contactName: string | null;
   reason: string | null;
-}): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const greeting = input.contactName ? `Pozdrav ${input.contactName},` : `Pozdrav,`;
-  const subject = `${branding.fromName} — povratna informacija o zahtjevu za probni pristup`;
-
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
   const reasonLine = input.reason?.trim()
     ? `Razlog: ${input.reason.trim()}`
-    : `Ako želite više detalja, slobodno odgovorite na ovaj e-mail.`;
+    : "Ako želite više detalja, slobodno odgovorite na ovaj e-mail.";
 
-  const text = [
-    greeting,
-    ``,
-    `Hvala na interesu za ${branding.fromName}.`,
-    `Nažalost, zahtjev za probni pristup za subjekt ${input.companyName} ovaj put ne možemo odobriti.`,
-    ``,
-    reasonLine,
-    ``,
-    `Ako se okolnosti promijene, slobodno se ponovno javite — rado ćemo razgovarati.`,
-  ].join("\n");
-
-  const html = shellHtml(
-    `Povratna informacija o zahtjevu`,
-    `<p>${escapeHtml(greeting)}</p>
-     <p>Hvala na interesu za <strong>${escapeHtml(branding.fromName)}</strong>.</p>
-     <p>Nažalost, zahtjev za probni pristup za subjekt <strong>${escapeHtml(input.companyName)}</strong> ovaj put <strong>ne možemo odobriti</strong>.</p>
-     <p style="font-size:13px;color:#475569;">${escapeHtml(reasonLine)}</p>
-     <p style="font-size:13px;color:#64748b;">Ako se okolnosti promijene, slobodno se ponovno javite — rado ćemo razgovarati.</p>`,
+  return renderVendorTemplate({
+    type: "REGISTRATION_REQUEST_REJECTED",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      companyName: input.companyName,
+      greetingLine: greetingLineFor(input.contactName),
+      reasonLine,
+    },
+  });
 }
 
-export function subscriptionExpiringEmail(
+export async function subscriptionExpiringEmail(
   companyName: string,
   daysLeft: number,
   billingUrl: string,
-): { subject: string; html: string; text: string } {
-  const branding = brandingNow();
-  const subject = `${branding.fromName} — pretplata ističe za ${daysLeft} dana`;
-  const text = `Vaša pretplata za ${companyName} ističe za ${daysLeft} dana.\nObnovite je na:\n${billingUrl}`;
-  const html = shellHtml(
-    `Pretplata ističe`,
-    `<p>Poštovani,</p>
-     <p>Vaša ${escapeHtml(branding.fromName)} pretplata za tvrtku <strong>${escapeHtml(companyName)}</strong> ističe za <strong>${daysLeft} dana</strong>.</p>
-     <p>Da biste izbjegli prekid korištenja, obnovite pretplatu:</p>
-     <p><a href="${billingUrl}" style="display:inline-block;background:${branding.brandColor};color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Obnovi pretplatu</a></p>`,
+): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "SUBSCRIPTION_EXPIRING",
     branding,
-  );
-  return { subject, html, text };
+    vars: {
+      appName: branding.fromName,
+      companyName,
+      daysLeft: String(daysLeft),
+      billingUrl,
+    },
+  });
 }
 
 /**
  * Eagerly warm-up branding cache (poziva se opcionalno na boot-u).
  */
 export async function warmBrandingCache(): Promise<void> {
-  await brandingForTemplate();
+  await resolveBrandingSafe();
 }

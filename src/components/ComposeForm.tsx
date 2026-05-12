@@ -21,7 +21,8 @@ interface Props {
   itemCount: number;
   companyName: string;
   customerName: string;
-  gmailFrom: string;
+  /** Adresa s koje se mail šalje (Gmail / SMTP From). */
+  fromAddress: string;
   monthLabel: string;
   templates: TemplateData[];
   defaultTemplateType: string;
@@ -45,7 +46,7 @@ export default function ComposeForm({
   itemCount,
   companyName,
   customerName,
-  gmailFrom,
+  fromAddress,
   monthLabel,
   templates,
   defaultTemplateType,
@@ -223,7 +224,7 @@ export default function ComposeForm({
         <div className="divide-y divide-slate-100 border-b border-slate-100 text-sm">
           <div className="flex items-center gap-0 px-4 py-1.5">
             <span className="w-16 shrink-0 text-xs font-medium text-slate-400">Od</span>
-            <span className="text-slate-600">{gmailFrom}</span>
+            <span className="text-slate-600">{fromAddress}</span>
           </div>
           <div className="flex items-center gap-0 px-4 py-1.5">
             <span className="w-16 shrink-0 text-xs font-medium text-slate-400">Prima</span>

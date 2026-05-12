@@ -13,7 +13,8 @@ interface Props {
   orderNumber: string;
   customerName: string;
   customerEmail: string | null;
-  gmailConnected: boolean;
+  /** Je li bilo koji mail provider (Gmail ili SMTP) povezan i aktivan. */
+  mailConnected: boolean;
 }
 
 export default function PdfActionButton({
@@ -24,7 +25,7 @@ export default function PdfActionButton({
   orderNumber,
   customerName,
   customerEmail,
-  gmailConnected,
+  mailConnected,
 }: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -88,8 +89,8 @@ export default function PdfActionButton({
     }
   }
 
-  const mailDisabled = !gmailConnected;
-  const mailTitle = !gmailConnected ? "Gmail nije povezan" : undefined;
+  const mailDisabled = !mailConnected;
+  const mailTitle = !mailConnected ? "Mail nije konfiguriran (Postavke → Postavke maila)" : undefined;
 
   return (
     <>

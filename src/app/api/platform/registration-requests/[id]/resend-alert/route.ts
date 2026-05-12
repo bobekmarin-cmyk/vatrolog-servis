@@ -48,7 +48,7 @@ export const POST = apiHandler(
     }
 
     const reviewUrl = `${getAppBaseUrl()}/platform/registration-requests/${reg.id}`;
-    const tpl = registrationRequestVendorAlertEmail({
+    const tpl = await registrationRequestVendorAlertEmail({
       reviewUrl,
       companyName: reg.companyName,
       oib: reg.oib,

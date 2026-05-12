@@ -272,7 +272,7 @@ export const POST = apiHandler(
         const workshopUsernames = locationSpecs.map((s) =>
           buildLocationUsername(parsed.serviceCode, parsed.usernameSlug, s.kind, s.ordinal),
         );
-        const tpl = adminOnboardingEmail({
+        const tpl = await adminOnboardingEmail({
           companyName: parsed.companyName,
           serviceCode: parsed.serviceCode,
           usernames: { admin: adminUsername, workshops: workshopUsernames },

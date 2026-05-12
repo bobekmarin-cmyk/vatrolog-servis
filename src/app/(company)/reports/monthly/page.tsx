@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import BatchSendButton from "@/components/BatchSendButton";
 import MonthlyReportTables, { type CustRow } from "@/components/MonthlyReportTables";
 import { buildMonthData } from "@/lib/monthlyReport";
+import { getTenantMailStatus } from "@/lib/tenantMail";
 
 function startOfMonthFromYm(ym: string) {
   const [y, m] = ym.split("-").map((x) => Number(x));
@@ -48,13 +49,10 @@ export default async function MonthlyReportPage({
   const to = startOfNextMonth(from);
   const showSentBanner = sp.sent === "1";
 
-  const [dueData, overdueData, gmailStatus, emailLogs] = await Promise.all([
+  const [dueData, overdueData, mailStatus, emailLogs] = await Promise.all([
     buildMonthData(session.companyId, { from, to, mode: "current" }),
     buildMonthData(session.companyId, { from, mode: "overdue" }),
-    prisma.company.findUnique({
-      where: { id: session.companyId },
-      select: { gmailEmail: true },
-    }),
+    getTenantMailStatus(session.companyId),
     prisma.emailLog.findMany({
       where: { companyId: session.companyId, month, status: "SENT" },
       orderBy: { sentAt: "desc" },
@@ -62,7 +60,7 @@ export default async function MonthlyReportPage({
     }),
   ]);
 
-  const gmailConnected = !!gmailStatus?.gmailEmail;
+  const mailConnected = !!mailStatus.activeProvider;
 
   const sentEntries = emailLogs
     .filter((l): l is { customerId: string; sentAt: Date } => l.customerId !== null)
@@ -79,7 +77,7 @@ export default async function MonthlyReportPage({
     if (
       c.autoNotify &&
       c.email &&
-      gmailConnected &&
+      mailConnected &&
       remaining > 0 &&
       !uniqueAutoNotify.has(uniqueKey)
     ) {
@@ -129,14 +127,14 @@ export default async function MonthlyReportPage({
         </div>
       </section>
 
-      {!gmailConnected && (
+      {!mailConnected && (
         <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Gmail nije povezan — <Link href="/admin/settings/mail" className="underline font-medium">povežite ga u postavkama</Link> za slanje obavijesti.
+          Mail nije konfiguriran — <Link href="/admin/settings/mail" className="underline font-medium">povežite Gmail ili SMTP u postavkama</Link> za slanje obavijesti.
         </div>
       )}
 
       {/* Batch send */}
-      {gmailConnected && batchEligible.length > 0 && (
+      {mailConnected && batchEligible.length > 0 && (
         <section className="surface p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -166,7 +164,7 @@ export default async function MonthlyReportPage({
         customersOverdue={overdueData.rows}
         totalDueItems={dueData.totalItems}
         totalOverdueItems={overdueData.totalItems}
-        gmailConnected={gmailConnected}
+        mailConnected={mailConnected}
         sentEntries={sentEntries}
       />
     </main>

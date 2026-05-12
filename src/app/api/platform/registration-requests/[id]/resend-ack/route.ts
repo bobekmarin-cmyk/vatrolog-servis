@@ -34,7 +34,7 @@ export const POST = apiHandler(
       );
     }
 
-    const tpl = registrationRequestReceivedEmail({
+    const tpl = await registrationRequestReceivedEmail({
       companyName: reg.companyName,
       contactName: reg.contactName ?? null,
     });

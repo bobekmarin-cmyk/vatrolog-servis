@@ -77,7 +77,7 @@ export const POST = apiHandler(
     let emailSent = false;
     let emailError: string | null = null;
     if (parsed.sendEmail) {
-      const tpl = registrationRequestRejectedEmail({
+      const tpl = await registrationRequestRejectedEmail({
         companyName: reg.companyName,
         contactName: reg.contactName ?? null,
         reason,

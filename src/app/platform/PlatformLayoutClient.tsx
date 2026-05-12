@@ -12,6 +12,7 @@ const nav: PlatformNavItem[] = [
   { href: "/platform/katalog", label: "Katalog", icon: "📚" },
   { href: "/platform/notifications", label: "Obavijesti", icon: "🔔" },
   { href: "/platform/audit", label: "Audit log", icon: "🛡️" },
+  { href: "/platform/email-templates", label: "Email predlošci", icon: "✉️" },
   { href: "/platform/email-log", label: "Email log", icon: "📧" },
   { href: "/platform/settings", label: "Postavke", icon: "⚙️" },
 ];

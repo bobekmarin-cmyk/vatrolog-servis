@@ -68,7 +68,7 @@ export async function POST(
 
   const origin = new URL(req.url).origin;
   const resetUrl = `${origin}/auth/reset/${encodeURIComponent(plaintext)}`;
-  const tpl = passwordResetEmail(resetUrl);
+  const tpl = await passwordResetEmail(resetUrl);
 
   const sent = await sendSystemMail({
     to: account.email,
