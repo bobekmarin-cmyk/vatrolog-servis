@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 const VERSION = "1.0.3";
 const TITLE = `Ažuriranje VatroLog v${VERSION}`;
 const SUMMARY =
-  "Redizajn email predložaka u stilu PDF dokumenata, novi platformski editor za vendor predloške i SMTP integracija za slanje obavijesti s vlastite domene (npr. info@vatroservis.hr).";
+  "Redizajn email predložaka u stilu PDF dokumenata, novi platformski editor za vendor predloške i SMTP integracija za slanje obavijesti s vlastite domene (npr. info@moj-servis.hr).";
 
 const BODY = [
   "Pozdrav!",
@@ -20,7 +20,7 @@ const BODY = [
   "",
   "Predlošci svih e-mailova (i vendorskih i onih koje vi šaljete kupcima) potpuno su redizajnirani u istom čistom, minimalističkom stilu kao otpremnica i upisnik — ista tipografija, crveni naglasak, jasne sekcije i informativan podnožni potpis.",
   "",
-  "Najveća novost: uz Gmail integraciju, sada možete spojiti i vlastiti SMTP server (npr. info@vatroservis.hr) i slati obavijesti kupcima s vlastite domene. Postavke su predefinirane za HT, A1, Microsoft 365, Gmail SMTP i Yahoo, a podržan je i bilo koji vlastiti SMTP server.",
+  "Najveća novost: uz Gmail integraciju, sada možete spojiti i vlastiti SMTP server (npr. info@moj-servis.hr) i slati obavijesti kupcima s vlastite domene. Postavke su predefinirane za HT, A1, Microsoft 365, Gmail SMTP i Yahoo, a podržan je i bilo koji vlastiti SMTP server.",
 ].join("\n");
 
 const PAYLOAD = {
@@ -31,7 +31,7 @@ const PAYLOAD = {
       kind: "NEW",
       title: "Novo",
       items: [
-        "SMTP integracija za slanje obavijesti kupcima s vlastite domene (npr. info@vatroservis.hr) — alternativa postojećoj Gmail integraciji.",
+        "SMTP integracija za slanje obavijesti kupcima s vlastite domene (npr. info@moj-servis.hr) — alternativa postojećoj Gmail integraciji.",
         "Predlošci za poznate hrvatske providere u SMTP formi: Hrvatski Telekom (mail.ht.hr), A1 (mail.a1net.hr / mail.vip.hr), Microsoft 365, Gmail SMTP (app password), Yahoo Mail i opcija „Vlastiti SMTP server”.",
         "Stranica Postavke → Postavke maila redizajnirana: dvije kartice (Gmail i SMTP) jedna pored druge, oznaka „Aktivno” na onome koji se trenutno koristi.",
         "Mogućnost odabira aktivnog providera kad su konfigurirana oba: jednim klikom prebacujete je li mail kupcima ide preko Gmaila ili preko vašeg SMTP servera, a drugi ostaje sačuvan.",
@@ -63,7 +63,7 @@ const PAYLOAD = {
       kind: "IMPORTANT",
       title: "Važno za korisnike",
       items: [
-        "Ako koristite vlastiti hosting / domenu i imate poslovni e-mail tipa info@vatroservis.hr, sad ga možete spojiti u Postavke → Postavke maila → kartica „SMTP”. Vaši kupci će obavijesti dobivati izravno s te adrese, bez „preko Gmaila”.",
+        "Ako koristite vlastiti hosting / domenu i imate poslovni e-mail tipa info@moj-servis.hr, sad ga možete spojiti u Postavke → Postavke maila → kartica „SMTP”. Vaši kupci će obavijesti dobivati izravno s te adrese, bez „preko Gmaila”.",
         "Postojeća Gmail integracija ostaje u potpunosti funkcionalna i nije potrebno mijenjati ništa ako vam Gmail odgovara.",
         "Pri prvom spremanju SMTP postavki sustav će se pokušati spojiti na server (do 10s) — ako vidite grešku, provjerite host, port (465 SSL ili 587 STARTTLS), korisničko ime i lozinku. Za 2FA račune (Microsoft 365, Gmail, Yahoo) generirajte „App password” umjesto regularne lozinke.",
         "Za HT korisnike: predložak postavlja `mail.ht.hr` na portu 465 (SSL/TLS). Ako 465 ne radi kod vašeg paketa, isključite SSL/TLS i probajte port 587.",

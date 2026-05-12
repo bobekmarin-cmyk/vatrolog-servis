@@ -224,7 +224,7 @@ model Company {
   gmailEmail        String?
   gmailConnectedAt  DateTime?
 
-  /// Custom SMTP integracija za slanje obavijesti kupcima (npr. info@vatroservis.hr).
+  /// Custom SMTP integracija za slanje obavijesti kupcima (npr. info@moj-servis.hr).
   /// Aktivira se neovisno o Gmail OAuth integraciji; korisnik bira aktivni provider preko `mailProvider`.
   smtpHost          String?
   smtpPort          Int?
@@ -232,7 +232,7 @@ model Company {
   smtpUser          String?
   /// Šifrirano (aes-256-gcm) istim ključem kao Gmail tokeni (ENCRYPTION_KEY/AUTH_SECRET fallback).
   smtpPassEncrypted String?
-  /// Adresa koja se prikazuje u "From" headeru (npr. info@vatroservis.hr).
+  /// Adresa koja se prikazuje u "From" headeru (npr. info@moj-servis.hr).
   /// Ako je null, koristi se `smtpUser`.
   smtpFromEmail     String?
   /// Display ime u "From" headeru. Ako je null, koristi se `name` (naziv tvrtke).

@@ -40,7 +40,7 @@ export default async function MailSettingsPage({
         <div>
           <h2 className="h1">Slanje obavijesti kupcima</h2>
           <p className="subtle mt-1">
-            Povežite Gmail račun ili konfigurirajte vlastiti SMTP server (npr. <span className="font-medium">info@vatroservis.hr</span>) za slanje obavijesti kupcima o isteku servisa, upisnika i izvještaja.
+            Povežite Gmail račun ili konfigurirajte vlastiti SMTP server (npr. <span className="font-medium">info@moj-servis.hr</span>) za slanje obavijesti kupcima o isteku servisa, upisnika i izvještaja.
           </p>
         </div>
         <MailIntegrationsSection initial={mailStatus} />

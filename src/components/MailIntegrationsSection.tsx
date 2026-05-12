@@ -356,7 +356,7 @@ function SmtpCard({
             <h3 className="text-base font-semibold text-slate-800">SMTP (vlastita domena)</h3>
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            Koristite vlastiti SMTP server (npr. <span className="font-medium">info@vatroservis.hr</span>).
+            Koristite vlastiti SMTP server (npr. <span className="font-medium">info@moj-servis.hr</span>).
             Radi s Zoho, Microsoft 365, cPanel hostingom i sl.
           </p>
         </div>
@@ -623,7 +623,7 @@ function SmtpForm({
           <label className="label">From naziv (po želji)</label>
           <input
             className="input"
-            placeholder="npr. VatroServis d.o.o."
+            placeholder="npr. Moj Servis d.o.o."
             value={fromName}
             onChange={(e) => setFromName(e.target.value)}
           />

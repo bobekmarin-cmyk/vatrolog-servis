@@ -3,7 +3,7 @@
  *
  * Tvrtka (Company) može imati konfigurirana dva providera za isporuku:
  *  - GMAIL  — Google OAuth integracija (gmailAccessToken/RefreshToken/Email).
- *  - SMTP   — vlastiti SMTP server (npr. info@vatroservis.hr).
+ *  - SMTP   — vlastiti SMTP server (npr. info@moj-servis.hr).
  *
  * Ako su oba konfigurirana, korisnik bira aktivnog kroz `Company.mailProvider`
  * ("GMAIL" | "SMTP" | null). Null = automatski (Gmail prefer ako oba postoje).
