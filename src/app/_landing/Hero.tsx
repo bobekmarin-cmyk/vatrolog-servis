@@ -1,5 +1,5 @@
 import Link from "next/link";
-import BrowserFrame from "./BrowserFrame";
+import MockupImage from "./MockupImage";
 import { IconArrowRight, IconCheck, IconFireExt } from "./icons";
 
 export default function Hero() {
@@ -69,9 +69,15 @@ export default function Hero() {
 
         <div className="relative min-w-0">
           <div className="relative rounded-[1.75rem] bg-slate-950 p-2 shadow-2xl shadow-red-900/20 ring-1 ring-slate-900/80">
-            <BrowserFrame url="vatrolog.com/work-orders">
-              <HeroMock />
-            </BrowserFrame>
+            <MockupImage
+              src="/landing/mockups/hero.png"
+              alt="VatroLog dashboard – pregled radnih naloga"
+              width={2200}
+              height={934}
+              priority
+              sizes="(min-width: 1024px) 60vw, 100vw"
+              className="overflow-hidden rounded-[1.5rem]"
+            />
           </div>
           <div
             aria-hidden
@@ -87,7 +93,7 @@ export default function Hero() {
   );
 }
 
-function HeroMock() {
+export function HeroMock() {
   const rows = [
     {
       id: "26-05-001",

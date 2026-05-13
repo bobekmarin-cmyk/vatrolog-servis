@@ -93,6 +93,11 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/portal/")) return true;
   if (pathname.startsWith("/legal/")) return true;
+  // Dev-only capture rute za generiranje landing PNG mockupa.
+  // Sama stranica vraća 404 u produkciji (defense in depth).
+  if (process.env.NODE_ENV !== "production" && pathname.startsWith("/capture/")) {
+    return true;
+  }
   return false;
 }
 
@@ -335,8 +340,8 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // sve osim Next internals i statike
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // sve osim Next internals i statike (favicon, public assete poput /landing/* i /portal/* mockup PNG-ova)
+    "/((?!_next/static|_next/image|favicon.ico|landing/).*)",
   ],
 };
 

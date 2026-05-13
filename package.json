@@ -20,7 +20,8 @@
     "db:migrate": "prisma migrate deploy && prisma generate",
     "db:setup": "docker compose up -d && prisma migrate deploy && prisma generate && prisma db seed",
     "typecheck": "tsc --noEmit",
-    "version:bump": "node scripts/bump-app-version.mjs"
+    "version:bump": "node scripts/bump-app-version.mjs",
+    "mockups:gen": "node scripts/generate-mockup-pngs.mjs"
   },
   "prisma": {
     "seed": "ts-node -P tsconfig.seed.json prisma/seed.ts"
@@ -57,6 +58,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "playwright": "^1.60.0",
     "prisma": "6.19.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",

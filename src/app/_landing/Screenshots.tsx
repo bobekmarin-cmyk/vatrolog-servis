@@ -1,4 +1,4 @@
-import BrowserFrame from "./BrowserFrame";
+import MockupImage from "./MockupImage";
 
 type InspectionMark = "PP" | "UP";
 
@@ -81,48 +81,50 @@ export default function Screenshots() {
         </div>
 
         <div className="mt-14 grid gap-8 lg:grid-cols-2">
-          <div className="lg:col-span-2">
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001">
-              <WorkOrderMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Servisni nalog — 5 aparata, napredak i dokumenti
-            </p>
-          </div>
+          <MockupImage
+            src="/landing/mockups/work-order.png"
+            alt="Servisni nalog – 5 aparata, napredak i dokumenti"
+            width={2200}
+            height={956}
+            sizes="(min-width: 1024px) 90vw, 100vw"
+            caption="Servisni nalog — 5 aparata, napredak i dokumenti"
+            className="lg:col-span-2"
+          />
 
-          <div className="lg:col-span-2">
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001/service/01050003">
-              <ServiceMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Servisiraj aparat — naljepnica, serviser, dijelovi i dodatne usluge
-            </p>
-          </div>
+          <MockupImage
+            src="/landing/mockups/service.png"
+            alt="Servisiraj aparat – naljepnica, serviser, dijelovi i dodatne usluge"
+            width={2200}
+            height={940}
+            sizes="(min-width: 1024px) 90vw, 100vw"
+            caption="Servisiraj aparat — naljepnica, serviser, dijelovi i dodatne usluge"
+            className="lg:col-span-2"
+          />
 
-          <div>
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001/otpremnica">
-              <DeliveryNoteMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Otpremnica — automatski dokument za predaju aparata kupcu
-            </p>
-          </div>
+          <MockupImage
+            src="/landing/mockups/delivery.png"
+            alt="Otpremnica – automatski dokument za predaju aparata kupcu"
+            width={1640}
+            height={2008}
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            caption="Otpremnica — automatski dokument za predaju aparata kupcu"
+          />
 
-          <div>
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001/upisnik">
-              <RegisterMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Upisnik — podaci o kupcu, serviseru i svim servisiranim aparatima
-            </p>
-          </div>
+          <MockupImage
+            src="/landing/mockups/register.png"
+            alt="Upisnik – podaci o kupcu, serviseru i svim servisiranim aparatima"
+            width={1640}
+            height={2008}
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            caption="Upisnik — podaci o kupcu, serviseru i svim servisiranim aparatima"
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function WorkOrderMock() {
+export function WorkOrderMock() {
   return (
     <div className="bg-slate-100 p-4 text-[10px] text-slate-700 sm:text-[11px]">
       <div className="mb-3 space-y-3">
@@ -181,7 +183,7 @@ function WorkOrderMock() {
   );
 }
 
-function ServiceMock() {
+export function ServiceMock() {
   return (
     <div className="bg-slate-100 p-4 text-[10px] text-slate-700 sm:text-[11px]">
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -285,7 +287,7 @@ function ServiceMock() {
   );
 }
 
-function DeliveryNoteMock() {
+export function DeliveryNoteMock() {
   return (
     <div className="bg-slate-100 p-4 text-[7px] text-slate-700 sm:text-[8px]">
       <div className="relative mx-auto aspect-[210/297] max-h-[58rem] overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -456,7 +458,7 @@ function DeliveryNoteMock() {
   );
 }
 
-function RegisterMock() {
+export function RegisterMock() {
   return (
     <div className="bg-slate-100 p-4 text-[7px] text-slate-700 sm:text-[8px]">
       <div className="relative mx-auto aspect-[210/297] max-h-[58rem] overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
