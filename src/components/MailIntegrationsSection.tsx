@@ -290,35 +290,117 @@ function GmailCard({
       </header>
 
       {!gmail.configured ? (
-        <div>
-          <a
-            href="/api/gmail/connect"
-            className="btn btn-primary inline-flex items-center px-4"
-          >
-            Poveži Gmail račun
-          </a>
+        <div className="space-y-3">
+          <GmailDisclosure />
+          <div>
+            <a
+              href="/api/gmail/connect"
+              className="btn btn-primary inline-flex items-center px-4"
+            >
+              Poveži Gmail račun
+            </a>
+          </div>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Klikom na „Poveži Gmail račun” bit ćete preusmjereni na Googleov ekran za odobrenje pristupa.
+            Povezivanjem prihvaćate{" "}
+            <a
+              href="/legal/privacy#google-api"
+              className="underline hover:text-slate-700"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Politiku privatnosti
+            </a>{" "}
+            i{" "}
+            <a
+              href="/legal/google-api"
+              className="underline hover:text-slate-700"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              opis Gmail integracije
+            </a>
+            .
+          </p>
         </div>
       ) : (
-        <div className="flex items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
-          <div>
-            <div className="text-sm font-medium text-emerald-800">{gmail.email}</div>
-            {gmail.connectedAt && (
-              <div className="text-xs text-emerald-700/80">
-                Povezano: {formatDate(gmail.connectedAt)}
-              </div>
-            )}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <div>
+              <div className="text-sm font-medium text-emerald-800">{gmail.email}</div>
+              {gmail.connectedAt && (
+                <div className="text-xs text-emerald-700/80">
+                  Povezano: {formatDate(gmail.connectedAt)}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline px-3 text-xs text-red-600 border-red-300 hover:bg-red-50"
+              onClick={onDisconnect}
+              disabled={disconnecting}
+            >
+              {disconnecting ? "Odspajam…" : "Odspoji"}
+            </button>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline px-3 text-xs text-red-600 border-red-300 hover:bg-red-50"
-            onClick={onDisconnect}
-            disabled={disconnecting}
-          >
-            {disconnecting ? "Odspajam…" : "Odspoji"}
-          </button>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            Odspajanjem brišemo OAuth tokene iz baze i opozivamo refresh token kod Googlea. Pristup
+            možete dodatno opozvati i izravno na{" "}
+            <a
+              href="https://myaccount.google.com/permissions"
+              className="underline hover:text-slate-700"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              myaccount.google.com/permissions
+            </a>
+            .
+          </p>
         </div>
       )}
     </section>
+  );
+}
+
+function GmailDisclosure() {
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+      <p className="font-semibold text-slate-800">Što tražimo od Googlea:</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4">
+        <li>
+          <code className="rounded bg-white px-1 text-[11px]">gmail.send</code> — slanje e-pošte iz vašeg
+          računa kada vi ili automatizam u VatroLogu (npr. mjesečni podsjetnik kupcima) eksplicitno
+          pokrenete slanje.
+        </li>
+        <li>
+          <code className="rounded bg-white px-1 text-[11px]">userinfo.email</code> — prikaz adrese
+          spojenog računa u sučelju, radi vaše kontrole.
+        </li>
+      </ul>
+      <p className="mt-2 font-semibold text-slate-800">Ne radimo:</p>
+      <p>
+        ne čitamo inbox, ne pohranjujemo tijela poruka, ne dijelimo Gmail podatke s trećim stranama, ne
+        koristimo ih za oglašavanje ni za treniranje AI/ML modela. Korištenje je sukladno{" "}
+        <a
+          href="https://developers.google.com/terms/api-services-user-data-policy"
+          className="underline hover:text-slate-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Google API Services User Data Policy
+        </a>{" "}
+        i Limited Use zahtjevima. Detalji:{" "}
+        <a
+          href="/legal/google-api"
+          className="underline hover:text-slate-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Gmail integracija
+        </a>
+        .
+      </p>
+    </div>
   );
 }
 

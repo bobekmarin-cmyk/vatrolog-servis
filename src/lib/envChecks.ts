@@ -76,6 +76,27 @@ export function validateLaunchEnv(): EnvIssue[] {
     });
   }
 
+  // NEXT_PUBLIC_APP_URL — koristi se za Google OAuth redirect URI (tenant + vendor).
+  // Mora biti postavljen u produkciji kako bi se redirect URI točno poklopio s onim
+  // registriranim u Google Cloud Consoleu (inače `redirect_uri_mismatch`).
+  const publicUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (isProd && !publicUrl) {
+    issues.push({
+      severity: "error",
+      key: "NEXT_PUBLIC_APP_URL",
+      message:
+        "NEXT_PUBLIC_APP_URL nije postavljen — koristi se za OAuth redirect URI; bez njega Gmail integracija pada na 'redirect_uri_mismatch'. Postavi na produkcijsku domenu (npr. https://vatrolog.com).",
+    });
+  }
+  if (isProd && publicUrl && process.env.APP_BASE_URL?.trim() && publicUrl !== process.env.APP_BASE_URL?.trim()) {
+    issues.push({
+      severity: "warn",
+      key: "NEXT_PUBLIC_APP_URL",
+      message:
+        "NEXT_PUBLIC_APP_URL i APP_BASE_URL se razlikuju — za OAuth flow koristi se NEXT_PUBLIC_APP_URL; provjeri da je to baš domena registrirana u Google Cloud Consoleu.",
+    });
+  }
+
   // CRON_SECRET — vec hard-required u guardCronRequest u produkciji, ali
   // ako fali u prod buildu, neka launch upozori odmah, ne na prvi cron.
   if (isProd && !process.env.CRON_SECRET?.trim()) {

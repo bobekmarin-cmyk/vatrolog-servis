@@ -22,6 +22,9 @@ export default function Footer() {
           <Link href="/legal/dpa" className="hover:text-slate-900 hover:underline">
             DPA
           </Link>
+          <Link href="/legal/google-api" className="hover:text-slate-900 hover:underline">
+            Gmail integracija
+          </Link>
           <Link href="/legal/impressum" className="hover:text-slate-900 hover:underline">
             Impressum
           </Link>

@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const runtime = "nodejs";
 
 export const alt =
-  "VatroLog — digitalni servis vatrogasnih aparata. Nalozi, evidencija, upisnici, izvještaji.";
+  "VatroLog — digitalna evidencija servisa vatrogasnih aparata. Kupci, nalozi, skladište, otpremnice, upisnici.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -65,7 +65,7 @@ export default async function OGImage() {
               maxWidth: "920px",
             }}
           >
-            <span>Digitalni servis </span>
+            <span>Digitalna evidencija servisa </span>
             <span style={{ color: "#dc2626" }}>vatrogasnih aparata</span>
             <span>, bez papira i Excela.</span>
           </div>
@@ -77,8 +77,8 @@ export default async function OGImage() {
               lineHeight: 1.35,
             }}
           >
-            Servisni nalozi, evidencija aparata, upisnici i izvještaji u jednom
-            alatu — za servisere u Hrvatskoj.
+            Kupci, servisni nalozi, skladište dijelova, ovlaštenja, naljepnice, otpremnice i
+            upisnici u jednom alatu.
           </div>
         </div>
 
@@ -91,8 +91,8 @@ export default async function OGImage() {
             fontSize: "20px",
           }}
         >
-          <div>vatrolog.hr</div>
-          <div>14 dana probnog rada · bez kartice</div>
+          <div>vatrolog.com</div>
+          <div>30 dana probnog rada · bez kartice</div>
         </div>
       </div>
     ),

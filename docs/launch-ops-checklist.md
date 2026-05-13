@@ -11,7 +11,8 @@ u repu kao audit trag launch-a.
 - [ ] `ENCRYPTION_KEY` postavljen, dug, **različit** od `AUTH_SECRET` i `PLATFORM_AUTH_SECRET`.
 - [ ] `CRON_SECRET` postavljen i poznat samo Vercel cron konfiguraciji.
 - [ ] `DATABASE_URL` pokazuje na produkcijski Postgres (s SSL-om i ograničenim pristupom po IP-u, ako platforma to dopušta).
-- [ ] `APP_BASE_URL` eksplicitno postavljen na produkcijsku domenu (`https://app.vatrolog.hr` i sl.).
+- [ ] `APP_BASE_URL` eksplicitno postavljen na produkcijsku domenu (`https://vatrolog.com`).
+- [ ] `NEXT_PUBLIC_APP_URL` postavljen identično (`https://vatrolog.com`) — koristi se za OAuth redirect URI-jeve i klijentske linkove.
 
 Provjera u app-u: `src/lib/envChecks.ts` će tijekom boota baciti grešku ako
 nešto kritično fali u produkciji. Pokrenuti `npm run build && npm run start`
@@ -19,10 +20,11 @@ lokalno s prod env-om kao smoke test.
 
 ## 2. Mail infrastruktura
 
-- [ ] Vendor Gmail spojen kroz `/platform/integrations/gmail` (refresh token spremljen, scope `gmail.send` + `gmail.readonly`).
+- [ ] Vendor Gmail spojen kroz `/platform/settings` (refresh token spremljen, scopeovi `gmail.send` + `userinfo.email`).
+- [ ] OAuth verifikacija pokrenuta na Google Cloud Consoleu — vidi `docs/google-oauth-verification.md`.
 - [ ] SMTP fallback konfiguriran (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL`) za slučaj da Gmail token padne.
 - [ ] Slanje testnog maila: password reset, account invite, registration request received, registration request rejected.
-- [ ] DNS SPF / DKIM / DMARC za `vatrolog.hr` i mail kanale postavljeni i validirani (mxtoolbox, mail-tester).
+- [ ] DNS SPF / DKIM / DMARC za `vatrolog.com` i mail kanale postavljeni i validirani (mxtoolbox, mail-tester).
 
 ## 3. Storage
 

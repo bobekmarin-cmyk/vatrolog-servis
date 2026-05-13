@@ -182,6 +182,8 @@ function EmailTab({
         </div>
       </dl>
 
+      <VendorGmailDisclosure />
+
       <div className="flex flex-wrap gap-2">
         {!vendor.connected ? (
           <a className="btn btn-primary px-4" href="/api/platform/gmail/connect">
@@ -203,6 +205,46 @@ function EmailTab({
           </>
         )}
       </div>
+
+      {!vendor.connected && (
+        <p className="text-[11px] leading-relaxed text-slate-500">
+          Klikom na „Poveži Gmail” bit ćete preusmjereni na Googleov ekran za odobrenje pristupa.
+          Povezivanjem prihvaćate{" "}
+          <a
+            href="/legal/privacy#google-api"
+            className="underline hover:text-slate-700"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Politiku privatnosti
+          </a>{" "}
+          i{" "}
+          <a
+            href="/legal/google-api"
+            className="underline hover:text-slate-700"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            opis Gmail integracije
+          </a>
+          .
+        </p>
+      )}
+      {vendor.connected && (
+        <p className="text-[11px] leading-relaxed text-slate-500">
+          Odspajanjem brišemo OAuth tokene iz baze i opozivamo refresh token kod Googlea. Pristup
+          možete dodatno opozvati i izravno na{" "}
+          <a
+            href="https://myaccount.google.com/permissions"
+            className="underline hover:text-slate-700"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            myaccount.google.com/permissions
+          </a>
+          .
+        </p>
+      )}
 
       {vendor.connected && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -232,6 +274,47 @@ function EmailTab({
         </div>
       )}
     </section>
+  );
+}
+
+function VendorGmailDisclosure() {
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+      <p className="font-semibold text-slate-800">Što tražimo od Googlea:</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4">
+        <li>
+          <code className="rounded bg-white px-1 text-[11px]">gmail.send</code> — slanje sistemskih
+          mailova (reset lozinki, pozivnice, podsjetnici pretplate, alerti) iz vendor računa.
+        </li>
+        <li>
+          <code className="rounded bg-white px-1 text-[11px]">userinfo.email</code> — prikaz adrese
+          spojenog vendor računa u sučelju.
+        </li>
+      </ul>
+      <p className="mt-2 font-semibold text-slate-800">Ne radimo:</p>
+      <p>
+        ne čitamo inbox, ne pohranjujemo tijela poruka, ne dijelimo Gmail podatke s trećim stranama,
+        ne koristimo ih za oglašavanje ni za treniranje AI/ML modela. Korištenje je sukladno{" "}
+        <a
+          href="https://developers.google.com/terms/api-services-user-data-policy"
+          className="underline hover:text-slate-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Google API Services User Data Policy
+        </a>{" "}
+        i Limited Use zahtjevima. Detalji:{" "}
+        <a
+          href="/legal/google-api"
+          className="underline hover:text-slate-900"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Gmail integracija
+        </a>
+        .
+      </p>
+    </div>
   );
 }
 

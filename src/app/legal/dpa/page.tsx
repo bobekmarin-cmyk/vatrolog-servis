@@ -7,7 +7,7 @@ export default function DpaPage() {
   return (
     <article>
       <h1>Ugovor o obradi osobnih podataka (DPA)</h1>
-      <p className="text-sm text-slate-500">Sastavni dio Uvjeta korištenja. Zadnje ažuriranje: 20. travnja 2026.</p>
+      <p className="text-sm text-slate-500">Sastavni dio Uvjeta korištenja. Zadnje ažuriranje: 13. svibnja 2026.</p>
 
       <p>
         Ovim Ugovorom o obradi podataka (u daljnjem tekstu: „DPA”) uređuje se odnos između <strong>Kupca</strong> kao voditelja obrade
@@ -51,7 +51,7 @@ export default function DpaPage() {
           <tr><td className="p-2 border-b">Stripe Inc.</td><td className="p-2 border-b">Naplata pretplate</td><td className="p-2 border-b">Irska / SAD (SCC)</td></tr>
           <tr><td className="p-2 border-b">Sentry</td><td className="p-2 border-b">Error tracking</td><td className="p-2 border-b">EU</td></tr>
           <tr><td className="p-2 border-b">Upstash</td><td className="p-2 border-b">Redis rate limiting</td><td className="p-2 border-b">EU</td></tr>
-          <tr><td className="p-2">Google LLC (Gmail API)</td><td className="p-2">Slanje transakcijskih emailova (tenant opcionalno)</td><td className="p-2">Globalno (SCC)</td></tr>
+          <tr><td className="p-2">Google LLC (Gmail API)</td><td className="p-2">Slanje servisnih i transakcijskih e-mailova iz korisničkog Gmail računa (opcionalna integracija); pristup samo putem scopeova <code>gmail.send</code> i <code>userinfo.email</code></td><td className="p-2">SAD (SCC)</td></tr>
         </tbody>
       </table>
       <p>O promjenama podizvršitelja obavještavamo Kupca najmanje 30 dana unaprijed uz pravo prigovora.</p>

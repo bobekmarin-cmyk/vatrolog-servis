@@ -11,6 +11,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             <Link href="/legal/terms" className="text-slate-700 hover:text-red-600">Uvjeti</Link>
             <Link href="/legal/privacy" className="text-slate-700 hover:text-red-600">Privatnost</Link>
             <Link href="/legal/dpa" className="text-slate-700 hover:text-red-600">DPA</Link>
+            <Link href="/legal/google-api" className="text-slate-700 hover:text-red-600">Gmail integracija</Link>
             <Link href="/legal/impressum" className="text-slate-700 hover:text-red-600">Impressum</Link>
           </nav>
         </div>
