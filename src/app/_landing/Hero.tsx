@@ -54,11 +54,7 @@ export default function Hero() {
           </div>
 
           <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
-            {[
-              "30 dana probnog rada bez naplate",
-              "Bez kartice i automatske naplate",
-              "Zahtjev pregledavamo isti radni dan; uz dogovor dolazimo s prezentacijom programa uživo na vašu lokaciju",
-            ].map((item) => (
+            {["30 dana bez naplate", "besplatna prezentacija u vašem servisu"].map((item) => (
               <li key={item} className="flex items-center gap-2">
                 <IconCheck className="h-4 w-4 text-emerald-600" />
                 {item}

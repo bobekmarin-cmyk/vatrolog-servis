@@ -30,9 +30,9 @@ const features: Feature[] = [
     Icon: IconFireExt,
   },
   {
-    title: "QR kodovi na aparatima",
+    title: "Katalog aparata",
     description:
-      "Nakon prvog unosa više ne tražiš podatke na aparatu. QR naljepnica otvara aparat u radionici ili na terenu.",
+      "Odaberi proizvođača i tip, unesi tvornički broj i godinu. Imamo bazu s aparatima svih proizvođača u Hrvatskoj. Svakom aparatu naznačen je medij (prah, pjena, CO₂, F klasa) kao i izvedba (bočica, stalni tlak).",
     Icon: IconShield,
   },
   {
@@ -79,12 +79,8 @@ export default function Features() {
             Sve što servisu vatrogasnih aparata treba — u jednom alatu
           </h2>
           <p className="mt-4 text-base text-slate-600">
-            Dizajnirano zajedno s aktivnim serviserima. Bez suvišnih polja, s jasnim tokom
-            posla od primitka aparata do izdavanja dokumenata.
-          </p>
-          <p className="mt-3 text-sm text-slate-500">
-            Dokumenti pomažu u urednom vođenju evidencije prema hrvatskim pravilima struke;
-            pravnu usklađenost postupka i podatke na dokumentima potvrđuje servis.
+            Dizajnirano zajedno sa serviserima. Bez suvišnih polja, s jasnim tokom posla od
+            primitka aparata do izdavanja dokumenata.
           </p>
         </div>
 

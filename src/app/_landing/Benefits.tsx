@@ -3,13 +3,13 @@ const stats = [
     value: "QR kod",
     label: "Sekunda po aparatu umjesto ručnog unosa",
     detail:
-      "Ako kroz radionicu prođe 40 aparata dnevno, samo čitanje i unos serijskog broja i godine proizvodnje uzima vrijeme. Uz QR sken podaci su u nalogu u isti tren.",
+      "Ako kroz radionicu prođe 50 aparata dnevno, samo čitanje i unos serijskog broja i godine proizvodnje uzima vrijeme. Uz QR sken podaci su u nalogu u isti tren.",
   },
   {
     value: "Dokumentacija",
     label: "Otpremnice i upisnici u jednom kliku",
     detail:
-      "Trideset otpremnica tjedno po tri minute znači oko sat i pol pisanja. Samo za dokumentaciju to je više od 25 sati uštede mjesečno po serviseru.",
+      "Pisanje dvadeset otpremnica i upisnika tjedno odzima barem 20 sati mjesečno. Fokusiraj se na servis, ne na pisanje.",
   },
   {
     value: "Obavijesti",
