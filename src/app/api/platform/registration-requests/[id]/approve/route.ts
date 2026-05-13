@@ -129,7 +129,7 @@ export const POST = apiHandler(
     let createdCompanyId: string | null = null;
     let createdAdminAccountId: string | null = null;
 
-    const TRIAL_DAYS = 14;
+    const TRIAL_DAYS = 30;
     const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
 
     try {

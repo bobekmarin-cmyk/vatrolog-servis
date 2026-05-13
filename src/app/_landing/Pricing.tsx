@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { IconCheck, IconBolt } from "./icons";
+import { IconCheck, IconBolt, IconSparkles } from "./icons";
 
-const included = [
-  "Neograničen broj naloga",
-  "Neograničeno aparata u evidenciji",
-  "PDF upisnici i dostavnice",
-  "Skladište i primke dijelova",
-  "Gmail integracija za slanje dokumenata",
-  "Javni portal za kupce (tajni link)",
-  "Višekorisnički pristup (admin + radionica)",
-  "E-mail podrška tijekom testiranja",
+const trialFeatures = [
+  "Neograničen broj naloga i vatrogasnih aparata",
+  "PDF primke, upisnici i otpremnice",
+  "Integracija s vlastitim mailom (Gmail / SMTP)",
+  "Višekorisnički pristup — administrator, radionica, servisno vozilo",
+  "Skladište naljepnica i dijelova sa katalozima proizvođača",
+  "Portal za kupce — link na koji kupac vidi sve svoje aparate",
+  "Puna mail i telefonska podrška",
+  "Detaljna statistika izvedenog rada — za svakog servisera",
 ];
 
 export default function Pricing() {
@@ -21,38 +21,48 @@ export default function Pricing() {
             Cijene
           </span>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            14 dana probnog rada uz ručno odobrenje — bez kartice
+            30 dana probnog rada — bez naplate, bez obaveza
           </h2>
           <p className="mt-4 text-base text-slate-600">
-            Pošaljete zahtjev, mi ga pregledamo i u roku 1 radnog dana šaljemo
-            pozivnicu putem koje sami postavljate korisnička imena i lozinke. Tek
-            tada počinje 14-dnevni probni rad. Nastavak korištenja dogovaramo
-            osobno, uz early-bird uvjete za prve servisere.
+            Pošaljete zahtjev, mi ga pregledamo isti radni dan i pripremamo vaše
+            korisničke račune. Šaljemo pozivnicu na e-mail putem koje sami postavljate
+            samo lozinke — i tek tada kreće 30 dana probnog rada, bez naplate i bez
+            obaveza. Uz dogovor dolazimo s prezentacijom uživo na vašu lokaciju.
           </p>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-3">
-          <div className="overflow-hidden rounded-3xl border border-slate-900 bg-slate-900 p-8 text-white shadow-xl lg:col-span-2">
-            <div className="flex items-center gap-2">
+        <div className="mx-auto mt-12 max-w-5xl">
+          <div className="overflow-hidden rounded-3xl border border-slate-900 bg-slate-900 p-8 text-white shadow-xl sm:p-10">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-200 ring-1 ring-red-400/40">
                 <IconBolt className="h-3.5 w-3.5" />
-                Early-bird trial
+                Probno razdoblje
               </span>
-              <span className="text-xs text-slate-400">Trenutno dostupno</span>
+              <span className="text-xs text-slate-400">Trenutno aktivno</span>
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-400/30">
+                <IconSparkles className="h-3.5 w-3.5" />
+                Sve otključano
+              </span>
             </div>
-            <h3 className="mt-5 text-2xl font-bold">Puni pristup tijekom probnog rada</h3>
+
+            <h3 className="mt-5 text-2xl font-bold sm:text-3xl">
+              Puni pristup tijekom probnog rada
+            </h3>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-5xl font-extrabold tracking-tight">0 €</span>
-              <span className="text-slate-400">/ 14 dana, bez kartice</span>
+              <span className="text-slate-400">
+                / 30 dana, bez kartice, uz mogućnost besplatnog produljenja
+              </span>
             </div>
-            <p className="mt-3 max-w-md text-sm text-slate-300">
-              Po odobrenju zahtjeva svi ključni moduli su otključani. Nakon
-              probnog rada nastavak dogovaramo direktno, uz early-bird uvjete
-              za prve korisnike.
+            <p className="mt-3 max-w-2xl text-sm text-slate-300">
+              U probnom razdoblju otključano je sve što program trenutno sadržava —
+              kako biste stvarno isprobali tijek rada od primke do otpremnice. I
+              nakon probnog rada program ostaje jedan paket sa svim funkcijama,
+              uz ugovor i dogovorene uvjete korištenja.
             </p>
 
             <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-              {included.map((f) => (
+              {trialFeatures.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-slate-200">
                   <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                   <span>{f}</span>
@@ -71,34 +81,51 @@ export default function Pricing() {
                 href="#kontakt"
                 className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/30 hover:bg-white/10"
               >
-                Dogovori early-bird
+                Dogovori prezentaciju uživo
               </a>
             </div>
           </div>
+        </div>
 
+        <div className="mx-auto mt-14 max-w-5xl">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900">Nakon testiranja</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Planiramo jednostavnu mjesečnu pretplatu po servisnom poslovanju, bez skrivenih
-              troškova.
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Nakon probnog rada
+            </span>
+            <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+              Paket dogovaramo prema načinu rada vašeg servisa
+            </h3>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+              Nakon probnog rada ne guramo sve servise u isti model. Uvjeti korištenja i
+              cijena dogovaraju se individualno, prema stvarnim potrebama kupca — broju
+              korisničkih računa, servisnih vozila i načinu rada radionice.
             </p>
-            <ul className="mt-5 space-y-3 text-sm">
-              <li className="flex items-start gap-2 text-slate-700">
-                <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                Cijena vezana uz jedan servisni subjekt (OIB)
-              </li>
-              <li className="flex items-start gap-2 text-slate-700">
-                <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                Bez ograničenja broja aparata i naloga
-              </li>
-              <li className="flex items-start gap-2 text-slate-700">
-                <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                Otkazivanje u svakom trenutku
-              </li>
-            </ul>
-            <div className="mt-6 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
-              Finalne tarife objavljujemo po izlasku iz bete. Rani partneri zadržavaju
-              početne uvjete.
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+              Većina funkcija ostaje dostupna svima, a program uključuje redovna
+              održavanja, zakonske prilagodbe i nadogradnje kataloga proizvođača, aparata,
+              dijelova i naljepnica. Sa svakim servisnim subjektom sklapa se ugovor, a ako
+              imate specifične zahtjeve, nastojat ćemo ih implementirati jer VatroLog
+              gradimo zajedno sa servisima koji ga koriste.
+            </p>
+            <div className="mt-6 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="font-semibold text-slate-900">Individualni dogovor</div>
+                <p className="mt-1 text-slate-600">
+                  Uvjeti prate veličinu servisa, broj korisnika i način rada.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="font-semibold text-slate-900">Redovna ažuriranja</div>
+                <p className="mt-1 text-slate-600">
+                  Održavanje, zakonske promjene i stalno širenje kataloga.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="font-semibold text-slate-900">Nadogradnje po potrebi</div>
+                <p className="mt-1 text-slate-600">
+                  Specifične zahtjeve pokušavamo pretvoriti u korisne funkcije.
+                </p>
+              </div>
             </div>
           </div>
         </div>

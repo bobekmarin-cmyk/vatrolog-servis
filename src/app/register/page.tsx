@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Zahtjev za probni pristup",
   description:
-    "Pošaljite zahtjev za 14-dnevni probni rad u VatroLogu. Pregledamo zahtjev i odobravamo ga ručno — bez kartice, bez automatske aktivacije.",
+    "Pošaljite zahtjev za 30-dnevni probni rad u VatroLogu. Pregledavamo zahtjev isti radni dan i odobravamo ga ručno — bez kartice, bez automatske aktivacije.",
   alternates: { canonical: "/register" },
 };
 
@@ -20,9 +20,9 @@ export default function RegisterPage() {
         </div>
         <h1 className="text-2xl font-bold">Zahtjev za probni pristup</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Pošaljite zahtjev i pregledat ćemo ga u roku 1 radnog dana. Po odobrenju
-          dobivate e-mail s pozivnicom za postavljanje korisničkih računa i 14-dnevni
-          probni rad — bez kartice i bez automatske naplate.
+          Pošaljite zahtjev i pregledat ćemo ga isti radni dan. Po odobrenju
+          dobivate e-mail s pozivnicom za postavljanje korisničkih računa i 30-dnevni
+          probni rad — bez kartice i bez automatske naplate. Uz dogovor dolazimo s prezentacijom programa uživo na vašu lokaciju.
         </p>
 
         <div className="mt-6">

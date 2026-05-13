@@ -3,25 +3,25 @@ const steps = [
     n: "01",
     title: "Primka",
     description:
-      "Kupac dovozi aparate. Otvoriš nalog, skeniraš QR ili odabereš aparat iz evidencije, kupac potpiše primku.",
+      "Odaberi kupca, aparat jednom uneseš u bazu i više ne moraš tražiti serijski broj i godinu proizvodnje na samom aparatu. Skeniraj QR s aparata — servisni nalog se automatski popunjava. Primku generiraš i ispisuješ kupcu.",
   },
   {
     n: "02",
     title: "Servis",
     description:
-      "Odabereš tip servisa (periodični ili internalni), dodaš potrošene dijelove iz skladišta. Sve se automatski skida sa stanja.",
+      "Na servisnom nalogu upišeš broj servisne naljepnice, odabereš vrstu pregleda i iskorištene rezervne dijelove. Vodiš stvarno stanje skladišta dijelova i naljepnica.",
   },
   {
     n: "03",
     title: "Upisnik",
     description:
-      "Generiraš PDF upisnika s pečatom i potpisom, arhiviraš ga i po potrebi pošalješ e-mailom kupcu izravno iz alata.",
+      "Prema odrađenom servisu automatski se generira upisnik sa svim potrebnim podacima. Šalješ ga kupcu e-poštom ili ispisuješ — izravno iz programa.",
   },
   {
     n: "04",
-    title: "Dostava",
+    title: "Otpremnica",
     description:
-      "Ispišeš dostavnicu, označiš nalog dostavljenim, aparat dobiva novi rok. Podsjetnik za idući servis postavljen automatski.",
+      "Ne trebaš više ručno pisati otpremnice — u jednom kliku ih automatski generiraš iz podataka naloga.",
   },
 ];
 

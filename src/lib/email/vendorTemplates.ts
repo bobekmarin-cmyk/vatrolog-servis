@@ -170,7 +170,7 @@ export const VENDOR_TEMPLATE_DEFAULTS: Record<VendorTemplateType, VendorTemplate
       bodyText:
         "Hvala što ste poslali zahtjev za probni pristup <strong>{{appName}}</strong>-u za subjekt <strong>{{companyName}}</strong>. Pregledat ćemo podatke i javiti se u roku od <strong>1 radnog dana</strong>.",
       calloutText:
-        "Ako odobrimo zahtjev, dobit ćete e-mail s pozivnicom putem koje sami postavljate korisnička imena i lozinke za svoju tvrtku te odmah krećete s 14-dnevnim probnim radom.",
+        "Ako odobrimo zahtjev, dobit ćete e-mail s pozivnicom putem koje sami postavljate korisnička imena i lozinke za svoju tvrtku te odmah krećete s 30-dnevnim probnim radom.",
       closingText:
         "Ako u međuvremenu imate pitanja, slobodno odgovorite na ovaj e-mail.",
       footerNote: null,

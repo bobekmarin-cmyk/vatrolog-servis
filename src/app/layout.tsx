@@ -19,11 +19,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(getAppBaseUrl()),
   title: {
-    default: "VatroLog — Digitalni servis vatrogasnih aparata",
+    default: "VatroLog — Digitalna evidencija servisa vatrogasnih aparata",
     template: "%s | VatroLog",
   },
   description:
-    "Servisni nalozi, evidencija aparata, skladište, upisnici i izvještaji na jednom mjestu. Za servisere vatrogasnih aparata u Hrvatskoj.",
+    "Baza kupaca, servisni nalozi, skladište dijelova, ovlaštenja, naljepnice, otpremnice i upisnici u jednom alatu. Razvijeno u suradnji sa serviserima.",
   applicationName: "VatroLog",
   keywords: [
     "vatrogasni aparati",
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     "Hrvatska",
   ],
   openGraph: {
-    title: "VatroLog — Digitalni servis vatrogasnih aparata",
+    title: "VatroLog — Digitalna evidencija servisa vatrogasnih aparata",
     description:
-      "Vodi servis vatrogasnih aparata bez papira i Excela. Nalozi, evidencija, upisnici i izvještaji u jednom alatu.",
+      "Digitalna evidencija servisa bez papira i Excela. Kupci, nalozi, skladište, ovlaštenja, naljepnice, otpremnice i upisnici u jednom alatu.",
     locale: "hr_HR",
     type: "website",
     url: "/",
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VatroLog — Digitalni servis vatrogasnih aparata",
+    title: "VatroLog — Digitalna evidencija servisa vatrogasnih aparata",
     description:
-      "Servisni nalozi, evidencija aparata, skladište, upisnici i izvještaji na jednom mjestu.",
+      "Baza kupaca, servisni nalozi, skladište dijelova, ovlaštenja, naljepnice, otpremnice i upisnici u jednom alatu.",
   },
   robots: {
     index: true,

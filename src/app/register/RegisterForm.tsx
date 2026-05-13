@@ -102,7 +102,7 @@ export default function RegisterForm() {
           <ul className="mt-3 space-y-1 text-xs text-emerald-700 list-disc pl-5">
             <li>Pregledamo zahtjev i javimo se u roku 1 radnog dana.</li>
             <li>Ako odobrimo, dobit ćete e-mail s pozivnicom za postavljanje lozinki.</li>
-            <li>Probni rad od 14 dana kreće tek nakon odobrenja i prihvaćanja pozivnice.</li>
+            <li>Probni rad od 30 dana kreće tek nakon odobrenja i prihvaćanja pozivnice.</li>
           </ul>
         </div>
         <Link
@@ -306,7 +306,7 @@ export default function RegisterForm() {
 
       <p className="text-xs text-slate-500">
         Ne tražimo lozinku ni broj kartice. Ako odobrimo zahtjev, dobit ćete e-mail s
-        pozivnicom za postavljanje korisničkih računa i početak 14-dnevnog probnog rada.
+        pozivnicom za postavljanje korisničkih računa i početak 30-dnevnog probnog rada.
       </p>
 
       {error && <p className="text-sm text-red-700 bg-red-50 p-2 rounded">{error}</p>}

@@ -18,51 +18,51 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    title: "Servisni nalozi",
+    title: "Servisni nalog i primka",
     description:
-      "Periodični i internalni nalozi s katalogom usluga, zaključavanjem, potpisom i PDF izdanjem.",
+      "Odaberi kupca, skeniraj QR kod aparata i nalog se popunjava podacima iz baze. Primku možeš odmah ispisati kupcu.",
     Icon: IconClipboard,
   },
   {
     title: "Evidencija aparata",
     description:
-      "Svaki aparat povezan s kupcem i odjelom, statusom, rokovima i povijesti servisa.",
+      "Proizvođač, tip, tvornički broj, godina proizvodnje, status, rokovi i povijest servisa uvijek su vezani uz kupca.",
     Icon: IconFireExt,
   },
   {
     title: "QR kodovi na aparatima",
     description:
-      "Ispis QR naljepnica za brzu identifikaciju i uvid u aparat iz radionice ili na terenu.",
+      "Nakon prvog unosa više ne tražiš podatke na aparatu. QR naljepnica otvara aparat u radionici ili na terenu.",
     Icon: IconShield,
   },
   {
-    title: "Skladište i primke",
+    title: "Skladište dijelova i naljepnica",
     description:
-      "Stanja rezervnih dijelova po šifri, ulazne primke dobavljača i automatsko skidanje sa stanja na nalogu.",
+      "Prati stvarno stanje dijelova i evidencijskih naljepnica, uz kataloge proizvođača i upozorenja ispod minimuma.",
     Icon: IconBox,
   },
   {
-    title: "Kupci i javni portal",
+    title: "Baza kupaca",
     description:
-      "Matica kupaca s odjelima i lokacijama; opcionalni portal s tajnim linkom gdje kupac vidi svoje aparate.",
+      "Matica kupaca s odjelima i lokacijama. Kupcu možeš poslati link na kojem vidi popis svih svojih aparata.",
     Icon: IconUsers,
   },
   {
     title: "Izvještaji i rokovi",
     description:
-      "Mjesečni rasporedi i zaostaci, lista kupaca s predstojećim rokovima — bez ručnog filtriranja.",
+      "Mjesečni raspored servisiranja, popis zaostataka i statistika izvedenog rada dostupni su bez ručnog filtriranja.",
     Icon: IconChart,
   },
   {
-    title: "Slanje e-maila iz alata",
+    title: "Obavijesti i e-mail",
     description:
-      "Spoji Gmail i pošalji ponudu, upisnik ili dostavnicu kupcu bez izlaska iz VatroLog-a.",
+      "Spoji vlastiti mail i šalji kupcima dokumente ili obavijesti o nadolazećem servisu izravno iz programa.",
     Icon: IconMail,
   },
   {
-    title: "Upisnik i dostavnica (PDF)",
+    title: "Upisnici i otpremnice",
     description:
-      "Službeni PDF-ovi potrebni za zapisnik o servisu i predaju aparata — spremni za ispis ili slanje.",
+      "Prema odrađenom servisu automatski generiraj PDF upisnik ili otpremnicu za ispis i slanje.",
     Icon: IconFileText,
   },
 ];

@@ -17,8 +17,8 @@ export default function Contact() {
               </h2>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-red-50">
                 Razgovor od 15 minuta pokaže ti kako bi točno izgledalo tvoje poslovanje u
-                VatroLog-u. U testnom razdoblju smo dostupni za osobnu demonstraciju i
-                uvodno postavljanje.
+                VatroLog-u. Uvijek smo dostupni za osobnu demonstraciju i uvodno
+                postavljanje.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -67,7 +67,7 @@ export default function Contact() {
                     {CONTACT_PHONE_DISPLAY}
                   </a>
                   <p className="mt-1 text-xs text-red-100/90">
-                    Radnim danom 9:00 – 17:00. Termin demo poziva dogovaramo i e-mailom u roku 1 radnog dana.
+                    Radnim danom 7:00 – 17:00.
                   </p>
                 </div>
               </li>

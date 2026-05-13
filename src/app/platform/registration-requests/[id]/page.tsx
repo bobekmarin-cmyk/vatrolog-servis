@@ -312,7 +312,7 @@ export default async function RegistrationRequestDetailPage({
               <p className="text-sm text-slate-600">
                 Po odobrenju kreiramo Company, neaktivni ADMIN i WORKSHOP račune,
                 servisne lokacije i katalog. Onboarding pozivnica se šalje na e-mail
-                admina; korisnik sam postavlja lozinke i tek time aktivira 14-dnevni
+                admina; korisnik sam postavlja lozinke i tek time aktivira 30-dnevni
                 probni rad.
               </p>
             </header>

@@ -1,15 +1,15 @@
 const faqs = [
   {
     q: "Tko može koristiti VatroLog?",
-    a: "Servisne radionice i tvrtke koje periodično i internalno servisiraju vatrogasne aparate u Hrvatskoj. Podržan je rad s više korisnika (administrator i radionica), a svaki servisni subjekt (OIB) ima vlastiti prostor.",
+    a: "Svaki servis vatrogasnih aparata u Hrvatskoj. Podržan je rad s više korisnika, primjerice administrator, servisna radionica i servisno vozilo.",
   },
   {
-    q: "Radi li na tabletu u radionici?",
-    a: "Da. Sučelje je u potpunosti prilagođeno tabletima i mobitelu — skeniranje QR naljepnica, potpis kupca i ispis dostavnice rade iz preglednika, bez instalacije.",
+    q: "Radi li na tabletu ili mobitelu?",
+    a: "Da, radi na tabletu i mobitelu, ali za punu funkcionalnost preporučuje se stolno računalo. Za rad je uz računalo potreban još samo QR skener kodova, koji je besplatan uz potpisivanje ugovora.",
   },
   {
     q: "Što s postojećim podacima iz Excela ili starog sustava?",
-    a: "Pomažemo s uvozom osnovnih podataka (kupci, aparati, povijest servisa) iz Excel-a ili CSV-a. Za veće migracije dogovaramo pojedinačan uvoz u sklopu uvodnog razgovora.",
+    a: "Možemo pomoći s unosom popisa kupaca i osnovnih podataka za početak rada. Trenutno nema mogućnosti unosa starijih evidencija i radnih naloga iz prijašnjih sustava.",
   },
   {
     q: "Kako stoji stvar s GDPR-om i zaštitom podataka?",
@@ -17,15 +17,15 @@ const faqs = [
   },
   {
     q: "Kako započinje probni rad?",
-    a: "Ispunite zahtjev za probni pristup. Pregledamo ga ručno (zbog različitih oblika servisnih subjekata — d.o.o., obrti, udruge — radije razgovaramo prije aktivacije) i u roku 1 radnog dana šaljemo pozivnicu na e-mail. Pozivnica vam omogućava da sami postavite korisnička imena i lozinke, i tek tada kreće 14-dnevni probni rad — bez kartice i automatske naplate.",
+    a: "Ispunite zahtjev za probni pristup. Pregledamo ga ručno (zbog različitih oblika servisnih subjekata — d.o.o., obrti, vatrogasna društva — radije razgovaramo prije aktivacije) i u roku 1 radnog dana šaljemo pozivnicu na e-mail. Korisnička imena pripremamo mi, a vi putem pozivnice postavljate lozinke. Tek tada kreće 30-dnevni probni rad — bez kartice i automatske naplate. Uz dogovor možemo doći i s prezentacijom uživo na vašu lokaciju.",
   },
   {
     q: "Postoji li podrška tijekom probnog rada?",
-    a: "Da. Tijekom 14-dnevnog probnog rada podrška je dostupna putem e-maila i uvodnog poziva. Za prve korisnike radimo i asistirano postavljanje osnovnih podataka.",
+    a: "Da. Podrška je dostupna uvijek i svima, tijekom probnog rada i kasnije, putem e-maila i telefona. Za prve korisnike radimo i asistirano postavljanje osnovnih podataka.",
   },
   {
     q: "Treba li mi internet u radionici?",
-    a: "Da, VatroLog je web-aplikacija pa je potrebna internet veza. Radimo i na offline scenarijima za konkretne slučajeve u radionici — javi nam ako je to tebi ključno.",
+    a: "Da. VatroLog je web-aplikacija, za rad je potrebna internet veza i program će uvijek raditi online.",
   },
 ];
 

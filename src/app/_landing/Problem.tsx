@@ -2,20 +2,26 @@ const problems = [
   {
     emoji: "📄",
     title: "Papiri se gube i teško se pretražuju",
-    before: "Prije: fascikli s nalozima, fotke na mobitelu, Excel koji svatko ima malo drugačiji.",
-    after: "S VatroLog-om: svaki nalog, aparat i dokument na jednom mjestu, pretraživo u sekundi.",
+    before:
+      "Prije: fascikl ili bilježnica s nalozima, ručno prepisivanje u Excel i traženje podataka po papirima.",
+    after:
+      "S VatroLog-om: svaki nalog, aparat i dokument na jednom mjestu, uredno povezan i pretraživ u sekundi.",
   },
   {
     emoji: "⏰",
     title: "Rokovi servisa ispadaju iz fokusa",
-    before: "Prije: ručno označavanje rokova, obavijesti kupcima kad se netko sjeti.",
-    after: "S VatroLog-om: automatski podsjetnici i mjesečne liste rokova za svakog kupca.",
+    before:
+      "Prije: ručno praćenje rokova, parcijalno obavještavanje kupaca i stalna provjera Excel tablica.",
+    after:
+      "S VatroLog-om: automatski podsjetnici mailom kupcu o nadolazećem servisu. U jednom prikazu vidljiv je raspored servisiranja po mjesecima ili popis zaostataka.",
   },
   {
     emoji: "🧾",
-    title: "Izvještaji i dostavnice troše sate",
-    before: "Prije: prepisivanje iz bilježnice u Word, ručno slaganje upisnika i dostavnica.",
-    after: "S VatroLog-om: PDF upisnik, dostavnica i mjesečni izvještaj generirani u jednom kliku.",
+    title: "Otpremnice i upisnici troše sate",
+    before:
+      "Prije: prepisivanje iz naloga ili bilježnice u Excel, ručni ispis, slanje kupcu i arhiviranje.",
+    after:
+      "S VatroLog-om: servisna primka, otpremnica ili upisnik automatski se generira kao PDF za ispis ili slanje mailom iz programa.",
   },
 ];
 
@@ -44,9 +50,9 @@ export default function Problem() {
             Servis vatrogasnih aparata zaslužuje bolji alat od Excela
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-300">
-            Znamo kako izgleda dan u radionici: aparat stiže, trebaš brzo znati kad je zadnji
-            put servisiran, što je na njemu mijenjano i kome ide nazad. VatroLog to sve drži
-            uredno i spremno za inspekciju.
+            U servisu je puno aparata od puno različitih kupaca — teško je znati što prvo
+            servisirati, a uz sam servis još trebaš ručno pisati otpremnice i upisnike. VatroLog
+            drži red u podacima i dokumentima da se možeš fokusirati na aparate, ne na papir.
           </p>
         </div>
 

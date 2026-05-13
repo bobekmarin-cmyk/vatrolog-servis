@@ -1,23 +1,27 @@
 const stats = [
   {
-    value: "Brže",
-    label: "izdavanje naloga",
-    detail: "Ručni unos zamijenjen brzom pretragom kupca, aparata i katalogom servisa.",
+    value: "QR kod",
+    label: "Sekunda po aparatu umjesto ručnog unosa",
+    detail:
+      "Ako kroz radionicu prođe 40 aparata dnevno, samo čitanje i unos serijskog broja i godine proizvodnje uzima vrijeme. Uz QR sken podaci su u nalogu u isti tren.",
   },
   {
-    value: "1 klik",
-    label: "do PDF upisnika i dostavnice",
-    detail: "Upisnik, dostavnica i mjesečni izvještaj spremni za slanje u PDF-u.",
+    value: "Dokumentacija",
+    label: "Otpremnice i upisnici u jednom kliku",
+    detail:
+      "Trideset otpremnica tjedno po tri minute znači oko sat i pol pisanja. Samo za dokumentaciju to je više od 25 sati uštede mjesečno po serviseru.",
   },
   {
-    value: "QR",
-    label: "na svakom aparatu",
-    detail: "Naljepnica s QR kodom otvara povijest servisa i status aparata.",
+    value: "Obavijesti",
+    label: "Skupna e-pošta umjesto poziva",
+    detail:
+      "Ako danas zoveš ili ručno pišeš mail da im je ovaj mjesec servis, to rješavaš jednom radnjom: automatski obavijestiš sve kupce kojima se bliži rok servisa aparata.",
   },
   {
-    value: "Manje",
-    label: "propuštenih rokova",
-    detail: "Automatski podsjetnici kupcima i interni zaostaci prije isteka roka.",
+    value: "Stanje zaliha",
+    label: "Dijelovi i naljepnice po proizvođaču",
+    detail:
+      "Pratiš potrošene rezervne dijelove i evidencijske naljepnice po proizvođaču ili uvozniku, uz katalog s točnim tvorničkim šiframa. Kad zaliha padne ispod minimuma koji si definirao, aplikacija te odmah upozori.",
   },
 ];
 
@@ -41,24 +45,25 @@ export default function Benefits() {
         className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent"
       />
 
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-[90rem] px-4">
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-red-300">
             Učinak
           </span>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Konkretne uštede koje osjetiš već prvi tjedan
+            Vrijeme koje odmah vraćaš serviserima
           </h2>
           <p className="mt-4 text-base text-slate-300">
-            Manje administracije, više vremena za stvarni posao u radionici i na terenu.
+            Najveća ušteda nije u papiru, nego u minutama koje svaki dan odlaze na unos,
+            prepisivanje, traženje podataka i slanje dokumenata.
           </p>
         </div>
 
-        <dl className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s, idx) => (
             <div
               key={s.label}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-6 shadow-xl transition hover:border-red-400/40"
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-5 shadow-xl transition hover:border-red-400/40 xl:p-6"
             >
               <div
                 aria-hidden
@@ -71,10 +76,12 @@ export default function Benefits() {
               <span className="text-[11px] font-semibold tracking-widest text-red-400/80">
                 {String(idx + 1).padStart(2, "0")}
               </span>
-              <dt className="mt-1 bg-gradient-to-br from-white via-red-200 to-red-500 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent">
+              <dt className="mt-1 whitespace-nowrap bg-gradient-to-br from-white via-red-200 to-red-500 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent xl:text-4xl">
                 {s.value}
               </dt>
-              <dd className="mt-2 text-sm font-semibold text-white">{s.label}</dd>
+              <dd className="mt-2 whitespace-nowrap text-[13px] font-semibold text-white xl:text-sm">
+                {s.label}
+              </dd>
               <p className="mt-2 text-sm leading-relaxed text-slate-300">{s.detail}</p>
             </div>
           ))}

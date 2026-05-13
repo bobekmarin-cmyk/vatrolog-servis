@@ -206,7 +206,7 @@ model Company {
   /// Ručna blokada od strane platform ownera
   blocked     Boolean   @default(false)
 
-  /// Trial koji je samopostavljen pri signupu (14 dana). Null nakon pretvorbe u plaćenu pretplatu.
+  /// Trial koji je samopostavljen pri signupu (30 dana). Null nakon pretvorbe u plaćenu pretplatu.
   trialEndsAt DateTime?
 
   /// Stripe SaaS polja (popunjena ako je Stripe omogućen).

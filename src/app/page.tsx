@@ -15,16 +15,16 @@ import Footer from "./_landing/Footer";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "VatroLog — Digitalni servis vatrogasnih aparata",
+  title: "VatroLog — Digitalna evidencija servisa vatrogasnih aparata",
   description:
-    "Servisni nalozi, evidencija aparata, skladište, upisnici i izvještaji na jednom mjestu. Za servisere vatrogasnih aparata u Hrvatskoj.",
+    "Baza kupaca, servisni nalozi, skladište dijelova, ovlaštenja, naljepnice, otpremnice i upisnici u jednom alatu. Razvijeno u suradnji sa serviserima.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "VatroLog — Digitalni servis vatrogasnih aparata",
+    title: "VatroLog — Digitalna evidencija servisa vatrogasnih aparata",
     description:
-      "Vodi servis vatrogasnih aparata bez papira i Excela. Nalozi, evidencija, upisnici i izvještaji u jednom alatu.",
+      "Digitalna evidencija servisa bez papira i Excela. Kupci, nalozi, skladište, ovlaštenja, naljepnice, otpremnice i upisnici u jednom alatu.",
     locale: "hr_HR",
     type: "website",
     url: "/",
