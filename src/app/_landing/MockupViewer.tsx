@@ -11,8 +11,6 @@ type MockupViewerProps = {
   children: React.ReactNode;
 };
 
-const SHRINK_THRESHOLD = 0.78;
-
 export default function MockupViewer({
   url,
   nativeWidth = 1100,
@@ -27,26 +25,28 @@ export default function MockupViewer({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const el = containerRef.current;
+    if (!el) return;
     const update = () => {
-      const w = containerRef.current?.clientWidth ?? 0;
-      if (w > 0) setScale(w / nativeWidth);
+      const w = el.clientWidth;
+      if (w > 0) setScale(Math.min(1, w / nativeWidth));
     };
     update();
     const ro = new ResizeObserver(update);
-    ro.observe(containerRef.current);
+    ro.observe(el);
     return () => ro.disconnect();
   }, [nativeWidth]);
 
   useEffect(() => {
-    if (!innerRef.current) return;
+    const el = innerRef.current;
+    if (!el) return;
     const update = () => {
-      const h = innerRef.current?.scrollHeight ?? 0;
+      const h = el.scrollHeight;
       if (h > 0) setContentHeight(h);
     };
     update();
     const ro = new ResizeObserver(update);
-    ro.observe(innerRef.current);
+    ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
@@ -68,38 +68,46 @@ export default function MockupViewer({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const showZoomBtn = scale < SHRINK_THRESHOLD;
-  const wrapperStyle =
-    contentHeight > 0
-      ? { height: contentHeight * scale, overflow: "hidden" as const }
-      : undefined;
+  const ready = contentHeight > 0;
+  const visualWidth = ready ? nativeWidth * scale : undefined;
+  const visualHeight = ready ? contentHeight * scale : undefined;
+  const isShrunk = scale < 0.999;
 
   return (
     <div className={className}>
       <div ref={containerRef} className="relative w-full">
-        <div className="relative" style={wrapperStyle}>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Otvori uvećan prikaz mockupa"
+          className="block w-full cursor-zoom-in text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+        >
           <div
-            ref={innerRef}
-            style={{
-              width: nativeWidth,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-            }}
+            className="relative mx-auto overflow-hidden"
+            style={
+              ready
+                ? { width: visualWidth, height: visualHeight }
+                : { width: "100%" }
+            }
           >
-            <BrowserFrame url={url ?? ""}>{children}</BrowserFrame>
+            <div
+              ref={innerRef}
+              style={{
+                width: nativeWidth,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+              }}
+            >
+              <BrowserFrame url={url ?? ""}>{children}</BrowserFrame>
+            </div>
           </div>
-        </div>
+        </button>
 
-        {showZoomBtn && (
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="Otvori uvećan prikaz"
-            className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white shadow-lg ring-1 ring-white/20 backdrop-blur transition hover:bg-slate-800 sm:bottom-4 sm:right-4"
-          >
+        {isShrunk && (
+          <div className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white shadow-lg ring-1 ring-white/20 backdrop-blur sm:bottom-4 sm:right-4">
             <ZoomIcon />
             Otvori veći prikaz
-          </button>
+          </div>
         )}
       </div>
 
