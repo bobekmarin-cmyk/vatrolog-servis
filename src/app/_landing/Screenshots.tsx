@@ -1,4 +1,4 @@
-import BrowserFrame from "./BrowserFrame";
+import MockupViewer from "./MockupViewer";
 
 type InspectionMark = "PP" | "UP";
 
@@ -82,39 +82,43 @@ export default function Screenshots() {
 
         <div className="mt-14 grid gap-8 lg:grid-cols-2">
           <div className="lg:col-span-2">
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001">
+            <MockupViewer
+              url="vatrolog.com/work-orders/26-05-001"
+              nativeWidth={1100}
+              caption="Servisni nalog — 5 aparata, napredak i dokumenti"
+            >
               <WorkOrderMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Servisni nalog — 5 aparata, napredak i dokumenti
-            </p>
+            </MockupViewer>
           </div>
 
           <div className="lg:col-span-2">
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001/service/01050003">
+            <MockupViewer
+              url="vatrolog.com/work-orders/26-05-001/service/01050003"
+              nativeWidth={1100}
+              caption="Servisiraj aparat — naljepnica, serviser, dijelovi i dodatne usluge"
+            >
               <ServiceMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Servisiraj aparat — naljepnica, serviser, dijelovi i dodatne usluge
-            </p>
+            </MockupViewer>
           </div>
 
           <div>
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001/otpremnica">
+            <MockupViewer
+              url="vatrolog.com/work-orders/26-05-001/otpremnica"
+              nativeWidth={820}
+              caption="Otpremnica — automatski dokument za predaju aparata kupcu"
+            >
               <DeliveryNoteMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Otpremnica — automatski dokument za predaju aparata kupcu
-            </p>
+            </MockupViewer>
           </div>
 
           <div>
-            <BrowserFrame url="vatrolog.com/work-orders/26-05-001/upisnik">
+            <MockupViewer
+              url="vatrolog.com/work-orders/26-05-001/upisnik"
+              nativeWidth={820}
+              caption="Upisnik — podaci o kupcu, serviseru i svim servisiranim aparatima"
+            >
               <RegisterMock />
-            </BrowserFrame>
-            <p className="mt-3 text-center text-sm font-medium text-slate-200">
-              Upisnik — podaci o kupcu, serviseru i svim servisiranim aparatima
-            </p>
+            </MockupViewer>
           </div>
         </div>
       </div>

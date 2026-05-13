@@ -1,5 +1,5 @@
 import Link from "next/link";
-import BrowserFrame from "./BrowserFrame";
+import MockupViewer from "./MockupViewer";
 import { IconArrowRight, IconCheck, IconFireExt } from "./icons";
 
 export default function Hero() {
@@ -69,9 +69,9 @@ export default function Hero() {
 
         <div className="relative min-w-0">
           <div className="relative rounded-[1.75rem] bg-slate-950 p-2 shadow-2xl shadow-red-900/20 ring-1 ring-slate-900/80">
-            <BrowserFrame url="vatrolog.com/work-orders">
+            <MockupViewer url="vatrolog.com/work-orders" nativeWidth={1100}>
               <HeroMock />
-            </BrowserFrame>
+            </MockupViewer>
           </div>
           <div
             aria-hidden
