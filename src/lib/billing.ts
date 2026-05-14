@@ -1,7 +1,11 @@
 /**
  * SaaS naplata: Stripe (ako je konfiguriran) ili ručni / predračun model.
  *
- * Stripe env varijable (sve opcionalne; ako ikoja nedostaje, fallback na ručni model):
+ * Ručni vs Stripe model:
+ *  - Ako nema STRIPE_SECRET_KEY ili je BILLING_MODE=manual, online Stripe Checkout
+ *    i Customer Portal nisu aktivni (pretplata se vodi ručno / predračunom).
+ *
+ * Stripe env varijable (sve opcionalne u stripe modu):
  *  - STRIPE_SECRET_KEY
  *  - STRIPE_WEBHOOK_SECRET
  *  - STRIPE_PRICE_STARTER  (npr. price_1AbCdE... za mjesečni Starter plan)
@@ -29,6 +33,15 @@ export type PlanDefinition = {
   features: string[];
   stripePriceEnv?: string;
 };
+
+export type BillingMode = "manual" | "stripe";
+
+/** Ručni model: nema Stripe ključa ili eksplicitno BILLING_MODE=manual. */
+export function getBillingMode(): BillingMode {
+  if (process.env.BILLING_MODE?.trim().toLowerCase() === "manual") return "manual";
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) return "manual";
+  return "stripe";
+}
 
 export const PLANS: ReadonlyArray<PlanDefinition> = [
   {
@@ -84,6 +97,7 @@ export function getStripe(): Stripe | null {
 }
 
 export function isStripeEnabled(): boolean {
+  if (getBillingMode() === "manual") return false;
   return !!getStripe();
 }
 

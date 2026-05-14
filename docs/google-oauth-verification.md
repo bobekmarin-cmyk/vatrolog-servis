@@ -16,7 +16,7 @@ Tvoj zadatak je copy-paste u Console + snimanje demo videa po skripti niže.
 | --- | --- |
 | App name | `VatroLog` |
 | User support email | `info@vatrolog.com` |
-| App logo | upload `public/icon-512.png` (ili logo iz brand kita) |
+| App logo | upload `public/icon-512.png` — generira se naredbom `npm run icons:build` iz `public/branding/favicon-source.png` (isti vizual kao favicon u tabu) |
 | Application home page | `https://vatrolog.com` |
 | Application privacy policy link | `https://vatrolog.com/legal/privacy` |
 | Application terms of service link | `https://vatrolog.com/legal/terms` |

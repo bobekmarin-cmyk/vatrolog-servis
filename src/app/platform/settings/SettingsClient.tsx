@@ -447,7 +447,9 @@ function HealthTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Health pregled</h2>
-          <p className="text-sm text-slate-500">DB, vendor Gmail, SMTP fallback i Stripe webhook konfiguracija.</p>
+          <p className="text-sm text-slate-500">
+            Pregled baze, mail sustava i — ako je aktivna — online Stripe naplate (webhook).
+          </p>
         </div>
         <button type="button" className="btn btn-outline px-3" onClick={load} disabled={loading}>
           {loading ? "Učitavam…" : "Osvježi"}
@@ -477,8 +479,12 @@ function HealthTab() {
           />
           <HealthCard
             title="Stripe"
-            ok={!!data.stripe?.configured && !!data.stripe?.webhookConfigured}
-            okLabel="Webhook konfiguriran"
+            ok={!!data.stripe?.ok}
+            okLabel={
+              data.stripe?.mode === "manual"
+                ? "Online Stripe naplata nije u upotrebi"
+                : "Webhook konfiguriran"
+            }
             failLabel={data.stripe?.configured ? "Webhook fali" : "Nije konfiguriran"}
           />
           <HealthCard

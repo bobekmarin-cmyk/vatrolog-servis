@@ -77,7 +77,9 @@ export default function TermsPage() {
 
       <h2>8. Otkaz pretplate i brisanje podataka</h2>
       <p>
-        Kupac u bilo kojem trenutku može otkazati pretplatu putem <a href="/admin/settings/billing">Stripe Customer Portala</a> ili kontaktiranjem podrške.
+        Kupac u bilo kojem trenutku može otkazati pretplatu kontaktiranjem podrške.
+        Ako je za račun omogućena online naplata putem Stripea, otkaz je moguć i putem{" "}
+        <a href="/admin/settings/billing">Stripe Customer Portala</a> (Postavke naplate).
         Nakon otkaza Kupcu se omogućava pristup podacima još 30 dana radi izvoza (DSAR). Nakon toga se podaci trajno brišu s aktivnih sustava i backupa u roku od 90 dana,
         osim ako zakon ne nalaže duže čuvanje.
       </p>

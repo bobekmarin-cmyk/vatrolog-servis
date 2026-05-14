@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { getVendorStatus } from "@/lib/platformGmail";
+import { getBillingMode } from "@/lib/billing";
 
 export async function GET() {
   const ps = await getPlatformSession();
@@ -28,12 +29,20 @@ export async function GET() {
 
   const stripeWebhookConfigured = !!process.env.STRIPE_WEBHOOK_SECRET;
   const stripeConfigured = !!process.env.STRIPE_SECRET_KEY;
+  const billingMode = getBillingMode();
+  const stripeManual = billingMode === "manual";
+  const stripeOk = stripeManual || (stripeConfigured && stripeWebhookConfigured);
 
   return NextResponse.json({
     db: { ok: dbOk, latencyMs: dbLatencyMs },
     vendorGmail: vendor,
     smtp: { configured: smtpConfigured, host: process.env.SMTP_HOST ?? null },
-    stripe: { configured: stripeConfigured, webhookConfigured: stripeWebhookConfigured },
+    stripe: {
+      mode: billingMode,
+      ok: stripeOk,
+      configured: stripeConfigured,
+      webhookConfigured: stripeWebhookConfigured,
+    },
     env: {
       googleClient: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
       vendorFromEmail: process.env.VENDOR_FROM_EMAIL ?? null,

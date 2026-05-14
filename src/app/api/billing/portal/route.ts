@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth";
-import { getStripe, getAppBaseUrl } from "@/lib/billing";
+import { getStripe, getAppBaseUrl, getBillingMode } from "@/lib/billing";
 import { apiHandler } from "@/lib/apiHandler";
 
 export const runtime = "nodejs";
@@ -11,6 +11,9 @@ export const runtime = "nodejs";
  */
 export const POST = apiHandler(async () => {
   const session = await requireAdminSession();
+  if (getBillingMode() === "manual") {
+    return NextResponse.json({ error: "Online Stripe naplata nije u upotrebi." }, { status: 501 });
+  }
   const stripe = getStripe();
   if (!stripe) {
     return NextResponse.json({ error: "Stripe nije konfiguriran." }, { status: 501 });

@@ -57,6 +57,7 @@ lokalno s prod env-om kao smoke test.
 
 ## 7. Pretplata i blokiranje
 
+- [ ] **Stripe je opcionalan:** prvi launch može ići na ručni model (`BILLING_MODE=manual` u `.env` ili bez `STRIPE_SECRET_KEY`). Webhook i price ID-jeve konfiguriraj tek kad uključuješ online naplatu.
 - [ ] Test: postavi `activeUntil` u prošlost preko platform-a → svi tenant korisnici dobiju force-logout (sessionsValidAfter bumpan), a sljedeći login vodi na `/subscription-expired`.
 - [ ] Test: `blocked = true` → middleware vraća redirect/403 i tenant ne može pristupiti.
 - [ ] Cron `subscription-reminders` šalje testni mail "ističe za N dana" (provjeri `EmailLog`).

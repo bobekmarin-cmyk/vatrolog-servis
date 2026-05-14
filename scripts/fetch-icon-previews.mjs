@@ -13,7 +13,7 @@ async function grab(path, filename) {
   if (!res.ok) throw new Error(`${url} -> ${res.status}`);
   const ct = res.headers.get("content-type") ?? "";
   if (!ct.includes("image/png")) {
-    throw new Error(`${url} -> content-type: ${ct} (očekivam image/png; provjeri middleware /icon)`);
+    throw new Error(`${url} -> content-type: ${ct} (očekivam image/png; provjeri middleware /icon.png)`);
   }
   const buf = Buffer.from(await res.arrayBuffer());
   mkdirSync(outDir, { recursive: true });
@@ -23,8 +23,8 @@ async function grab(path, filename) {
 }
 
 try {
-  await grab("/icon", "favicon-preview-32.png");
-  await grab("/apple-icon", "apple-touch-preview-180.png");
+  await grab("/icon.png", "favicon-preview-32.png");
+  await grab("/apple-icon.png", "apple-touch-preview-180.png");
 } catch (e) {
   console.error(e.message);
   console.error("\nPokreni dev server: npm run dev\nZatim: node scripts/fetch-icon-previews.mjs");
