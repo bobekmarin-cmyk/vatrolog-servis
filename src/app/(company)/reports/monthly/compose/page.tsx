@@ -70,7 +70,13 @@ export default async function ComposeMailPage({
   const isOverdue = type === "overdue";
   const defaultTemplateType = isOverdue ? "AFTER_EXPIRY" : "BEGINNING";
 
-  const templates = await ensureDefaultTemplates(session.companyId);
+  const allTemplates = await ensureDefaultTemplates(session.companyId);
+  // U compose flow-u za mjesečne podsjetnike biramo samo predloške s placeholderom {mjesec}
+  // (BEGINNING/BEFORE_EXPIRY/AFTER_EXPIRY); REGISTER/RECEIPT/DELIVERY_NOTE su PDF predlošci
+  // za radne naloge i ne pripadaju ovdje.
+  const templates = allTemplates.filter((t) =>
+    t.type === "BEGINNING" || t.type === "BEFORE_EXPIRY" || t.type === "AFTER_EXPIRY",
+  );
 
   return (
     <main className="max-w-3xl mx-auto space-y-4">

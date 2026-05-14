@@ -13,16 +13,25 @@ import {
   renderSubject,
   renderTemplateHtml,
   type RenderVars,
+  type TemplateType,
 } from "@/lib/emailTemplates";
 
 export const runtime = "nodejs";
 
 type KindKey = "primka" | "register" | "delivery-note";
 
-const KIND_META: Record<KindKey, { label: string; filename: string; slug: string }> = {
-  primka: { label: "Primka", filename: "primka", slug: "primka" },
-  register: { label: "Upisnik", filename: "upisnik", slug: "register" },
-  "delivery-note": { label: "Otpremnica", filename: "otpremnica", slug: "delivery-note" },
+const KIND_META: Record<
+  KindKey,
+  { label: string; filename: string; slug: string; templateType: TemplateType }
+> = {
+  primka: { label: "Primka", filename: "primka", slug: "primka", templateType: "RECEIPT" },
+  register: { label: "Upisnik", filename: "upisnik", slug: "register", templateType: "REGISTER" },
+  "delivery-note": {
+    label: "Otpremnica",
+    filename: "otpremnica",
+    slug: "delivery-note",
+    templateType: "DELIVERY_NOTE",
+  },
 };
 
 function isKind(x: unknown): x is KindKey {
@@ -99,40 +108,29 @@ export async function POST(req: NextRequest) {
 
   const custName = customerDisplayName(order.customer);
 
-  let subject: string;
-  let html: string;
-  if (kind === "register") {
-    const templates = await ensureDefaultTemplates(session.companyId);
-    const tpl = templates.find((t) => t.type === "REGISTER");
-    if (!tpl) {
-      return NextResponse.json({ error: "Predložak za upisnik nije pronađen" }, { status: 500 });
-    }
-    const servicedCount = await prisma.workOrderItem.count({
-      where: {
-        workOrderId: order.id,
-        companyId: session.companyId,
-        isPlaceholder: false,
-        periodicDone: true,
-        extinguisherId: { not: null },
-      },
-    });
-    const vars: RenderVars = {
-      mjesec: "",
-      broj: servicedCount,
-      kupac: custName,
-      tvrtka: company.name,
-      nalog: order.orderNumber,
-    };
-    subject = renderSubject(tpl, vars);
-    html = renderTemplateHtml(tpl, vars);
-  } else {
-    subject = `${meta.label} – nalog ${order.orderNumber}`;
-    html = `
-      <p>Poštovani,</p>
-      <p>u prilogu Vam šaljemo dokument <strong>${meta.label}</strong> za radni nalog <strong>${order.orderNumber}</strong>.</p>
-      <p>Srdačan pozdrav,<br/>${company.name}</p>
-    `;
+  // Sva tri tipa (RECEIPT/REGISTER/DELIVERY_NOTE) idu kroz konfigurabilan
+  // predložak iz EmailTemplate tablice — admin može mijenjati tekst u
+  // Postavke → E-mail predlošci.
+  const templates = await ensureDefaultTemplates(session.companyId);
+  const tpl = templates.find((t) => t.type === meta.templateType);
+  if (!tpl) {
+    return NextResponse.json(
+      { error: `Predložak za "${meta.label}" nije pronađen` },
+      { status: 500 },
+    );
   }
+
+  const broj = await countItemsForKind(session.companyId, order.id, kind);
+
+  const vars: RenderVars = {
+    mjesec: "",
+    broj,
+    kupac: custName,
+    tvrtka: company.name,
+    nalog: order.orderNumber,
+  };
+  const subject = renderSubject(tpl, vars);
+  const html = renderTemplateHtml(tpl, vars);
 
   const pdfFilename = `${meta.filename}_${order.orderNumber.replaceAll("/", "-")}.pdf`;
   const monthTag = `WO-${order.orderNumber}`;
@@ -183,4 +181,39 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Vraća broj relevantnih aparata za pojedini dokument:
+ *  - REGISTER (upisnik) — broj realno servisiranih aparata (periodicDone=true).
+ *  - RECEIPT  (primka)  — broj zaprimljenih aparata (sve realne stavke naloga).
+ *  - DELIVERY_NOTE (otpremnica) — broj otpremljenih aparata
+ *    (sve stavke naloga, isto pravilo kao primka — fizički su to isti aparati
+ *    koji su se vratili nakon servisa).
+ */
+async function countItemsForKind(
+  companyId: string,
+  workOrderId: string,
+  kind: KindKey,
+): Promise<number> {
+  if (kind === "register") {
+    return prisma.workOrderItem.count({
+      where: {
+        workOrderId,
+        companyId,
+        isPlaceholder: false,
+        periodicDone: true,
+        extinguisherId: { not: null },
+      },
+    });
+  }
+
+  return prisma.workOrderItem.count({
+    where: {
+      workOrderId,
+      companyId,
+      isPlaceholder: false,
+      extinguisherId: { not: null },
+    },
+  });
 }

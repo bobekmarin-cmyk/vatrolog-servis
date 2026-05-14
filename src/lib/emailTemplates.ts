@@ -2,8 +2,19 @@ import { prisma } from "@/lib/prisma";
 import { renderEmailShell } from "@/lib/email/layout";
 import type { EmailBranding } from "@/lib/email/components";
 
-export const TEMPLATE_TYPES = ["BEGINNING", "BEFORE_EXPIRY", "AFTER_EXPIRY", "REGISTER"] as const;
+export const TEMPLATE_TYPES = [
+  "BEGINNING",
+  "BEFORE_EXPIRY",
+  "AFTER_EXPIRY",
+  "REGISTER",
+  "RECEIPT",
+  "DELIVERY_NOTE",
+] as const;
 export type TemplateType = (typeof TEMPLATE_TYPES)[number];
+
+/** Predlošci koji se koriste za slanje PDF priloga (radni nalog dokumenti). */
+export const PDF_TEMPLATE_TYPES = ["REGISTER", "RECEIPT", "DELIVERY_NOTE"] as const;
+export type PdfTemplateType = (typeof PDF_TEMPLATE_TYPES)[number];
 
 export interface TemplateFields {
   type: string;
@@ -65,7 +76,33 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
       "u prilogu Vam šaljemo upisnik za radni nalog {nalog}.",
     calloutText: "Upisnik sadrži {broj} servisiranih aparata.",
     closingText:
-      "Molimo Vas da pregledajte upisnik i kontaktirate nas u slučaju pitanja.",
+      "Molimo Vas da pregledate upisnik i kontaktirate nas u slučaju pitanja.",
+    footerNote:
+      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+  },
+  RECEIPT: {
+    type: "RECEIPT",
+    label: "Slanje primke",
+    subject: "Primka - nalog {nalog}",
+    greeting: "Poštovani,",
+    bodyText:
+      "u prilogu Vam šaljemo primku za radni nalog {nalog} kojom potvrđujemo zaprimanje Vaših vatrogasnih aparata na servis.",
+    calloutText: "Zaprimljeno aparata: {broj}",
+    closingText:
+      "O statusu servisa obavijestit ćemo Vas na vrijeme. Za sva pitanja stojimo Vam na raspolaganju.",
+    footerNote:
+      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+  },
+  DELIVERY_NOTE: {
+    type: "DELIVERY_NOTE",
+    label: "Slanje otpremnice",
+    subject: "Otpremnica - nalog {nalog}",
+    greeting: "Poštovani,",
+    bodyText:
+      "u prilogu Vam šaljemo otpremnicu za radni nalog {nalog} kojom potvrđujemo isporuku servisiranih vatrogasnih aparata.",
+    calloutText: "Otpremljeno aparata: {broj}",
+    closingText:
+      "Molimo Vas da pregledate priloženi dokument. Za sva pitanja ili eventualne reklamacije stojimo Vam na raspolaganju.",
     footerNote:
       "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
   },
@@ -117,6 +154,27 @@ export interface RenderVars {
   nalog?: string;
 }
 
+/** Mapping tipa predloška → naslov i labela koji se prikazuju u headeru maila. */
+const TEMPLATE_HEADER: Record<string, { heading: string; label: string }> = {
+  REGISTER: {
+    heading: "Upisnik servisiranih vatrogasnih aparata",
+    label: "Upisnik",
+  },
+  RECEIPT: {
+    heading: "Primka vatrogasnih aparata",
+    label: "Primka",
+  },
+  DELIVERY_NOTE: {
+    heading: "Otpremnica vatrogasnih aparata",
+    label: "Otpremnica",
+  },
+};
+
+const DEFAULT_HEADER = {
+  heading: "Obavijest o servisu vatrogasnih aparata",
+  label: "Obavijest",
+};
+
 /**
  * Renderira tenant → kupac mail koristeći zajednički `renderEmailShell` iz
  * `src/lib/email/layout.ts`. Sva polja iz baze (greeting, bodyText, callout,
@@ -124,8 +182,9 @@ export interface RenderVars {
  * vizualni shell kao i vendor mailovi (PDF-style dizajn).
  *
  * `vars.tvrtka` se koristi kao `branding.fromName` u headeru. Brand boja je
- * fiksno crvena za sve obavijesti (jednako kao u PDF-u); `REGISTER` može
- * dodatno koristiti `documentLabel` da naglasi da je u prilogu upisnik.
+ * fiksno crvena za sve obavijesti (jednako kao u PDF-u). PDF predlošci
+ * (REGISTER/RECEIPT/DELIVERY_NOTE) koriste vlastiti heading + documentLabel
+ * preko `TEMPLATE_HEADER` mape.
  */
 export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): string {
   const greeting = replacePlaceholders(template.greeting, vars);
@@ -133,8 +192,6 @@ export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): 
   const callout = replacePlaceholders(template.calloutText, vars);
   const closing = replacePlaceholders(template.closingText, vars);
   const footer = template.footerNote ? replacePlaceholders(template.footerNote, vars) : null;
-
-  const isRegister = template.type === "REGISTER";
 
   const branding: EmailBranding = {
     fromName: vars.tvrtka,
@@ -144,12 +201,10 @@ export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): 
     brandColor: "#dc2626",
   };
 
-  const subjectForHeading = isRegister
-    ? "Upisnik servisiranih vatrogasnih aparata"
-    : "Obavijest o servisu vatrogasnih aparata";
+  const header = TEMPLATE_HEADER[template.type] ?? DEFAULT_HEADER;
 
   const { html } = renderEmailShell({
-    subject: subjectForHeading,
+    subject: header.heading,
     fields: {
       greeting,
       bodyText: body,
@@ -158,7 +213,7 @@ export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): 
       footerNote: footer,
     },
     branding,
-    documentLabel: isRegister ? "Upisnik" : "Obavijest",
+    documentLabel: header.label,
   });
 
   return html;

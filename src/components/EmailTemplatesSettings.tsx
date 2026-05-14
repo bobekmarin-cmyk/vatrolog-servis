@@ -19,12 +19,21 @@ interface Props {
   templates: Template[];
 }
 
-const TYPE_ORDER = ["BEGINNING", "BEFORE_EXPIRY", "AFTER_EXPIRY", "REGISTER"];
+const TYPE_ORDER = [
+  "BEGINNING",
+  "BEFORE_EXPIRY",
+  "AFTER_EXPIRY",
+  "RECEIPT",
+  "REGISTER",
+  "DELIVERY_NOTE",
+];
 const PLACEHOLDERS_BY_TYPE: Record<string, string[]> = {
   BEGINNING: ["{mjesec}", "{broj}", "{kupac}", "{tvrtka}"],
   BEFORE_EXPIRY: ["{mjesec}", "{broj}", "{kupac}", "{tvrtka}"],
   AFTER_EXPIRY: ["{mjesec}", "{broj}", "{kupac}", "{tvrtka}"],
   REGISTER: ["{nalog}", "{broj}", "{kupac}", "{tvrtka}"],
+  RECEIPT: ["{nalog}", "{broj}", "{kupac}", "{tvrtka}"],
+  DELIVERY_NOTE: ["{nalog}", "{broj}", "{kupac}", "{tvrtka}"],
 };
 const THEME_BY_TYPE: Record<string, { borderColor: string; bgColor: string; textColor: string; headerText: string }> = {
   BEGINNING: {
@@ -46,10 +55,22 @@ const THEME_BY_TYPE: Record<string, { borderColor: string; bgColor: string; text
     headerText: "Obavijest o servisu vatrogasnih aparata",
   },
   REGISTER: {
-    borderColor: "border-blue-600",
-    bgColor: "bg-blue-50",
-    textColor: "text-blue-900",
+    borderColor: "border-red-600",
+    bgColor: "bg-red-50",
+    textColor: "text-red-900",
     headerText: "Upisnik servisiranih vatrogasnih aparata",
+  },
+  RECEIPT: {
+    borderColor: "border-red-600",
+    bgColor: "bg-red-50",
+    textColor: "text-red-900",
+    headerText: "Primka vatrogasnih aparata",
+  },
+  DELIVERY_NOTE: {
+    borderColor: "border-red-600",
+    bgColor: "bg-red-50",
+    textColor: "text-red-900",
+    headerText: "Otpremnica vatrogasnih aparata",
   },
 };
 
