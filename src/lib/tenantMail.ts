@@ -38,6 +38,14 @@ export type TenantMailStatus = {
   activeProvider: MailProvider | null;
   /** Ekspliticno postavljen aktivni provider (može biti null = auto). */
   preferredProvider: MailProvider | null;
+  /**
+   * Display ime u "From" headeru, vrijedi za oba providera (Gmail i SMTP).
+   * Ako je null, fallback na naziv tvrtke (Company.name).
+   * Pohranjuje se u Company.smtpFromName (povijesno ime kolone, danas se koristi kao "displayName").
+   */
+  displayName: string | null;
+  /** Naziv tvrtke (fallback za displayName). */
+  companyName: string;
   gmail: {
     configured: boolean;
     email: string | null;
@@ -78,6 +86,7 @@ export async function getTenantMailStatus(companyId: string): Promise<TenantMail
   const company = await prisma.company.findUnique({
     where: { id: companyId },
     select: {
+      name: true,
       gmailEmail: true,
       gmailConnectedAt: true,
       gmailAccessToken: true,
@@ -110,6 +119,8 @@ export async function getTenantMailStatus(companyId: string): Promise<TenantMail
     configured: gmailConfigured || smtpConfigured,
     activeProvider: active,
     preferredProvider: preferred,
+    displayName: company.smtpFromName?.trim() || null,
+    companyName: company.name ?? "",
     gmail: {
       configured: gmailConfigured,
       email: company.gmailEmail ?? null,
@@ -133,6 +144,8 @@ function emptyStatus(): TenantMailStatus {
     configured: false,
     activeProvider: null,
     preferredProvider: null,
+    displayName: null,
+    companyName: "",
     gmail: { configured: false, email: null, connectedAt: null },
     smtp: {
       configured: false,
@@ -145,6 +158,23 @@ function emptyStatus(): TenantMailStatus {
       connectedAt: null,
     },
   };
+}
+
+/**
+ * Postavlja "Naziv pošiljatelja" za tenant — vrijedi kao display name
+ * u "From" headeru za Gmail i SMTP. Reciklira `Company.smtpFromName`.
+ * `displayName=null` znači "vrati na default = naziv tvrtke".
+ */
+export async function setTenantDisplayName(
+  companyId: string,
+  displayName: string | null,
+): Promise<void> {
+  const value = displayName?.trim();
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { smtpFromName: value && value.length > 0 ? value : null },
+  });
+  invalidateTransporter(companyId);
 }
 
 function normalizePreferred(raw: string | null | undefined): MailProvider | null {
@@ -396,6 +426,7 @@ async function sendViaGmail(input: TenantSendInput): Promise<TenantSendResult> {
       gmailAccessToken: true,
       gmailRefreshToken: true,
       name: true,
+      smtpFromName: true,
     },
   });
 
@@ -410,20 +441,23 @@ async function sendViaGmail(input: TenantSendInput): Promise<TenantSendResult> {
     throw new TenantMailSendError("GMAIL", "Greška dekriptiranja Gmail tokena", err);
   }
 
-  const fromAddress = `${company.name} <${company.gmailEmail}>`;
+  // `smtpFromName` reciklira se kao zajednički "display name" za Gmail i SMTP
+  // (postavlja se u Postavke → Postavke maila → polje "Naziv pošiljatelja").
+  const displayName = (company.smtpFromName ?? "").trim() || company.name;
+  const fromAddress = `${encodeMailDisplayName(displayName)} <${company.gmailEmail}>`;
 
   const send = async (token: string) => {
     if (input.attachment) {
       await sendGmailWithAttachment(
         token,
-        company.gmailEmail!,
+        fromAddress,
         input.to,
         input.subject,
         input.html,
         input.attachment,
       );
     } else {
-      await sendGmail(token, company.gmailEmail!, input.to, input.subject, input.html);
+      await sendGmail(token, fromAddress, input.to, input.subject, input.html);
     }
   };
 
@@ -454,6 +488,24 @@ async function sendViaGmail(input: TenantSendInput): Promise<TenantSendResult> {
       throw new TenantMailSendError("GMAIL", refreshMsg, refreshErr);
     }
   }
+}
+
+/**
+ * Sigurno enkodira display ime za RFC 5322 "From" header.
+ * Ako sadrži non-ASCII (č, ć, š, …) ili specijalne znakove (`,`, `;`, `<`, `>`),
+ * koristi MIME Q-encoded oblik. Inače wrapa u double-quote da Gmail
+ * "Tomislav Bobek" prikaže punim imenom umjesto da padne na lokalni dio adrese.
+ */
+function encodeMailDisplayName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "";
+  const isAscii = /^[\x20-\x7E]*$/.test(trimmed);
+  if (!isAscii) {
+    return `=?UTF-8?B?${Buffer.from(trimmed).toString("base64")}?=`;
+  }
+  // Quote string ako sadrži znakove koji bi inače razbili header.
+  const needsQuote = /[",;<>()@\\\/]/.test(trimmed);
+  return needsQuote ? `"${trimmed.replace(/"/g, '\\"')}"` : trimmed;
 }
 
 async function sendViaSmtp(input: TenantSendInput): Promise<TenantSendResult> {

@@ -10,6 +10,13 @@ export type MailIntegrationsStatus = {
   configured: boolean;
   activeProvider: Provider | null;
   preferredProvider: Provider | null;
+  /**
+   * Display ime u From headeru (vrijedi za Gmail i SMTP).
+   * Ako je null, koristi se naziv tvrtke (`companyName`).
+   */
+  displayName: string | null;
+  /** Naziv tvrtke (fallback za displayName). */
+  companyName: string;
   gmail: {
     configured: boolean;
     email: string | null;
@@ -139,9 +146,21 @@ export default function MailIntegrationsSection({ initial }: Props) {
   }
 
   const bothConfigured = status.gmail.configured && status.smtp.configured;
+  const anyConfigured = status.gmail.configured || status.smtp.configured;
 
   return (
     <div className="space-y-6">
+      {anyConfigured && (
+        <DisplayNameSection
+          initial={status.displayName}
+          companyName={status.companyName}
+          onSaved={async () => {
+            await refreshStatus();
+            router.refresh();
+          }}
+        />
+      )}
+
       {bothConfigured && (
         <ActiveProviderPicker
           status={status}
@@ -175,6 +194,81 @@ export default function MailIntegrationsSection({ initial }: Props) {
           onDisconnect={handleDisconnectSmtp}
         />
       </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   DISPLAY NAME (zajednički "From" naziv za Gmail i SMTP)
+============================================================ */
+
+function DisplayNameSection({
+  initial,
+  companyName,
+  onSaved,
+}: {
+  initial: string | null;
+  companyName: string;
+  onSaved: () => Promise<void> | void;
+}) {
+  const dialog = useDialog();
+  const [value, setValue] = useState(initial ?? "");
+  const [saving, setSaving] = useState(false);
+  const trimmed = value.trim();
+  const dirty = (initial ?? "") !== trimmed;
+  const effectivePreview = trimmed || companyName || "Naziv tvrtke";
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/mail/display-name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName: trimmed }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        await dialog.alert({
+          title: "Spremanje nije uspjelo",
+          message: (data?.error ?? "Nepoznata greška.") as string,
+          variant: "danger",
+        });
+        return;
+      }
+      await onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="text-sm font-semibold text-slate-700">Naziv pošiljatelja</div>
+      <p className="mt-1 text-xs text-slate-500">
+        Ime koje primatelji vide u Inboxu uz e-mail adresu (npr. <em>Tomislav Bobek</em> ili
+        <em> FOSSLIN servis</em>). Vrijedi za Gmail i SMTP. Ako ostavite prazno, koristi se naziv
+        tvrtke.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          className="input flex-1"
+          placeholder={companyName || "npr. Tomislav Bobek"}
+          maxLength={80}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <button
+          type="button"
+          className="btn btn-primary px-4"
+          onClick={handleSave}
+          disabled={saving || !dirty}
+        >
+          {saving ? "Spremam…" : "Spremi"}
+        </button>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">
+        Pretpregled u Inboxu: <span className="font-medium text-slate-700">{effectivePreview}</span>
+      </p>
     </div>
   );
 }
