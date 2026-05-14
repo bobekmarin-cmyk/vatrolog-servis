@@ -11,7 +11,6 @@
 
 import { EMAIL_COLORS, EMAIL_FONTS, EMAIL_MAX_WIDTH, EMAIL_SIZES } from "./design";
 import {
-  emailAccentBar,
   emailCallout,
   emailFooter,
   emailHeader,
@@ -88,7 +87,6 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
     `style="max-width:${EMAIL_MAX_WIDTH}px;width:100%;background:${EMAIL_COLORS.surface};border:1px solid ${EMAIL_COLORS.border};border-radius:8px;">` +
     `<tr><td style="padding:28px 32px 24px 32px;">` +
     emailHeader(branding, documentLabel) +
-    emailAccentBar(branding.brandColor) +
     emailHeading(escapeHtml(subject)) +
     innerContent +
     emailFooter(branding, fields.footerNote ?? null) +

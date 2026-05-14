@@ -25,8 +25,8 @@ export function emailBrandTitle(name: string, brandColor: string): string {
   if (trimmed.toLowerCase() === "vatrolog") {
     return (
       `<div style="font-family:${EMAIL_FONTS.body};font-weight:800;font-size:22px;letter-spacing:-0.01em;line-height:1;">` +
-      `<span style="color:${EMAIL_COLORS.text};">Vatro</span>` +
-      `<span style="color:${brandColor};">Log</span>` +
+      `<span style="color:${EMAIL_COLORS.text};font-weight:800;">Vatro</span>` +
+      `<span style="color:${brandColor};font-weight:800;">Log</span>` +
       `</div>`
     );
   }
@@ -37,21 +37,20 @@ export function emailBrandTitle(name: string, brandColor: string): string {
   );
 }
 
-/** Header bar: tvrtka lijevo, brand desno + tanki donji border (`#e2e8f0`). */
+/** Jedan brand red (slika ili tipografski naslov) + debela crvena crta ispod — bez duplog logotipa. */
 export function emailHeader(branding: EmailBranding, documentLabel?: string): string {
-  const logo = branding.logoUrl
+  const logoBlock = branding.logoUrl
     ? `<img src="${escapeHtmlLite(branding.logoUrl)}" alt="${escapeHtmlLite(branding.fromName)}" height="28" style="height:28px;display:block;border:0;outline:none;" />`
+    : emailBrandTitle(branding.fromName, branding.brandColor);
+
+  const labelBlock = documentLabel
+    ? `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textSubtle};text-transform:uppercase;letter-spacing:0.6px;font-weight:600;margin-bottom:6px;">${escapeHtmlLite(documentLabel)}</div>`
     : "";
-  const left = documentLabel
-    ? `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textSubtle};text-transform:uppercase;letter-spacing:0.6px;font-weight:600;">${escapeHtmlLite(documentLabel)}</div>` +
-      `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.subheading}px;color:${EMAIL_COLORS.text};font-weight:600;margin-top:2px;">${escapeHtmlLite(branding.fromName)}</div>`
-    : `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.subheading}px;color:${EMAIL_COLORS.text};font-weight:600;">${escapeHtmlLite(branding.fromName)}</div>`;
 
   return (
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-bottom:1px solid ${EMAIL_COLORS.border};padding-bottom:14px;margin-bottom:18px;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-bottom:4px solid ${branding.brandColor};padding-bottom:14px;margin-bottom:18px;">` +
     `<tr>` +
-    `<td valign="top" style="padding:0;">${logo}${left}</td>` +
-    `<td valign="top" align="right" style="padding:0;">${emailBrandTitle(branding.fromName, branding.brandColor)}</td>` +
+    `<td valign="top" style="padding:0;">${labelBlock}${logoBlock}</td>` +
     `</tr>` +
     `</table>`
   );
@@ -86,14 +85,19 @@ export function emailCallout(html: string, brandColor: string = EMAIL_COLORS.acc
   );
 }
 
-/** CTA gumb (red-600 bg, bijeli tekst, mali radius). Bullet-proof za Outlook (mso fallback). */
+/** CTA gumb — tamnija pozadina, veći font i `bgcolor` na ćeliji radi čitljivosti u Outlooku/Gmailu. */
 export function emailButton(input: { href: string; label: string; brandColor?: string }): string {
-  const bg = input.brandColor ?? EMAIL_COLORS.accent;
+  const raw = (input.brandColor ?? EMAIL_COLORS.accent).trim();
+  const useDefaultRed = !input.brandColor || raw.toLowerCase() === EMAIL_COLORS.accent.toLowerCase();
+  const bg = useDefaultRed ? EMAIL_COLORS.accentDark : raw;
+  const bgAttr = bg.replace("#", "").toUpperCase();
   return (
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 8px 0;border-collapse:separate;">` +
-    `<tr><td align="center" style="border-radius:6px;background:${bg};">` +
+    `<tr><td align="center" bgcolor="#${bgAttr}" style="border-radius:8px;background-color:${bg};mso-padding-alt:0;">` +
     `<a href="${escapeHtmlLite(input.href)}" target="_blank" rel="noopener" ` +
-    `style="display:inline-block;font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.body}px;font-weight:600;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:6px;line-height:1.2;">` +
+    `style="display:inline-block;font-family:${EMAIL_FONTS.body};font-size:16px;font-weight:700;color:#ffffff !important;` +
+    `text-decoration:none;padding:14px 28px;border-radius:8px;line-height:1.35;` +
+    `background-color:${bg};border:1px solid #f87171;letter-spacing:0.02em;">` +
     `${escapeHtmlLite(input.label)}</a></td></tr></table>`
   );
 }
