@@ -230,13 +230,11 @@ export async function middleware(req: NextRequest) {
     const ps = await readPlatformSession(req);
 
     // Public platform rute
+    // /platform/login: NE preusmjeravamo na companies samo na temelju JWT cookiea
+    // (DB user može biti obrisan/deaktiviran → nastao bi redirect loop sa
+    // requirePlatformSession() na /platform/companies koja vraća na /platform/login).
+    // Konačnu DB-validaciju i preusmjeravanje radi sama login stranica.
     if (pathname === "/platform/login" || pathname.startsWith("/api/platform/auth/")) {
-      // ako je već ulogiran, preskoči login
-      if (pathname === "/platform/login" && ps) {
-        const url = req.nextUrl.clone();
-        url.pathname = "/platform/companies";
-        return NextResponse.redirect(url);
-      }
       return NextResponse.next();
     }
 
