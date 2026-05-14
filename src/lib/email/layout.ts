@@ -71,6 +71,17 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
     ? `<div style="display:none!important;visibility:hidden;mso-hide:all;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(preheader)}</div>`
     : "";
 
+  // Style tag normalizira font (Gmail web/Apple Mail/Live preview u admin sučelju).
+  // Outlook desktop ignorira <style> i pada na inline font-family na svakom elementu.
+  // CTA gumb: forsira bijeli tekst i bez podvlake (Gmail Web inače `<a>` linkovima
+  // primijeni plavi tekst unatoč inline color:#fff !important).
+  const styleBlock =
+    `<style type="text/css">` +
+    `body,table,td,p,h1,h2,h3,span,a,div{font-family:${EMAIL_FONTS.body};}` +
+    `a.vbtn,a.vbtn:link,a.vbtn:visited,a.vbtn:hover,a.vbtn:active,` +
+    `a.vbtn span{color:#ffffff !important;text-decoration:none !important;}` +
+    `</style>`;
+
   const html =
     `<!DOCTYPE html>` +
     `<html lang="hr"><head>` +
@@ -78,6 +89,7 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
     `<meta name="viewport" content="width=device-width,initial-scale=1.0" />` +
     `<meta name="x-apple-disable-message-reformatting" />` +
     `<title>${escapeHtml(subject)}</title>` +
+    styleBlock +
     `</head>` +
     `<body style="margin:0;padding:0;background:${EMAIL_COLORS.pageBg};font-family:${EMAIL_FONTS.body};color:${EMAIL_COLORS.text};">` +
     preheaderHtml +

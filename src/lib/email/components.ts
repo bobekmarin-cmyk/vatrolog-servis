@@ -85,7 +85,14 @@ export function emailCallout(html: string, brandColor: string = EMAIL_COLORS.acc
   );
 }
 
-/** CTA gumb — tamnija pozadina, veći font i `bgcolor` na ćeliji radi čitljivosti u Outlooku/Gmailu. */
+/**
+ * CTA gumb — pouzdano bijeli tekst na crvenoj pozadini u Gmailu, Outlooku i Apple Mailu.
+ *
+ * Gmail Web ima jaki user-agent stylesheet koji `<a>` linkove unutar mail body-a
+ * forsira na plavu boju i underline, ignoriraj inline `color:#fff !important`.
+ * Trik: tekst je u `<span>` unutar `<a>` — Gmail-ov override gađa `<a>`, a `<span>`
+ * uvijek dobije naš style. Bez tankog crvenog border-a (slabi vizualni kontrast).
+ */
 export function emailButton(input: { href: string; label: string; brandColor?: string }): string {
   const raw = (input.brandColor ?? EMAIL_COLORS.accent).trim();
   const useDefaultRed = !input.brandColor || raw.toLowerCase() === EMAIL_COLORS.accent.toLowerCase();
@@ -94,11 +101,13 @@ export function emailButton(input: { href: string; label: string; brandColor?: s
   return (
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 8px 0;border-collapse:separate;">` +
     `<tr><td align="center" bgcolor="#${bgAttr}" style="border-radius:8px;background-color:${bg};mso-padding-alt:0;">` +
-    `<a href="${escapeHtmlLite(input.href)}" target="_blank" rel="noopener" ` +
-    `style="display:inline-block;font-family:${EMAIL_FONTS.body};font-size:16px;font-weight:700;color:#ffffff !important;` +
-    `text-decoration:none;padding:14px 28px;border-radius:8px;line-height:1.35;` +
-    `background-color:${bg};border:1px solid #f87171;letter-spacing:0.02em;">` +
-    `${escapeHtmlLite(input.label)}</a></td></tr></table>`
+    `<a class="vbtn" href="${escapeHtmlLite(input.href)}" target="_blank" rel="noopener" ` +
+    `style="display:inline-block;background-color:${bg};border-radius:8px;` +
+    `padding:14px 28px;text-decoration:none;border:0;line-height:1;color:#ffffff;">` +
+    `<span style="font-family:${EMAIL_FONTS.body};font-size:16px;font-weight:700;` +
+    `color:#ffffff;text-decoration:none;letter-spacing:0.02em;line-height:1;display:inline-block;">` +
+    `${escapeHtmlLite(input.label)}</span>` +
+    `</a></td></tr></table>`
   );
 }
 
