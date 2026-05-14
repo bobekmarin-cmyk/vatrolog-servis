@@ -38,13 +38,6 @@ function isoWeekNumber(date: Date): number {
   return Math.ceil(((d.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7);
 }
 
-const HR_LONG_DATE = new Intl.DateTimeFormat("hr-HR", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
 const HR_SHORT_DATE = new Intl.DateTimeFormat("hr-HR", {
   day: "numeric",
   month: "numeric",
@@ -289,18 +282,13 @@ export default async function DashboardPage() {
   });
 
   const pct = totalInService > 0 ? Math.round((servicedCount / totalInService) * 100) : 0;
-  const todayLabelLong = HR_LONG_DATE.format(now);
 
   return (
     <main className="space-y-6">
-      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-red-600">
-            Pregled servisa
-          </div>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500 first-letter:uppercase">{todayLabelLong}</p>
-        </div>
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-sm font-semibold uppercase tracking-wider text-red-600">
+          Pregled servisa
+        </h1>
         <div className="flex flex-wrap gap-2">
           <Link className="btn btn-outline px-3 text-sm" href="/work-orders">
             Svi nalozi
