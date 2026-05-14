@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useDialog } from "@/components/ui/useDialog";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type Props = {
   oib: string;
@@ -16,6 +17,7 @@ type Props = {
 
 export default function CompanySettingsForm(props: Props) {
   const dialog = useDialog();
+  const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -31,7 +33,9 @@ export default function CompanySettingsForm(props: Props) {
         body: fd,
       });
 
-      const data = (await res.json().catch(() => null)) as null | { error?: string; redirectTo?: string };
+      const data = (await res.json().catch(() => null)) as
+        | null
+        | { error?: string; redirectTo?: string | null; justCompletedSetup?: boolean };
       if (!res.ok) {
         await dialog.alert({
           title: "Spremanje nije uspjelo",
@@ -41,12 +45,14 @@ export default function CompanySettingsForm(props: Props) {
         return;
       }
 
-      const redirectTo = (data?.redirectTo ?? "").trim();
+      const redirectTo = (data?.redirectTo ?? "").toString().trim();
       if (redirectTo) {
+        showToast("Postavke spremljene. Preusmjeravam vas na Dashboard…", "success");
         window.location.href = redirectTo;
-      } else {
-        window.location.reload();
+        return;
       }
+
+      showToast("Postavke spremljene.", "success");
     } catch {
       await dialog.alert({
         title: "Spremanje nije uspjelo",

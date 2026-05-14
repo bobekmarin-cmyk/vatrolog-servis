@@ -25,6 +25,8 @@ export async function POST(req: Request) {
   if (!email.includes("@")) return badRequest("E-mail nije ispravan.");
   if (!phone) return badRequest("Kontakt broj je obavezan.");
 
+  const wasSetupComplete = session.setupComplete === true;
+
   const company = await prisma.company.update({
     where: { id: session.companyId },
     data: { street, city, postalCode, iban, email, phone },
@@ -47,7 +49,15 @@ export async function POST(req: Request) {
     serviceLocationId: session.serviceLocationId ?? null,
   });
 
-  const res = NextResponse.json({ ok: true, redirectTo: setupComplete ? "/" : "/admin/settings" });
+  // Inicijalni setup (prvi put da je sve popunjeno) → preusmjeri admina na dashboard.
+  // Obični edit → ostani na postavkama, front prikazuje toast "Postavke spremljene".
+  const justCompletedSetup = setupComplete && !wasSetupComplete;
+  const res = NextResponse.json({
+    ok: true,
+    setupComplete,
+    justCompletedSetup,
+    redirectTo: justCompletedSetup ? "/dashboard" : null,
+  });
   res.cookies.set("vb_session", token, {
     httpOnly: true,
     sameSite: "lax",
