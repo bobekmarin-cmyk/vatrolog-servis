@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -74,9 +75,11 @@ export default function MockupImage({
       {caption && (
         <p className="mt-3 text-center text-sm font-medium text-slate-200">{caption}</p>
       )}
-      {open && (
-        <Lightbox src={src} alt={alt} width={width} onClose={() => setOpen(false)} />
-      )}
+      {open &&
+        createPortal(
+          <Lightbox src={src} alt={alt} width={width} onClose={() => setOpen(false)} />,
+          document.body,
+        )}
     </div>
   );
 }
@@ -123,16 +126,15 @@ function Lightbox({
       </div>
       <div
         onClick={onClose}
-        className="flex-1 overflow-auto"
+        className="flex min-h-0 flex-1 overflow-auto"
         style={{ touchAction: "pinch-zoom pan-x pan-y" }}
       >
+        {/* m-auto centrira mockup kad stane u viewport; kad je veci od ekrana,
+            overflow-auto omogucuje scroll u svim smjerovima (hero + sva 4 mockupa). */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="mx-auto inline-block min-w-full p-4 sm:p-6"
+          className="m-auto shrink-0 p-4 sm:p-6"
         >
-          {/* Native <img> da bi pinch-zoom radio nativno na mobilnom + da nije ograniceno
-              next/image transformacijama. Sirina = nativna CSS sirina (file px / 2 jer
-              je capture sniman s deviceScaleFactor=2). Mali ekrani scroll-aju po potrebi. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={src}
