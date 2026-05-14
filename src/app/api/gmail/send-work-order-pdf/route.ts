@@ -72,24 +72,29 @@ export async function POST(req: NextRequest) {
   }
 
   // Interni fetch PDF-a (reuse postojećih GET ruta s istom sesijom).
+  // Na Railway/Vercel-u self-fetch na javnu domenu često padne zbog DNS-a kontejnera
+  // (`vatrolog.com` izvana radi, iz containera ne) — koristimo loopback bazu.
   const cookieHdr = req.headers.get("cookie") ?? "";
-  const pdfUrl = new URL(`/work-orders/${workOrderId}/${meta.slug}/pdf`, req.url);
+  const port = process.env.PORT?.trim() || "3000";
+  const internalBase = `http://127.0.0.1:${port}`;
+  const path = `/work-orders/${workOrderId}/${meta.slug}/pdf`;
   let pdfBuffer: Buffer;
   try {
-    const pdfRes = await fetch(pdfUrl, {
+    const pdfRes = await fetch(internalBase + path, {
       headers: { cookie: cookieHdr },
       cache: "no-store",
     });
     if (!pdfRes.ok) {
+      const detail = await pdfRes.text().catch(() => "");
       return NextResponse.json(
-        { error: `Generiranje PDF-a nije uspjelo (${pdfRes.status})` },
+        { error: `Generiranje PDF-a nije uspjelo (${pdfRes.status})${detail ? `: ${detail.slice(0, 200)}` : ""}` },
         { status: 500 },
       );
     }
     pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Nepoznata greška";
-    return NextResponse.json({ error: `PDF fetch: ${msg}` }, { status: 500 });
+    return NextResponse.json({ error: `PDF fetch (${internalBase}${path}): ${msg}` }, { status: 500 });
   }
 
   const custName = customerDisplayName(order.customer);
