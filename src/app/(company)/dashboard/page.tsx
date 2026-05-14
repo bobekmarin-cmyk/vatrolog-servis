@@ -4,7 +4,9 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import WorkOrderStatusBadge from "@/components/WorkOrderStatusBadge";
 import { customerDisplayName } from "@/lib/customerDisplay";
-import WeeklyChart from "@/components/WeeklyChart";
+import WeeklyChart, { type DayData, type WeekData } from "@/components/WeeklyChart";
+
+const DAY_MS = 86_400_000;
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -15,19 +17,25 @@ function endOfDay(d: Date) {
 
 const DAY_NAMES = ["Ned", "Pon", "Uto", "Sri", "Čet", "Pet", "Sub"];
 
-function lastNDaysNoSunday(n: number): Date[] {
-  const out: Date[] = [];
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  while (out.length < n) {
-    if (d.getDay() !== 0) out.unshift(new Date(d));
-    d.setDate(d.getDate() - 1);
-  }
-  return out;
-}
-
 function dayLabel(d: Date) {
   return `${DAY_NAMES[d.getDay()]}\n${d.getDate()}.${d.getMonth() + 1}.`;
+}
+
+/** Ponedjeljak kao prvi dan tjedna (ISO). */
+function startOfISOWeek(d: Date): Date {
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = day === 0 ? -6 : 1 - day;
+  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  r.setDate(r.getDate() + diff);
+  return r;
+}
+
+function isoWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7);
 }
 
 const HR_LONG_DATE = new Intl.DateTimeFormat("hr-HR", {
@@ -46,7 +54,7 @@ type DueTone = "overdue" | "today" | "soon" | "later";
 
 function relativeDueLabel(due: Date, todayStart: Date): { text: string; tone: DueTone } {
   const dueStart = startOfDay(due);
-  const diffDays = Math.round((dueStart.getTime() - todayStart.getTime()) / 86_400_000);
+  const diffDays = Math.round((dueStart.getTime() - todayStart.getTime()) / DAY_MS);
   if (diffDays < 0) return { text: `Kasni ${Math.abs(diffDays)} d`, tone: "overdue" };
   if (diffDays === 0) return { text: "Danas", tone: "today" };
   if (diffDays === 1) return { text: "Sutra", tone: "soon" };
@@ -151,6 +159,9 @@ function StatCard({
   );
 }
 
+const HISTORY_DAYS = 84; // ~12 tjedana
+const WEEKS_TO_SHOW = 8;
+
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -198,33 +209,62 @@ export default async function DashboardPage() {
     },
   });
 
-  const days = lastNDaysNoSunday(7);
-  const weekStart = startOfDay(days[0]);
-  const weekEnd = endOfDay(days[days.length - 1]);
+  // Povijest servisiranja za graf (zadnja 84 dana ~ 12 tjedana)
+  const historyStart = startOfDay(new Date(now.getTime() - HISTORY_DAYS * DAY_MS));
 
-  const weekItems = await prisma.workOrderItem.findMany({
+  const historyItems = await prisma.workOrderItem.findMany({
     where: {
       companyId: session.companyId,
-      servicedAt: { gte: weekStart, lte: weekEnd },
+      servicedAt: { gte: historyStart, lte: todayEnd },
     },
     select: { servicedAt: true },
   });
 
-  const chartData = days.map((d) => {
-    const ds = startOfDay(d).getTime();
-    const de = endOfDay(d).getTime();
-    const count = weekItems.filter(
-      (i) => i.servicedAt && i.servicedAt.getTime() >= ds && i.servicedAt.getTime() <= de,
-    ).length;
-    return {
-      label: dayLabel(d),
-      count,
-      isToday: d.getTime() === todayStart.getTime(),
-    };
-  });
+  // Po danu: bucket po danu, uzmi zadnjih 7 dana sa count > 0
+  const dailyBuckets = new Map<number, number>();
+  for (const it of historyItems) {
+    if (!it.servicedAt) continue;
+    const k = startOfDay(it.servicedAt).getTime();
+    dailyBuckets.set(k, (dailyBuckets.get(k) ?? 0) + 1);
+  }
+  const dailyChart: DayData[] = [];
+  const cursor = new Date(todayStart);
+  while (dailyChart.length < 7 && cursor.getTime() >= historyStart.getTime()) {
+    const key = cursor.getTime();
+    const count = dailyBuckets.get(key) ?? 0;
+    if (count > 0) {
+      dailyChart.unshift({
+        label: dayLabel(new Date(cursor)),
+        count,
+        isToday: key === todayStart.getTime(),
+      });
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
 
-  const weekTotal = chartData.reduce((s, d) => s + d.count, 0);
-  const todayServiced = chartData.find((d) => d.isToday)?.count ?? 0;
+  // Po tjednu: zadnjih 8 ISO tjedana (Pon–Ned), uvijek prikaži sve
+  const thisWeekStart = startOfISOWeek(now);
+  const weeklyChart: WeekData[] = [];
+  for (let i = WEEKS_TO_SHOW - 1; i >= 0; i--) {
+    const wStart = new Date(thisWeekStart);
+    wStart.setDate(wStart.getDate() - i * 7);
+    const wEnd = new Date(wStart);
+    wEnd.setDate(wEnd.getDate() + 6);
+    wEnd.setHours(23, 59, 59, 999);
+    const count = historyItems.filter((it) => {
+      const t = it.servicedAt!.getTime();
+      return t >= wStart.getTime() && t <= wEnd.getTime();
+    }).length;
+    weeklyChart.push({
+      label: `${wStart.getDate()}.${wStart.getMonth() + 1}.\nTj. ${isoWeekNumber(wStart)}`,
+      count,
+      isCurrent: wStart.getTime() === thisWeekStart.getTime(),
+    });
+  }
+
+  const todayServiced = dailyBuckets.get(todayStart.getTime()) ?? 0;
+  const thisWeekTotal =
+    weeklyChart.length > 0 ? weeklyChart[weeklyChart.length - 1].count : 0;
 
   const upcomingDueOrders = await prisma.workOrder.findMany({
     where: {
@@ -237,6 +277,7 @@ export default async function DashboardPage() {
     include: {
       customer: true,
       department: { select: { name: true } },
+      items: { select: { id: true, servicedAt: true, isPlaceholder: true } },
     },
   });
 
@@ -373,10 +414,12 @@ export default async function DashboardPage() {
 
         <div className="lg:col-span-2 flex flex-col gap-6">
           <section className="surface p-4">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Servisirano kroz tjedan</h2>
-                <p className="text-xs text-slate-500">Posljednjih 7 radnih dana</p>
+                <h2 className="text-sm font-semibold text-slate-900">Servisirano</h2>
+                <p className="text-xs text-slate-500">
+                  Po danu: zadnjih 7 aktivnih dana · Po tjednu: zadnjih {WEEKS_TO_SHOW} tjedana
+                </p>
               </div>
               <div className="flex gap-3 text-[11px] text-slate-500">
                 <div className="text-right">
@@ -384,21 +427,13 @@ export default async function DashboardPage() {
                   <div className="text-sm font-semibold text-emerald-700">{todayServiced}</div>
                 </div>
                 <div className="text-right">
-                  <div>Tjedan</div>
-                  <div className="text-sm font-semibold text-red-700">{weekTotal}</div>
+                  <div>Ovaj tjedan</div>
+                  <div className="text-sm font-semibold text-red-700">{thisWeekTotal}</div>
                 </div>
               </div>
             </div>
             <div className="mt-3">
-              <WeeklyChart data={chartData} />
-            </div>
-            <div className="mt-2 flex items-center gap-3 text-[10px] text-slate-600">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-indigo-500" /> Prethodni dani
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-sm bg-emerald-500" /> Danas
-              </span>
+              <WeeklyChart daily={dailyChart} weekly={weeklyChart} />
             </div>
           </section>
 
@@ -425,6 +460,9 @@ export default async function DashboardPage() {
                 {upcomingDueOrders.map((o) => {
                   const due = o.dueAt as Date;
                   const rel = relativeDueLabel(due, todayStart);
+                  const remainingItems = o.items.filter(
+                    (i) => !i.servicedAt && !i.isPlaceholder,
+                  ).length;
                   return (
                     <li key={o.id}>
                       <Link
@@ -438,10 +476,15 @@ export default async function DashboardPage() {
                               <span className="text-slate-500"> · {o.department.name}</span>
                             ) : null}
                           </div>
-                          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
                             <span className="font-mono">{o.orderNumber}</span>
-                            <span>·</span>
+                            <span aria-hidden>·</span>
                             <span>{HR_SHORT_DATE.format(due)}</span>
+                            <span aria-hidden>·</span>
+                            <span>
+                              <b className="tabular-nums text-slate-700">{remainingItems}</b>{" "}
+                              {remainingItems === 1 ? "aparat" : "aparata"} za servis
+                            </span>
                           </div>
                         </div>
                         <span
