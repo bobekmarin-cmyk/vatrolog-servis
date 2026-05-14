@@ -460,9 +460,8 @@ export default async function DashboardPage() {
                 {upcomingDueOrders.map((o) => {
                   const due = o.dueAt as Date;
                   const rel = relativeDueLabel(due, todayStart);
-                  const remainingItems = o.items.filter(
-                    (i) => !i.servicedAt && !i.isPlaceholder,
-                  ).length;
+                  const servicedItems = o.items.filter((i) => i.servicedAt).length;
+                  const remainingItems = o.items.length - servicedItems;
                   return (
                     <li key={o.id}>
                       <Link
