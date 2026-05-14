@@ -6,7 +6,7 @@ import {
   IconChart,
   IconMail,
   IconFileText,
-  IconShield,
+  IconQr,
 } from "./icons";
 import type { SVGProps } from "react";
 
@@ -24,16 +24,16 @@ const features: Feature[] = [
     Icon: IconClipboard,
   },
   {
-    title: "Evidencija aparata",
+    title: "QR kod",
     description:
-      "Proizvođač, tip, tvornički broj, godina proizvodnje, status, rokovi i povijest servisa uvijek su vezani uz kupca.",
-    Icon: IconFireExt,
+      "Na naljepnici je interni broj aparata; skeniranjem otvaraš podatke o tvorničkom broju, godini proizvodnje i proizvođaču te zapise o svim servisima tog aparata.",
+    Icon: IconQr,
   },
   {
     title: "Katalog aparata",
     description:
       "Odaberi proizvođača i tip, unesi tvornički broj i godinu. Imamo bazu s aparatima svih proizvođača u Hrvatskoj. Svakom aparatu naznačen je medij (prah, pjena, CO₂, F klasa) kao i izvedba (bočica, stalni tlak).",
-    Icon: IconShield,
+    Icon: IconFireExt,
   },
   {
     title: "Skladište dijelova i naljepnica",
@@ -44,7 +44,7 @@ const features: Feature[] = [
   {
     title: "Baza kupaca",
     description:
-      "Matica kupaca s odjelima i lokacijama. Kupcu možeš poslati link na kojem vidi popis svih svojih aparata.",
+      "Baza kupaca s odjelima i lokacijama. Kupcu možeš poslati link na kojem vidi popis svih svojih aparata.",
     Icon: IconUsers,
   },
   {
