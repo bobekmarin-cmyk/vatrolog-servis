@@ -93,6 +93,10 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/portal/")) return true;
   if (pathname.startsWith("/legal/")) return true;
+  // Favicon / PWA / OG slike (bez sesije — preglednici i društvene mreže).
+  if (pathname === "/icon" || pathname === "/apple-icon" || pathname === "/opengraph-image") {
+    return true;
+  }
   // Dev-only capture rute za generiranje landing PNG mockupa.
   // Sama stranica vraća 404 u produkciji (defense in depth).
   if (process.env.NODE_ENV !== "production" && pathname.startsWith("/capture/")) {
