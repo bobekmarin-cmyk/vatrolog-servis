@@ -12,6 +12,12 @@ export type PlatformNavItem = {
   icon?: string;
 };
 
+export type PlatformNavSection = {
+  /** Label sekcije (mali uppercase header). Ako je prazan, sekcija se renderira bez naslova. */
+  label?: string;
+  items: PlatformNavItem[];
+};
+
 function NavItem({ href, label, icon }: PlatformNavItem) {
   const pathname = usePathname();
   const active = pathname === href || (href !== "/platform" && pathname.startsWith(href + "/"));
@@ -34,11 +40,14 @@ function NavItem({ href, label, icon }: PlatformNavItem) {
 export default function PlatformShell(props: {
   title: string;
   roleLabel: string;
-  nav: PlatformNavItem[];
+  /** Ravna lista (legacy) ili lista sekcija s naslovima. */
+  nav: PlatformNavItem[] | PlatformNavSection[];
   children: React.ReactNode;
 }) {
   const { title, roleLabel, nav, children } = props;
   const [open, setOpen] = useState(false);
+
+  const sections: PlatformNavSection[] = isSectioned(nav) ? nav : [{ items: nav }];
 
   return (
     <div className="min-h-dvh bg-transparent">
@@ -107,9 +116,20 @@ export default function PlatformShell(props: {
               </button>
             </div>
 
-            <nav className="space-y-1 px-2 py-4">
-              {nav.map((i) => (
-                <NavItem key={i.href} href={i.href} label={i.label} icon={i.icon} />
+            <nav className="px-2 py-4">
+              {sections.map((section, idx) => (
+                <div key={section.label ?? `s-${idx}`} className={idx === 0 ? "" : "mt-5"}>
+                  {section.label ? (
+                    <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">
+                      {section.label}
+                    </div>
+                  ) : null}
+                  <div className="space-y-1">
+                    {section.items.map((i) => (
+                      <NavItem key={i.href} href={i.href} label={i.label} icon={i.icon} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </nav>
           </aside>
@@ -122,5 +142,9 @@ export default function PlatformShell(props: {
       </div>
     </div>
   );
+}
+
+function isSectioned(nav: PlatformNavItem[] | PlatformNavSection[]): nav is PlatformNavSection[] {
+  return nav.length > 0 && "items" in (nav[0] as object);
 }
 
