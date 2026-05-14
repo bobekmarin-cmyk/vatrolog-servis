@@ -167,7 +167,11 @@ export default async function DashboardPage() {
   const tomorrowEnd = endOfDay(tomorrowDate);
 
   const activeOrders = await prisma.workOrder.findMany({
-    where: { companyId: session.companyId, status: { in: ["DRAFT", "IN_PROGRESS"] } },
+    where: {
+      companyId: session.companyId,
+      status: { in: ["DRAFT", "IN_PROGRESS"] },
+      lockedAt: null,
+    },
     orderBy: { createdAt: "desc" },
     include: {
       customer: true,
@@ -186,7 +190,11 @@ export default async function DashboardPage() {
       companyId: session.companyId,
       servicedAt: null,
       isPlaceholder: false,
-      workOrder: { status: { in: ["DRAFT", "IN_PROGRESS"] }, dueAt: { lte: todayEnd } },
+      workOrder: {
+        status: { in: ["DRAFT", "IN_PROGRESS"] },
+        lockedAt: null,
+        dueAt: { lte: todayEnd },
+      },
     },
   });
 
@@ -197,6 +205,7 @@ export default async function DashboardPage() {
       isPlaceholder: false,
       workOrder: {
         status: { in: ["DRAFT", "IN_PROGRESS"] },
+        lockedAt: null,
         dueAt: { gt: todayEnd, lte: tomorrowEnd },
       },
     },
@@ -263,6 +272,7 @@ export default async function DashboardPage() {
     where: {
       companyId: session.companyId,
       status: { in: ["DRAFT", "IN_PROGRESS"] },
+      lockedAt: null,
       dueAt: { not: null },
     },
     orderBy: { dueAt: "asc" },
