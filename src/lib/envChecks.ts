@@ -174,6 +174,23 @@ export function validateLaunchEnv(): EnvIssue[] {
     });
   }
 
+  // Platform login: barem jedan put (password ili Google) MORA biti aktivan,
+  // inače se nitko ne moze prijaviti.
+  const pwFlag = process.env.PLATFORM_PASSWORD_LOGIN_ENABLED?.trim().toLowerCase();
+  const pwEnabled = !pwFlag || !["false", "0", "no", "off"].includes(pwFlag);
+  const platformAllowedEmails = process.env.PLATFORM_GOOGLE_ALLOWED_EMAILS?.trim();
+  const platformAllowedDomains = process.env.PLATFORM_GOOGLE_ALLOWED_DOMAINS?.trim();
+  const googlePlatformEnabled =
+    hasGoogleClient && (!!platformAllowedEmails || !!platformAllowedDomains);
+  if (!pwEnabled && !googlePlatformEnabled) {
+    issues.push({
+      severity: "error",
+      key: "PLATFORM_PASSWORD_LOGIN_ENABLED",
+      message:
+        "Oba puta za platform login su isključena: PLATFORM_PASSWORD_LOGIN_ENABLED=false i Google OIDC nije konfiguriran (GOOGLE_CLIENT_ID/SECRET + PLATFORM_GOOGLE_ALLOWED_EMAILS/DOMAINS). Nitko se neće moći prijaviti.",
+    });
+  }
+
   return issues;
 }
 

@@ -1,11 +1,21 @@
 import { prisma } from "@/lib/prisma";
-import { signPlatformSessionToken } from "@/lib/platformAuth";
+import { isPlatformPasswordLoginEnabled, signPlatformSessionToken } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 import { redirectRelative } from "@/lib/httpRedirect";
 import bcrypt from "bcryptjs";
 import { checkLoginRateLimit, clearLoginFailures, clientKeyFromRequest, recordLoginFailure } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
+  if (!isPlatformPasswordLoginEnabled()) {
+    return NextResponse.json(
+      {
+        error:
+          "Prijava korisničkim imenom i lozinkom je isključena. Koristi Google prijavu.",
+      },
+      { status: 403 },
+    );
+  }
+
   const ipKey = `platform:${clientKeyFromRequest(req)}`;
   const blocked = await checkLoginRateLimit(ipKey);
   if (blocked.blocked) {

@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import PlatformLoginForm from "./PlatformLoginForm";
-import { getPlatformSession, isPlatformGoogleLoginEnabled } from "@/lib/platformAuth";
+import {
+  getPlatformSession,
+  isPlatformGoogleLoginEnabled,
+  isPlatformPasswordLoginEnabled,
+} from "@/lib/platformAuth";
 
 const GOOGLE_ERROR_LABELS: Record<string, string> = {
   google_disabled: "Google prijava za platformu trenutno nije aktivna.",
@@ -23,6 +27,7 @@ export default async function PlatformLoginPage({
   if (ps) redirect("/platform/companies");
 
   const googleEnabled = isPlatformGoogleLoginEnabled();
+  const passwordEnabled = isPlatformPasswordLoginEnabled();
   const params = await searchParams;
   const errCode = params.google_error;
   const errLabel = errCode
@@ -70,17 +75,27 @@ export default async function PlatformLoginPage({
               </svg>
               Prijava Google računom
             </a>
-            <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span>ili</span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
+            {passwordEnabled && (
+              <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span>ili</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+            )}
           </div>
         )}
 
-        <div className="mt-4">
-          <PlatformLoginForm />
-        </div>
+        {passwordEnabled ? (
+          <div className="mt-4">
+            <PlatformLoginForm />
+          </div>
+        ) : !googleEnabled ? (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Nijedan način prijave nije aktivan. Postavi <code>GOOGLE_CLIENT_ID</code>{" "}
+            + <code>PLATFORM_GOOGLE_ALLOWED_EMAILS</code>, ili postavi{" "}
+            <code>PLATFORM_PASSWORD_LOGIN_ENABLED=true</code>.
+          </div>
+        ) : null}
       </div>
     </main>
   );

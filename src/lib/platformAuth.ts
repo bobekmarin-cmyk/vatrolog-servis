@@ -80,6 +80,21 @@ function parsePlatformGoogleEnvList(value: string | undefined): string[] {
 }
 
 /**
+ * Vraca true ako je dozvoljena prijava korisnickim imenom + lozinkom na /platform/login.
+ *
+ * Default: ENABLED — failsafe ako Google OAuth padne (Google account locked,
+ * client secret rotiran, allowlist obrisan, ...). Ne zelimo nikoga zakljucati van.
+ *
+ * Iskljucuje se eksplicitno: `PLATFORM_PASSWORD_LOGIN_ENABLED=false` (ili `0` / `no` / `off`).
+ * Preporuceno za produkciju nakon sto je Google login dokazan i aktivno se koristi.
+ */
+export function isPlatformPasswordLoginEnabled(): boolean {
+  const v = process.env.PLATFORM_PASSWORD_LOGIN_ENABLED?.trim().toLowerCase();
+  if (!v) return true;
+  return !["false", "0", "no", "off"].includes(v);
+}
+
+/**
  * Vraca true ako je platform Google login uopce omogucen:
  * GOOGLE_CLIENT_ID/SECRET + barem jedan allowlist (emails ili domains).
  * Koristi se na /platform/login i Google OAuth rutama.
