@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 };
 
-type NavItemConfig = CompanyNavItem & { featureKey: keyof typeof FEATURE_KEYS };
+type NavItemConfig = CompanyNavItem & { featureKey: keyof typeof FEATURE_KEYS; adminOnly?: boolean };
 type NavSectionConfig = { title?: string; items: NavItemConfig[]; inactiveSection?: boolean };
 
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
@@ -84,6 +84,14 @@ export default async function CompanyLayout({ children }: { children: React.Reac
         { href: "/customers", label: "Kupci", icon: "🏢", featureKey: "CUSTOMERS" },
         { href: "/reports/monthly", label: "Plan servisa", icon: "📅", featureKey: "REPORTS_MONTHLY" },
         { href: "/reports/email-log", label: "Poslana pošta", icon: "✉️", featureKey: "REPORTS_MONTHLY" },
+        {
+          href: "/reports/operations",
+          label: "Servisna analitika",
+          icon: "📈",
+          featureKey: "REPORTS_MONTHLY",
+          activePathPrefixes: ["/reports/operations"],
+          adminOnly: true,
+        },
         { href: "/extinguishers", label: "Aparati", icon: "🧯", featureKey: "EXTINGUISHERS" },
       ],
     },
@@ -109,6 +117,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
       items: section.items
         .filter((i) => {
           if (i.href === "/notifications") return session.role === "ADMIN";
+          if (i.adminOnly && session.role !== "ADMIN") return false;
           return isFeatureEnabledForRole(session.role, features, FEATURE_KEYS[i.featureKey]);
         })
         .map(
