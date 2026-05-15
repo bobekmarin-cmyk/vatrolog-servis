@@ -13,6 +13,7 @@ import QRCode from "qrcode";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
 import { buildSubsequentDeliveryLinesByDay } from "@/lib/primkaDeliveryLines";
+import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,19 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   });
 
   if (!order) notFound();
+
+  const pdfNames = buildWorkOrderPdfNames(
+    {
+      serviceCode: order.company.serviceCode,
+      usernameSlug: order.company.usernameSlug,
+    },
+    {
+      orderNumber: order.orderNumber,
+      customer: order.customer,
+    },
+    "primka",
+  );
+  const docId = pdfNames.docId;
 
   const now = new Date();
 
@@ -78,7 +92,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const dep = order.department;
   const cust = order.customer;
 
-  const docId = `primka-${order.orderNumber.replaceAll("/", "-")}`;
   const generatedAt = now;
   const hh = String(generatedAt.getHours()).padStart(2, "0");
   const mm = String(generatedAt.getMinutes()).padStart(2, "0");
@@ -156,9 +169,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const props = { data } satisfies ComponentProps<typeof PrimkaPdfDocument>;
   const element = React.createElement(PrimkaPdfDocument, props);
   const body = await renderPdfToBuffer(element);
-  const filename = `primka_${order.orderNumber.replaceAll("/", "-")}.pdf`;
+  const filename = pdfNames.fileName;
 
-  savePdf(session.companyId, "receipt", order.orderNumber, Buffer.from(body)).catch(() => {});
+  savePdf(session.companyId, "receipt", order.orderNumber, Buffer.from(body), {
+    fileBase: pdfNames.fileBase,
+  }).catch(() => {});
 
   return new Response(new Uint8Array(body), {
     headers: {

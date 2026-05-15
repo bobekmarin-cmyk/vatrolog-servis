@@ -15,6 +15,10 @@ interface Props {
   customerEmail: string | null;
   /** Je li bilo koji mail provider (Gmail ili SMTP) povezan i aktivan. */
   mailConnected: boolean;
+  /** Kada je true, PDF i slanje mailom su onemogućeni (npr. otpremnica prije zaključavanja naloga). */
+  disabled?: boolean;
+  /** Tooltip / pristupačnost kad je `disabled`. */
+  disabledTitle?: string;
 }
 
 export default function PdfActionButton({
@@ -26,6 +30,8 @@ export default function PdfActionButton({
   customerName,
   customerEmail,
   mailConnected,
+  disabled = false,
+  disabledTitle,
 }: Props) {
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -48,11 +54,13 @@ export default function PdfActionButton({
   }, [menuOpen]);
 
   function openPdf() {
+    if (disabled) return;
     window.open(pdfUrl, "_blank", "noopener,noreferrer");
     setMenuOpen(false);
   }
 
   function openMailModal() {
+    if (disabled) return;
     setEmailInput(customerEmail ?? "");
     setError(null);
     setSent(false);
@@ -89,24 +97,37 @@ export default function PdfActionButton({
     }
   }
 
-  const mailDisabled = !mailConnected;
-  const mailTitle = !mailConnected ? "Mail nije konfiguriran (Postavke → Postavke maila)" : undefined;
+  const mailDisabled = !mailConnected || disabled;
+  const mailTitle = disabled
+    ? (disabledTitle ?? "Ova akcija trenutačno nije dostupna.")
+    : !mailConnected
+      ? "Mail nije konfiguriran (Postavke → Postavke maila)"
+      : undefined;
+  const blockTitle = disabled ? (disabledTitle ?? "Ova akcija trenutačno nije dostupna.") : undefined;
 
   return (
     <>
       <div ref={wrapRef} className="relative inline-flex">
         <button
           type="button"
-          className="btn btn-outline rounded-r-none border-r-0 px-4"
+          className={
+            "btn btn-outline rounded-r-none border-r-0 px-4 " + (disabled ? "cursor-not-allowed opacity-50" : "")
+          }
           onClick={openPdf}
-          title={`Otvori ${label.toLowerCase()} PDF`}
+          disabled={disabled}
+          title={disabled ? blockTitle : `Otvori ${label.toLowerCase()} PDF`}
+          aria-disabled={disabled}
         >
           {label}
         </button>
         <button
           type="button"
-          className="btn btn-outline rounded-l-none px-2"
-          onClick={() => setMenuOpen((v) => !v)}
+          className={
+            "btn btn-outline rounded-l-none px-2 " + (disabled ? "cursor-not-allowed opacity-50" : "")
+          }
+          onClick={() => !disabled && setMenuOpen((v) => !v)}
+          disabled={disabled}
+          title={blockTitle}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           aria-label={`Opcije za ${label}`}

@@ -18,6 +18,7 @@ import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 import { savePdf } from "@/lib/pdfStorage";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
+import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 export const runtime = "nodejs";
 
@@ -64,6 +65,18 @@ export async function POST(req: NextRequest) {
   if (order.status !== "LOCKED") {
     return NextResponse.json({ error: "Nalog mora biti zaključan" }, { status: 400 });
   }
+
+  const pdfNames = buildWorkOrderPdfNames(
+    {
+      serviceCode: order.company.serviceCode,
+      usernameSlug: order.company.usernameSlug,
+    },
+    {
+      orderNumber: order.orderNumber,
+      customer: order.customer,
+    },
+    "upisnik",
+  );
 
   const recipientEmail = (toEmailOverride ?? order.customer.email ?? "").trim();
   if (!recipientEmail) {
@@ -164,7 +177,7 @@ export async function POST(req: NextRequest) {
     },
     serviceContextLabel,
     status: order.status,
-    docId: `upisnik-${order.orderNumber.replaceAll("/", "-")}`,
+    docId: pdfNames.docId,
     generatedAtLabel,
     appVersion: APP_VERSION,
     qrDataUrl: null,
@@ -175,9 +188,11 @@ export async function POST(req: NextRequest) {
   const pdfElement = React.createElement(RegisterPdfDocument, pdfProps);
   const pdfBuffer = Buffer.from(await renderPdfToBuffer(pdfElement));
 
-  savePdf(session.companyId, "register", order.orderNumber, pdfBuffer).catch(() => {});
+  savePdf(session.companyId, "register", order.orderNumber, pdfBuffer, {
+    fileBase: pdfNames.fileBase,
+  }).catch(() => {});
 
-  const pdfFilename = `upisnik_${order.orderNumber.replaceAll("/", "-")}.pdf`;
+  const pdfFilename = pdfNames.fileName;
   const monthTag = `WO-${order.orderNumber}`;
 
   try {

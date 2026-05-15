@@ -26,6 +26,7 @@ import { savePdf } from "@/lib/pdfStorage";
 import QRCode from "qrcode";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
+import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,6 +95,26 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   });
 
   if (!order) notFound();
+
+  if (order.status !== "LOCKED") {
+    return new Response("Otpremnicu je moguće izdati tek nakon zaključavanja radnog naloga.", {
+      status: 403,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  const pdfNames = buildWorkOrderPdfNames(
+    {
+      serviceCode: order.company.serviceCode,
+      usernameSlug: order.company.usernameSlug,
+    },
+    {
+      orderNumber: order.orderNumber,
+      customer: order.customer,
+    },
+    "otpremnica",
+  );
+  const docId = pdfNames.docId;
 
   const realItems = order.items.filter((i) => !i.isPlaceholder && i.extinguisher);
 
@@ -362,8 +383,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const generatedAtLabel = `${formatDateDdMmYyyy(now)} ${hh}:${mm}`;
-  const docId = `otpremnica-${order.orderNumber.replaceAll("/", "-")}`;
-
   const qrPayload = `VATROLOG:OTPREMNICA:${order.orderNumber}:${order.company.oib}`;
   let qrDataUrl: string | null = null;
   try {
@@ -435,9 +454,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const props = { data } satisfies ComponentProps<typeof DeliveryNotePdfDocument>;
   const element = React.createElement(DeliveryNotePdfDocument, props);
   const body = await renderPdfToBuffer(element);
-  const filename = `otpremnica_${order.orderNumber.replaceAll("/", "-")}.pdf`;
+  const filename = pdfNames.fileName;
 
-  savePdf(session.companyId, "delivery-note", order.orderNumber, Buffer.from(body)).catch(() => {});
+  savePdf(session.companyId, "delivery-note", order.orderNumber, Buffer.from(body), {
+    fileBase: pdfNames.fileBase,
+  }).catch(() => {});
 
   return new Response(new Uint8Array(body), {
     headers: {

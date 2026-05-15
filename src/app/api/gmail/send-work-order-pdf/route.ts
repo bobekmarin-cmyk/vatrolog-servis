@@ -15,6 +15,7 @@ import {
   type RenderVars,
   type TemplateType,
 } from "@/lib/emailTemplates";
+import { buildWorkOrderPdfNames, type WorkOrderDocSlug } from "@/lib/workOrderDocumentNames";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,12 @@ function isKind(x: unknown): x is KindKey {
   return typeof x === "string" && x in KIND_META;
 }
 
+function kindToDocSlug(kind: KindKey): WorkOrderDocSlug {
+  if (kind === "primka") return "primka";
+  if (kind === "register") return "upisnik";
+  return "otpremnica";
+}
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) {
@@ -59,10 +66,20 @@ export async function POST(req: NextRequest) {
 
   const order = await prisma.workOrder.findFirst({
     where: { id: workOrderId, companyId: session.companyId },
-    include: { company: true, customer: true },
+    include: {
+      company: true,
+      customer: true,
+    },
   });
   if (!order) {
     return NextResponse.json({ error: "Nalog ne postoji" }, { status: 404 });
+  }
+
+  if (kind === "delivery-note" && order.status !== "LOCKED") {
+    return NextResponse.json(
+      { error: "Otpremnicu je moguće poslati tek nakon zaključavanja radnog naloga." },
+      { status: 400 },
+    );
   }
 
   const recipientEmail = (toEmail ?? order.customer.email ?? "").trim();
@@ -79,6 +96,18 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+
+  const pdfNames = buildWorkOrderPdfNames(
+    {
+      serviceCode: company.serviceCode,
+      usernameSlug: company.usernameSlug,
+    },
+    {
+      orderNumber: order.orderNumber,
+      customer: order.customer,
+    },
+    kindToDocSlug(kind),
+  );
 
   // Interni fetch PDF-a (reuse postojećih GET ruta s istom sesijom).
   // Na Railway/Vercel-u self-fetch na javnu domenu često padne zbog DNS-a kontejnera
@@ -132,7 +161,7 @@ export async function POST(req: NextRequest) {
   const subject = renderSubject(tpl, vars);
   const html = renderTemplateHtml(tpl, vars);
 
-  const pdfFilename = `${meta.filename}_${order.orderNumber.replaceAll("/", "-")}.pdf`;
+  const pdfFilename = pdfNames.fileName;
   const monthTag = `WO-${order.orderNumber}`;
 
   try {

@@ -12,7 +12,8 @@ import { logInfo, logWarn } from "@/lib/logger";
  *    koristi S3-kompatibilni storage (Cloudflare R2, Backblaze B2, AWS S3, MinIO).
  *  - Inače fallback na lokalni filesystem (dev / single-server deploy).
  *
- * Putanja u storageu: `pdf/{companyId}/{docType}/{safe-order-number}.pdf`
+ * Putanja u storageu: `pdf/{companyId}/{docType}/{fileBase}.pdf`
+ * (`fileBase` može sadržavati serviser + kupca; vidi `savePdf` opciju `fileBase`).
  */
 
 const PDF_DIR = path.join(process.cwd(), "storage", "pdf");
@@ -51,9 +52,8 @@ function getS3(): S3Client {
   return s3Client;
 }
 
-function s3Key(companyId: string, docType: string, orderNumber: string, ext = "pdf"): string {
-  const safe = orderNumber.replaceAll("/", "-");
-  return `pdf/${companyId}/${docType}/${docType}_${safe}.${ext}`;
+function s3Key(companyId: string, docType: string, fileBase: string, ext = "pdf"): string {
+  return `pdf/${companyId}/${docType}/${fileBase}.${ext}`;
 }
 
 export type PdfDocType = "register" | "delivery-note" | "invoice" | "receipt";
@@ -66,11 +66,14 @@ export async function savePdf(
   docType: PdfDocType,
   orderNumber: string,
   buffer: Buffer | Uint8Array,
+  options?: { fileBase?: string },
 ): Promise<string> {
+  const safe = orderNumber.replaceAll("/", "-");
+  const fileBase = options?.fileBase ?? `${docType}_${safe}`;
   const mode = getMode();
 
   if (mode === "s3") {
-    const Key = s3Key(companyId, docType, orderNumber);
+    const Key = s3Key(companyId, docType, fileBase);
     const Bucket = process.env.S3_BUCKET!;
     try {
       const body = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
@@ -103,8 +106,7 @@ export async function savePdf(
 
   const dir = path.join(PDF_DIR, companyId, docType);
   await fs.mkdir(dir, { recursive: true });
-  const safeName = orderNumber.replaceAll("/", "-");
-  const filename = `${docType}_${safeName}.pdf`;
+  const filename = `${fileBase}.pdf`;
   const filePath = path.join(dir, filename);
   await fs.writeFile(filePath, buffer);
   return filePath;

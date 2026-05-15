@@ -187,6 +187,8 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
             mailConnected={mailConnected}
+            disabled={!isLocked}
+            disabledTitle="Zaključaj radni nalog prije izdavanja ili slanja otpremnice."
           />
           {session.role === "ADMIN" && (
             <PendingNavigationLink
