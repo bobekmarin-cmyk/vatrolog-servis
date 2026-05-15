@@ -27,4 +27,9 @@ jobs:
         run: npm run typecheck
 
       - name: Prisma schema
+        # `prisma validate` parsira schema.prisma uključujući `env("DATABASE_URL")`,
+        # pa varijabla MORA postojati cak i ako se nigdje ne spaja. Dummy
+        # connection string je standardni CI workaround.
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_validate?schema=public"
         run: npx prisma validate
