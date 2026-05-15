@@ -1,7 +1,10 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import AuthorizationsTable, { type AuthorizationRow } from "./AuthorizationsTable";
+import AuthorizationsClient, {
+  type AuthorizationRow,
+  type SharedCodes,
+} from "./AuthorizationsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +13,16 @@ export default async function AuthorizationsPage() {
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/");
 
-  const [manufacturers, existing] = await Promise.all([
+  const [company, manufacturers, existing] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: session.companyId },
+      select: {
+        labelCodeStrategy: true,
+        sharedPeriodicLabelCode: true,
+        sharedApparatusMassLabelCode: true,
+        sharedCylinderMassLabelCode: true,
+      },
+    }),
     prisma.manufacturer.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true },
@@ -19,6 +31,8 @@ export default async function AuthorizationsPage() {
       where: { companyId: session.companyId },
     }),
   ]);
+
+  if (!company) redirect("/");
 
   const byManuId = new Map(existing.map((a) => [a.manufacturerId, a]));
 
@@ -35,6 +49,12 @@ export default async function AuthorizationsPage() {
     };
   });
 
+  const sharedCodes: SharedCodes = {
+    periodicLabelCode: company.sharedPeriodicLabelCode ?? "",
+    apparatusMassLabelCode: company.sharedApparatusMassLabelCode ?? "",
+    cylinderMassLabelCode: company.sharedCylinderMassLabelCode ?? "",
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -42,12 +62,15 @@ export default async function AuthorizationsPage() {
         <div className="subtle max-w-3xl">
           Za svakog proizvođača označite ima li servis ovlaštenje, a opcionalno unesite i datum
           isteka. Interne šifre naljepnica (periodični pregled, masa aparata, masa bočice) koriste
-          se pri ispisu otpremnice nakon zaključavanja radnog naloga. Promjene se automatski
-          spremaju nakon izlaska iz polja.
+          se pri ispisu otpremnice nakon zaključavanja radnog naloga.
         </div>
       </div>
 
-      <AuthorizationsTable rows={rows} />
+      <AuthorizationsClient
+        initialStrategy={company.labelCodeStrategy}
+        initialSharedCodes={sharedCodes}
+        rows={rows}
+      />
     </div>
   );
 }

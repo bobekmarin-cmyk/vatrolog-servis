@@ -83,6 +83,15 @@ enum ServiceLabelKind {
   CYLINDER_MASS // Naljepnica mase bočice (CARTRIDGE)
 }
 
+/// Strategija unosa šifri naljepnica na razini tvrtke.
+///   - SHARED: jedan set od 3 šifre primjenjuje se na sve proizvođače.
+///   - PER_MANUFACTURER: svaki proizvođač ima vlastite šifre (sve šifre
+///     za istu vrstu naljepnice moraju biti različite kroz proizvođače).
+enum LabelCodeStrategy {
+  SHARED
+  PER_MANUFACTURER
+}
+
 /**
  * =======================
  * PLATFORM (ULTRA ADMIN)
@@ -251,6 +260,17 @@ model Company {
   /// Aktivni provider za slanje mailova kupcima ako su konfigurirana oba.
   /// Vrijednosti: "GMAIL" | "SMTP" | null. Null = automatski (Gmail prefer ako oba).
   mailProvider String?
+
+  /// Strategija unosa šifri naljepnica (na razini cijele tvrtke).
+  ///   SHARED           = jedan set od 3 šifre za sve proizvođače
+  ///   PER_MANUFACTURER = svaki proizvođač ima vlastiti set
+  labelCodeStrategy LabelCodeStrategy @default(SHARED)
+
+  /// Šifre koje se koriste u SHARED modu. U PER_MANUFACTURER modu su null i
+  /// nisu izvor istine; tada vrijede vrijednosti iz CompanyManufacturerAuthorization.
+  sharedPeriodicLabelCode      String?
+  sharedApparatusMassLabelCode String?
+  sharedCylinderMassLabelCode  String?
 
   /// Soft delete — ne hard cascade; scrub job nakon 30 dana.
   deletedAt DateTime?

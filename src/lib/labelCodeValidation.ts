@@ -2,19 +2,19 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 /**
  * Validacija šifri naljepnica pri spremanju ovlaštenja
- * (`CompanyManufacturerAuthorization`).
+ * (`CompanyManufacturerAuthorization`) ili zajedničkih šifri u SHARED modu.
  *
- * Pravila:
- *   1. Within-row: tri šifre istog proizvođača (periodicLabelCode,
- *      apparatusMassLabelCode, cylinderMassLabelCode) moraju biti različite ili
- *      prazne (null).
- *   2. Per-kind across company: za jednu vrstu naljepnice (npr. APPARATUS_MASS)
- *      kroz SVA ovlaštenja iste tvrtke vrijedi ili SVE šifre identične, ili SVE
- *      različite. Nije dozvoljena mješavina (npr. Pastor=0001, Klaleda=0001,
- *      Tornado=0002 → ERROR). Prazne (null) šifre se ignoriraju u provjeri.
+ * Pravila ovise o `Company.labelCodeStrategy`:
+ *   - SHARED: jedan set od 3 šifre primjenjuje se na sve proizvođače.
+ *     Per-manufacturer šifre se NE smiju mijenjati. Validira se SAMO da su
+ *     tri šifre unutar tog jednog seta međusobno različite (within-row).
+ *   - PER_MANUFACTURER: svaki proizvođač ima vlastiti set. Šifre za istu
+ *     vrstu naljepnice (npr. APPARATUS_MASS) kroz sve proizvođače moraju
+ *     biti RAZLIČITE — sustav ne dozvoljava dvjema proizvođačima istu šifru
+ *     unutar iste vrste (jer onda treba koristiti SHARED mod). Within-row
+ *     validacija isto vrijedi (3 šifre istog proizvođača međusobno različite).
  *
- * Vraća `ok: true` ako je sve u redu, ili `ok: false` s human-readable
- * porukom razloga koja se može direktno baciti kao `AppValidationError`.
+ * Prazne (null/trimmed-empty) šifre se ignoriraju u svim provjerama.
  */
 
 export type LabelCodeKind = "periodicLabelCode" | "apparatusMassLabelCode" | "cylinderMassLabelCode";
@@ -52,7 +52,8 @@ function norm(code: string | null | undefined): string | null {
 }
 
 /**
- * Provjeri da su tri šifre istog ovlaštenja međusobno različite (ignoriraju se prazne).
+ * Tri šifre u istom setu (jednog proizvođača ili SHARED set) moraju biti
+ * međusobno različite (ignoriraju se prazne).
  */
 export function validateWithinRow(input: LabelCodesInput): ValidationResult {
   const seen = new Map<string, LabelCodeKind>();
@@ -72,13 +73,10 @@ export function validateWithinRow(input: LabelCodesInput): ValidationResult {
 }
 
 /**
- * Provjera za jednu vrstu naljepnice kroz sva company-ova ovlaštenja.
- *
- * Pristupa bazi preko `tx` i traži već spremljene šifre za tu kind kod
- * drugih proizvođača iste tvrtke (osim onog koji se trenutno sprema).
- * Vraća fail ako bi se "miješalo".
+ * U PER_MANUFACTURER modu — za zadanu vrstu naljepnice, nova šifra ne smije
+ * koincidirati ni s jednom postojećom šifrom istog tipa kod drugog proizvođača.
  */
-export async function validatePerKindAcrossCompany(
+export async function validatePerManufacturerUnique(
   tx: Tx,
   params: {
     companyId: string;
@@ -106,10 +104,6 @@ export async function validatePerKindAcrossCompany(
     },
   });
 
-  if (existing.length === 0) {
-    return { ok: true };
-  }
-
   type Row = {
     manufacturer: { name: string; displayName: string | null };
     periodicLabelCode: string | null;
@@ -117,26 +111,23 @@ export async function validatePerKindAcrossCompany(
     cylinderMassLabelCode: string | null;
   };
 
-  const matches: string[] = [];
-  const differs: string[] = [];
+  const collisions: string[] = [];
   for (const row of existing as Row[]) {
     const c = norm(row[params.kind]);
     if (c == null) continue;
-    const name = row.manufacturer.displayName?.trim() || row.manufacturer.name;
     if (c === newCode) {
-      matches.push(`${name}=${c}`);
-    } else {
-      differs.push(`${name}=${c}`);
+      const name = row.manufacturer.displayName?.trim() || row.manufacturer.name;
+      collisions.push(name);
     }
   }
 
-  if (matches.length > 0 && differs.length > 0) {
+  if (collisions.length > 0) {
     return {
       ok: false,
       reason:
-        `Ne smiješ miješati istu i različitu šifru za ${LABEL_CODE_LABELS[params.kind]}. ` +
-        `Nova šifra ${newCode} podudara se s [${matches.join(", ")}], ali postoje i različite [${differs.join(", ")}]. ` +
-        `Sve aktivne šifre za ${LABEL_CODE_LABELS[params.kind]} moraju biti ili SVE iste ili SVE različite.`,
+        `Šifra "${newCode}" za ${LABEL_CODE_LABELS[params.kind]} već postoji kod proizvođača: ${collisions.join(", ")}. ` +
+        `U različitom načinu šifriranja sve šifre iste vrste moraju biti jedinstvene po proizvođaču. ` +
+        `Ako želiš da svi proizvođači imaju istu šifru, prebaci se na zajednički način šifriranja.`,
     };
   }
 
@@ -144,10 +135,10 @@ export async function validatePerKindAcrossCompany(
 }
 
 /**
- * Glavna validacija prije upserta jednog ovlaštenja.
- * Kombinira within-row i per-kind across-company provjere.
+ * PER_MANUFACTURER mod: validacija prije upserta jednog proizvođača —
+ * within-row + per-kind uniqueness kroz druge proizvođače.
  */
-export async function validateLabelCodes(
+export async function validateLabelCodesPerManufacturer(
   tx: Tx,
   params: {
     companyId: string;
@@ -159,7 +150,7 @@ export async function validateLabelCodes(
   if (!within.ok) return within;
 
   for (const kind of LABEL_CODE_KINDS) {
-    const r = await validatePerKindAcrossCompany(tx, {
+    const r = await validatePerManufacturerUnique(tx, {
       companyId: params.companyId,
       manufacturerId: params.manufacturerId,
       kind,
@@ -169,4 +160,12 @@ export async function validateLabelCodes(
   }
 
   return { ok: true };
+}
+
+/**
+ * SHARED mod: validacija seta od 3 šifre koji se primjenjuje na sve
+ * proizvođače — samo within-row pravilo.
+ */
+export function validateSharedLabelCodes(codes: LabelCodesInput): ValidationResult {
+  return validateWithinRow(codes);
 }
