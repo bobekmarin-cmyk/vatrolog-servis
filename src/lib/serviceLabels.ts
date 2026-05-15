@@ -89,6 +89,27 @@ export async function computeLabelUsage(
     labelMap.set(`${l.manufacturerId}:${l.kind}`, l.id);
   }
 
+  // Defensive auto-create: ako za neki (manufacturerId, kind) iz tally-ja ne
+  // postoji ServiceLabel zapis (npr. zato što je proizvođač kreiran prije nego
+  // što je auto-popunjavanje uvedeno, ili kroz seed bez ServiceLabel-ova),
+  // stvori ga sada da se naljepnice ne propuste s otpremnice.
+  const missing: { manufacturerId: string; kind: ServiceLabelKind }[] = [];
+  for (const entry of tally.values()) {
+    if (!labelMap.has(`${entry.manufacturerId}:${entry.kind}`)) {
+      missing.push({ manufacturerId: entry.manufacturerId, kind: entry.kind });
+    }
+  }
+  if (missing.length > 0) {
+    await tx.serviceLabel.createMany({ data: missing, skipDuplicates: true });
+    const created = await tx.serviceLabel.findMany({
+      where: { manufacturerId: { in: missing.map((m) => m.manufacturerId) } },
+      select: { id: true, manufacturerId: true, kind: true },
+    });
+    for (const l of created) {
+      labelMap.set(`${l.manufacturerId}:${l.kind}`, l.id);
+    }
+  }
+
   const rows: LabelUsageRow[] = [];
   for (const entry of tally.values()) {
     const labelId = labelMap.get(`${entry.manufacturerId}:${entry.kind}`);

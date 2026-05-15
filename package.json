@@ -22,6 +22,7 @@
     "typecheck": "tsc --noEmit",
     "audit:tenant": "node scripts/audit-tenant-isolation.mjs",
     "cleanup:demo-mfr": "node scripts/cleanup-demo-manufacturers.mjs",
+    "backfill:service-labels": "node scripts/backfill-service-labels.mjs",
     "backup:db": "node scripts/backup-db.mjs",
     "restore:db": "node scripts/restore-db.mjs",
     "verify:prod-env": "ts-node -P tsconfig.seed.json scripts/verify-prod-env.ts",
