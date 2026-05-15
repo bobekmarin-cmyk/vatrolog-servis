@@ -266,14 +266,25 @@ export async function collectLabelRowsForDeliveryNote(
 
   if (usage.length === 0) return [];
 
-  const labels = await client.serviceLabel.findMany({
-    where: { id: { in: usage.map((u) => u.serviceLabelId) } },
-    select: {
-      id: true,
-      kind: true,
-      manufacturer: { select: { id: true, name: true, displayName: true, sortOrder: true } },
-    },
-  });
+  const [labels, company] = await Promise.all([
+    client.serviceLabel.findMany({
+      where: { id: { in: usage.map((u) => u.serviceLabelId) } },
+      select: {
+        id: true,
+        kind: true,
+        manufacturer: { select: { id: true, name: true, displayName: true, sortOrder: true } },
+      },
+    }),
+    client.company.findUnique({
+      where: { id: params.companyId },
+      select: {
+        labelCodeStrategy: true,
+        sharedPeriodicLabelCode: true,
+        sharedApparatusMassLabelCode: true,
+        sharedCylinderMassLabelCode: true,
+      },
+    }),
+  ]);
   const labelById = new Map(labels.map((l) => [l.id, l]));
 
   const manufacturerIds = Array.from(new Set(labels.map((l) => l.manufacturer.id)));
@@ -284,6 +295,20 @@ export async function collectLabelRowsForDeliveryNote(
     },
   });
   const authByManu = new Map(auths.map((a) => [a.manufacturerId, a]));
+
+  const strategy = company?.labelCodeStrategy ?? "SHARED";
+
+  function sharedCodeFor(kind: ServiceLabelKind): string | null {
+    if (!company) return null;
+    switch (kind) {
+      case "PERIODIC":
+        return company.sharedPeriodicLabelCode ?? null;
+      case "APPARATUS_MASS":
+        return company.sharedApparatusMassLabelCode ?? null;
+      case "CYLINDER_MASS":
+        return company.sharedCylinderMassLabelCode ?? null;
+    }
+  }
 
   const raw: RawRow[] = [];
   for (const u of usage) {
@@ -302,7 +327,14 @@ export async function collectLabelRowsForDeliveryNote(
     });
   }
 
-  // Grupiraj po kind i pokušaj sažeti u jedan red ako su sve šifre iste i non-null.
+  // Strategija određuje prikaz na otpremnici:
+  //   SHARED            → uvijek grupirano (jedna stavka po kind-u, bez naziva
+  //                       proizvođača, sa zbrojenom količinom). Šifra se uzima
+  //                       prvenstveno iz Company.shared* polja, pa iz CMA
+  //                       (sve bi trebale biti iste), pa null.
+  //   PER_MANUFACTURER  → uvijek per-proizvođač (zasebna stavka po kombinaciji
+  //                       proizvođač + kind). Šifra je per-manu iz CMA, može
+  //                       biti null ako korisnik nije unio za tog proizvođača.
   const byKind = new Map<ServiceLabelKind, RawRow[]>();
   for (const r of raw) {
     const arr = byKind.get(r.kind) ?? [];
@@ -313,32 +345,33 @@ export async function collectLabelRowsForDeliveryNote(
   const groupedRows: LabelDeliveryRow[] = [];
   const perManuRows: LabelDeliveryRow[] = [];
 
-  for (const [kind, items] of byKind.entries()) {
-    const distinctManu = new Set(items.map((i) => i.manufacturerId)).size;
-    const allCodes = items.map((i) => i.code);
-    const firstCode = allCodes[0];
-    const allSameNonNull =
-      firstCode != null &&
-      firstCode.trim().length > 0 &&
-      allCodes.every((c) => c != null && c.trim() === firstCode.trim());
-
-    if (distinctManu >= 2 && allSameNonNull) {
+  if (strategy === "SHARED") {
+    for (const [kind, items] of byKind.entries()) {
       const sum = items.reduce((s, i) => s + i.quantity, 0);
+      // Prvenstveno Company.shared* polje (jedini istinski izvor u SHARED modu),
+      // pa fallback na CMA šifru s prvog item-a koja je obično ista.
+      let code = sharedCodeFor(kind);
+      if (!code) {
+        const firstWithCode = items.find((i) => i.code && i.code.trim().length > 0);
+        code = firstWithCode?.code ?? null;
+      }
       groupedRows.push({
         manufacturerName: "",
         kind,
         kindLabel: kindToShortLabel(kind),
-        code: firstCode!.trim(),
+        code: code && code.trim().length > 0 ? code.trim() : null,
         quantity: sum,
         grouped: true,
       });
-    } else {
+    }
+  } else {
+    for (const items of byKind.values()) {
       for (const r of items) {
         perManuRows.push({
           manufacturerName: r.manufacturerName,
           kind: r.kind,
           kindLabel: kindToFullLabel(r.kind, r.manufacturerName),
-          code: r.code,
+          code: r.code && r.code.trim().length > 0 ? r.code.trim() : null,
           quantity: r.quantity,
           grouped: false,
         });
@@ -348,8 +381,10 @@ export async function collectLabelRowsForDeliveryNote(
 
   groupedRows.sort((a, b) => kindOrder(a.kind) - kindOrder(b.kind));
   perManuRows.sort((a, b) => {
-    const so = raw.find((r) => r.manufacturerName === a.manufacturerName)?.manufacturerSortOrder ?? 0;
-    const sb = raw.find((r) => r.manufacturerName === b.manufacturerName)?.manufacturerSortOrder ?? 0;
+    const so =
+      raw.find((r) => r.manufacturerName === a.manufacturerName)?.manufacturerSortOrder ?? 0;
+    const sb =
+      raw.find((r) => r.manufacturerName === b.manufacturerName)?.manufacturerSortOrder ?? 0;
     const d = so - sb;
     if (d !== 0) return d;
     const n = a.manufacturerName.localeCompare(b.manufacturerName, "hr");
