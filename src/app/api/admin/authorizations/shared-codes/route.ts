@@ -62,46 +62,60 @@ export const POST = apiHandler(async (req: Request) => {
   // U jednoj transakciji ažuriraj Company.shared* i upiši ISTE šifre u sva
   // CompanyManufacturerAuthorization za sve proizvođače (kako bi otpremnica,
   // skladište i ostale rute koje čitaju iz CMA dobile konzistentne podatke).
-  const result = await prisma.$transaction(async (tx) => {
-    await tx.company.update({
-      where: { id: session.companyId },
-      data: {
-        sharedPeriodicLabelCode: codes.periodicLabelCode,
-        sharedApparatusMassLabelCode: codes.apparatusMassLabelCode,
-        sharedCylinderMassLabelCode: codes.cylinderMassLabelCode,
-      },
-    });
-
-    const manus = await tx.manufacturer.findMany({ select: { id: true } });
-
-    let upsertedCount = 0;
-    for (const m of manus) {
-      await tx.companyManufacturerAuthorization.upsert({
-        where: {
-          companyId_manufacturerId: {
-            companyId: session.companyId,
-            manufacturerId: m.id,
-          },
+  //
+  // Implementacija: updateMany za postojeće retke + createMany za nedostajuće.
+  // Stari sekvencijalni upsert za 31 proizvođača je prelazio Prisma default
+  // timeout (5s) pa je vraćao 500.
+  const result = await prisma.$transaction(
+    async (tx) => {
+      await tx.company.update({
+        where: { id: session.companyId },
+        data: {
+          sharedPeriodicLabelCode: codes.periodicLabelCode,
+          sharedApparatusMassLabelCode: codes.apparatusMassLabelCode,
+          sharedCylinderMassLabelCode: codes.cylinderMassLabelCode,
         },
-        create: {
-          companyId: session.companyId,
-          manufacturerId: m.id,
-          active: false,
-          periodicLabelCode: codes.periodicLabelCode,
-          apparatusMassLabelCode: codes.apparatusMassLabelCode,
-          cylinderMassLabelCode: codes.cylinderMassLabelCode,
-        },
-        update: {
+      });
+
+      const updateResult = await tx.companyManufacturerAuthorization.updateMany({
+        where: { companyId: session.companyId },
+        data: {
           periodicLabelCode: codes.periodicLabelCode,
           apparatusMassLabelCode: codes.apparatusMassLabelCode,
           cylinderMassLabelCode: codes.cylinderMassLabelCode,
         },
       });
-      upsertedCount++;
-    }
 
-    return { upsertedCount };
-  });
+      const [existing, allManus] = await Promise.all([
+        tx.companyManufacturerAuthorization.findMany({
+          where: { companyId: session.companyId },
+          select: { manufacturerId: true },
+        }),
+        tx.manufacturer.findMany({ select: { id: true } }),
+      ]);
+      const have = new Set(existing.map((e) => e.manufacturerId));
+      const missing = allManus.filter((m) => !have.has(m.id)).map((m) => m.id);
+
+      let created = 0;
+      if (missing.length > 0) {
+        const r = await tx.companyManufacturerAuthorization.createMany({
+          data: missing.map((manufacturerId) => ({
+            companyId: session.companyId,
+            manufacturerId,
+            active: false,
+            periodicLabelCode: codes.periodicLabelCode,
+            apparatusMassLabelCode: codes.apparatusMassLabelCode,
+            cylinderMassLabelCode: codes.cylinderMassLabelCode,
+          })),
+          skipDuplicates: true,
+        });
+        created = r.count;
+      }
+
+      return { upsertedCount: updateResult.count + created, updated: updateResult.count, created };
+    },
+    { timeout: 30000 },
+  );
 
   const audit = extractAuditMeta(req);
   await logAudit({
@@ -116,6 +130,8 @@ export const POST = apiHandler(async (req: Request) => {
       apparatusMassLabelCode: codes.apparatusMassLabelCode,
       cylinderMassLabelCode: codes.cylinderMassLabelCode,
       manufacturersUpdated: result.upsertedCount,
+      updated: result.updated,
+      created: result.created,
     },
     ip: audit.ip,
     userAgent: audit.userAgent,

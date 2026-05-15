@@ -4,7 +4,7 @@
  * • Prije git pusha na main/produkciju pokreni: `npm run version:bump`
  *   (povećava PATCH). Za veće releaseove ručno uredi ovu konstantu.
  */
-export const APP_VERSION = "1.0.7";
+export const APP_VERSION = "1.0.8";
 export const APP_NAME = "VatroLog";
 
 function ensureAbsoluteHttpUrl(raw: string): string {
