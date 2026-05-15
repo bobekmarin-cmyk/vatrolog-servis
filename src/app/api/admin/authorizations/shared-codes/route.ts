@@ -59,43 +59,39 @@ export const POST = apiHandler(async (req: Request) => {
     throw new AppValidationError(validation.reason);
   }
 
-  // U jednoj transakciji ažuriraj Company.shared* i upiši ISTE šifre u sva
-  // CompanyManufacturerAuthorization za sve proizvođače (kako bi otpremnica,
-  // skladište i ostale rute koje čitaju iz CMA dobile konzistentne podatke).
-  //
-  // Implementacija: updateMany za postojeće retke + createMany za nedostajuće.
-  // Stari sekvencijalni upsert za 31 proizvođača je prelazio Prisma default
-  // timeout (5s) pa je vraćao 500.
-  const result = await prisma.$transaction(
+  const [existing, allManus] = await Promise.all([
+    prisma.companyManufacturerAuthorization.findMany({
+      where: { companyId: session.companyId },
+      select: { manufacturerId: true },
+    }),
+    prisma.manufacturer.findMany({ select: { id: true } }),
+  ]);
+  const have = new Set(existing.map((e) => e.manufacturerId));
+  const missing = allManus.filter((m) => !have.has(m.id)).map((m) => m.id);
+
+  const companyData = {
+    sharedPeriodicLabelCode: codes.periodicLabelCode,
+    sharedApparatusMassLabelCode: codes.apparatusMassLabelCode,
+    sharedCylinderMassLabelCode: codes.cylinderMassLabelCode,
+  };
+  const authData = {
+    periodicLabelCode: codes.periodicLabelCode,
+    apparatusMassLabelCode: codes.apparatusMassLabelCode,
+    cylinderMassLabelCode: codes.cylinderMassLabelCode,
+  };
+
+  let result: { upsertedCount: number; updated: number; created: number };
+
+  const txResult = await prisma.$transaction(
     async (tx) => {
       await tx.company.update({
         where: { id: session.companyId },
-        data: {
-          sharedPeriodicLabelCode: codes.periodicLabelCode,
-          sharedApparatusMassLabelCode: codes.apparatusMassLabelCode,
-          sharedCylinderMassLabelCode: codes.cylinderMassLabelCode,
-        },
+        data: companyData,
       });
-
       const updateResult = await tx.companyManufacturerAuthorization.updateMany({
         where: { companyId: session.companyId },
-        data: {
-          periodicLabelCode: codes.periodicLabelCode,
-          apparatusMassLabelCode: codes.apparatusMassLabelCode,
-          cylinderMassLabelCode: codes.cylinderMassLabelCode,
-        },
+        data: authData,
       });
-
-      const [existing, allManus] = await Promise.all([
-        tx.companyManufacturerAuthorization.findMany({
-          where: { companyId: session.companyId },
-          select: { manufacturerId: true },
-        }),
-        tx.manufacturer.findMany({ select: { id: true } }),
-      ]);
-      const have = new Set(existing.map((e) => e.manufacturerId));
-      const missing = allManus.filter((m) => !have.has(m.id)).map((m) => m.id);
-
       let created = 0;
       if (missing.length > 0) {
         const r = await tx.companyManufacturerAuthorization.createMany({
@@ -103,19 +99,22 @@ export const POST = apiHandler(async (req: Request) => {
             companyId: session.companyId,
             manufacturerId,
             active: false,
-            periodicLabelCode: codes.periodicLabelCode,
-            apparatusMassLabelCode: codes.apparatusMassLabelCode,
-            cylinderMassLabelCode: codes.cylinderMassLabelCode,
+            ...authData,
           })),
           skipDuplicates: true,
         });
         created = r.count;
       }
-
-      return { upsertedCount: updateResult.count + created, updated: updateResult.count, created };
+      return { updated: updateResult.count, created };
     },
-    { timeout: 30000 },
+    { timeout: 60_000, maxWait: 15_000 },
   );
+
+  result = {
+    upsertedCount: txResult.updated + txResult.created,
+    updated: txResult.updated,
+    created: txResult.created,
+  };
 
   const audit = extractAuditMeta(req);
   await logAudit({

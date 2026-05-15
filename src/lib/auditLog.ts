@@ -21,15 +21,28 @@ export type LogAuditInput = {
  */
 export async function logAudit(input: LogAuditInput): Promise<void> {
   try {
+    // actorId je FK na AccountUser. PlatformUser / ostali tipovi nemaju redak u AccountUser — ne smiju ići u actorId.
+    let actorId = input.actorId ?? null;
+    let meta = input.meta;
+    if (input.actorType === "PLATFORM_USER") {
+      if (actorId) {
+        meta = {
+          ...(typeof meta === "object" && meta !== null && !Array.isArray(meta) ? meta : {}),
+          platformUserId: actorId,
+        };
+      }
+      actorId = null;
+    }
+
     await prisma.auditLog.create({
       data: {
         companyId: input.companyId ?? null,
-        actorId: input.actorId ?? null,
+        actorId,
         actorType: input.actorType,
         action: input.action,
         entity: input.entity ?? null,
         entityId: input.entityId ?? null,
-        meta: input.meta ? (input.meta as object) : undefined,
+        meta: meta ? (meta as object) : undefined,
         ip: input.ip ?? null,
         userAgent: input.userAgent ?? null,
       },
