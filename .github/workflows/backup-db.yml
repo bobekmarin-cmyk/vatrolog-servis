@@ -29,7 +29,11 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
-          pg_dump --version
+          # Stari postgresql-client-16 dolazi pre-installed u ubuntu-latest runneru i
+          # prvi je u PATH-u. Dajemo PostgreSQL 18 prednost za sve naredne stepove.
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          # Provjera da je 18-ica zaista prva (eksplicitan apsolutni put ovdje):
+          /usr/lib/postgresql/18/bin/pg_dump --version
 
       - uses: actions/setup-node@v4
         with:
