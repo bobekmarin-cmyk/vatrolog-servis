@@ -1,43 +1,33 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getServiceAnalyticsSnapshot, monthBoundsUtc } from "@/lib/serviceAnalyticsQueries";
+import {
+  getServiceAnalyticsSnapshot,
+  parseOperationsReportSearchParams,
+  resolvePrimaryCompareRanges,
+} from "@/lib/serviceAnalyticsQueries";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/reports/service-analytics?month=YYYY-MM&compare=YYYY-MM
- * Samo ADMIN. Vraća agregate servisiranih stavki (servicedAt u kalendarskom mjesecu UTC).
+ * GET /api/reports/service-analytics?mode=month|year|all&month=YYYY-MM&compare=…&year=YYYY&compareYear=…
+ * Samo ADMIN.
  */
 export async function GET(req: Request) {
   const session = await requireAdminSession();
   const url = new URL(req.url);
-  const month = url.searchParams.get("month")?.trim();
-  const compare = url.searchParams.get("compare")?.trim() || null;
 
-  if (!month) {
-    return NextResponse.json({ error: "Nedostaje parametar month (YYYY-MM)." }, { status: 400 });
-  }
+  const raw = parseOperationsReportSearchParams(url.searchParams);
 
   try {
-    monthBoundsUtc(month);
-    if (compare) monthBoundsUtc(compare);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Neispravan mjesec.";
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
-
-  try {
-    const primary = await getServiceAnalyticsSnapshot(prisma, session.companyId, month);
-    const compareSnapshot =
-      compare && compare !== month
-        ? await getServiceAnalyticsSnapshot(prisma, session.companyId, compare)
-        : null;
+    const { primary, compare } = await resolvePrimaryCompareRanges(prisma, session.companyId, raw);
+    const primarySnap = await getServiceAnalyticsSnapshot(prisma, session.companyId, primary);
+    const compareSnap = compare ? await getServiceAnalyticsSnapshot(prisma, session.companyId, compare) : null;
 
     return NextResponse.json({
-      primary,
-      compare: compareSnapshot,
+      primary: primarySnap,
+      compare: compareSnap,
     });
   } catch (e) {
     console.error("service-analytics", e);

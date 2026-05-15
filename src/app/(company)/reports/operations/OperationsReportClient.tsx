@@ -2,8 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ServiceAnalyticsSnapshot } from "@/lib/serviceAnalyticsQueries";
-import { currentYmUtc, monthLabelHr, shiftMonthYm } from "@/lib/serviceAnalyticsQueries";
+import type {
+  OperationsReportUrlState,
+  ServiceAnalyticsSnapshot,
+  TrendRow,
+} from "@/lib/serviceAnalyticsQueries";
+import {
+  currentYmUtc,
+  currentYearUtc,
+  monthLabelHr,
+  operationsReportSearchParamsToUrl,
+  shiftMonthYm,
+} from "@/lib/serviceAnalyticsQueries";
 import {
   Bar,
   BarChart,
@@ -32,6 +42,8 @@ const CHART_COLORS = [
   "#64748b",
 ];
 
+const MONTH_CHART = ["Sij", "Velj", "Ožu", "Tra", "Svi", "Lip", "Srp", "Kol", "Ruj", "Lis", "Stu", "Pro"];
+
 function deltaLabel(cur: number, prev: number | null): { text: string; tone: "up" | "down" | "flat" | "na" } {
   if (prev === null) return { text: "", tone: "na" };
   const d = cur - prev;
@@ -49,22 +61,84 @@ function pieData(rows: { label: string; count: number }[], max = 8) {
   return [...head, { label: "Ostalo", count: rest }];
 }
 
+function mergeUrlState(
+  current: OperationsReportUrlState,
+  patch: Partial<OperationsReportUrlState>,
+): OperationsReportUrlState {
+  return {
+    mode: patch.mode ?? current.mode,
+    monthYm: patch.monthYm ?? current.monthYm,
+    yearY: patch.yearY ?? current.yearY,
+    compareMonthYm: patch.compareMonthYm !== undefined ? patch.compareMonthYm : current.compareMonthYm,
+    compareYearY: patch.compareYearY !== undefined ? patch.compareYearY : current.compareYearY,
+  };
+}
+
+function href(current: OperationsReportUrlState, patch: Partial<OperationsReportUrlState>) {
+  const next = mergeUrlState(current, patch);
+  return `/reports/operations?${operationsReportSearchParamsToUrl(next)}`;
+}
+
+function mergeByBucket(
+  a: TrendRow[],
+  b: TrendRow[],
+): Array<{ x: string; count: number; compareCount: number }> {
+  const map = new Map<string, { x: string; count: number; compareCount: number }>();
+  for (const x of a) {
+    map.set(x.bucket, { x: x.bucket, count: x.count, compareCount: 0 });
+  }
+  for (const x of b) {
+    const ex = map.get(x.bucket) ?? { x: x.bucket, count: 0, compareCount: 0 };
+    ex.compareCount = x.count;
+    map.set(x.bucket, ex);
+  }
+  return [...map.values()].sort((p, q) => p.x.localeCompare(q.x));
+}
+
+function mergeTrendByMonthOfYear(
+  a: TrendRow[],
+  b: TrendRow[],
+): Array<{ x: string; count: number; compareCount: number }> {
+  const map = new Map<number, { x: string; count: number; compareCount: number }>();
+  for (const t of a) {
+    const d = new Date(`${t.bucket}T12:00:00.000Z`);
+    const mi = d.getUTCMonth();
+    map.set(mi, { x: MONTH_CHART[mi] ?? String(mi + 1), count: t.count, compareCount: 0 });
+  }
+  for (const t of b) {
+    const d = new Date(`${t.bucket}T12:00:00.000Z`);
+    const mi = d.getUTCMonth();
+    const ex = map.get(mi) ?? { x: MONTH_CHART[mi] ?? String(mi + 1), count: 0, compareCount: 0 };
+    ex.compareCount = t.count;
+    map.set(mi, ex);
+  }
+  return [...map.entries()]
+    .sort(([ka], [kb]) => ka - kb)
+    .map(([, v]) => v);
+}
+
+function yearOptions(centerY: number, span = 16): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < span; i++) out.push(String(centerY - i));
+  return out;
+}
+
+function formatShares(list: { label: string; percent: number }[], maxLen = 52): string {
+  if (!list.length) return "—";
+  const s = list.map((x) => `${x.label} ${x.percent}%`).join(" · ");
+  return s.length > maxLen ? `${s.slice(0, maxLen - 1)}…` : s;
+}
+
 export default function OperationsReportClient(props: {
   primary: ServiceAnalyticsSnapshot;
   compare: ServiceAnalyticsSnapshot | null;
-  month: string;
-  compareYm: string | null;
+  urlState: OperationsReportUrlState;
 }) {
-  const { primary, compare, month, compareYm } = props;
+  const { primary, compare, urlState } = props;
   const router = useRouter();
   const nowYm = currentYmUtc();
-
-  function href(nextMonth: string, nextCompare: string | null) {
-    const u = new URLSearchParams();
-    u.set("month", nextMonth);
-    if (nextCompare) u.set("compare", nextCompare);
-    return `/reports/operations?${u.toString()}`;
-  }
+  const nowY = currentYearUtc();
+  const cy = Number(nowY);
 
   const agentPie = pieData(primary.byAgent.map((r) => ({ label: r.label, count: r.count })));
   const constructionPie = pieData(
@@ -75,31 +149,43 @@ export default function OperationsReportClient(props: {
   const dPrimary = deltaLabel(primary.totals.serviced, compare?.totals.serviced ?? null);
   const dUp = deltaLabel(primary.totals.upPercent, compare?.totals.upPercent ?? null);
 
+  const lineRows =
+    compare && primary.mode === "year" && compare.mode === "year"
+      ? mergeTrendByMonthOfYear(primary.byTrend, compare.byTrend)
+      : compare
+        ? mergeByBucket(primary.byTrend, compare.byTrend)
+        : primary.byTrend.map((t) => ({ x: t.bucket, count: t.count }));
+
+  const servicerQuery = operationsReportSearchParamsToUrl(urlState);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Servisna analitika</h1>
           <p className="text-sm text-slate-600">
-            Servisirane stavke: <code className="rounded bg-slate-100 px-1">servicedAt</code> u mjesecu, s označenim
-            unutarnjim pregledom (UP) gdje je <code className="rounded bg-slate-100 px-1">internalDone</code>.
+            Servisirane stavke u odabranom razdoblju (<code className="rounded bg-slate-100 px-1">servicedAt</code>
+            ), s označenim unutarnjim pregledom (UP) gdje je{" "}
+            <code className="rounded bg-slate-100 px-1">internalDone</code>.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={href(nowYm, compareYm)}
+            href={href(urlState, { mode: "month", monthYm: nowYm, compareMonthYm: null })}
             className={
               "rounded-md border px-3 py-1.5 text-sm font-medium " +
-              (month === nowYm ? "border-indigo-600 bg-indigo-50 text-indigo-800" : "border-slate-200 bg-white hover:bg-slate-50")
+              (urlState.mode === "month" && urlState.monthYm === nowYm
+                ? "border-indigo-600 bg-indigo-50 text-indigo-800"
+                : "border-slate-200 bg-white hover:bg-slate-50")
             }
           >
             Ovaj mjesec
           </Link>
           <Link
-            href={href(shiftMonthYm(nowYm, -1), compareYm)}
+            href={href(urlState, { mode: "month", monthYm: shiftMonthYm(nowYm, -1), compareMonthYm: null })}
             className={
               "rounded-md border px-3 py-1.5 text-sm font-medium " +
-              (month === shiftMonthYm(nowYm, -1)
+              (urlState.mode === "month" && urlState.monthYm === shiftMonthYm(nowYm, -1)
                 ? "border-indigo-600 bg-indigo-50 text-indigo-800"
                 : "border-slate-200 bg-white hover:bg-slate-50")
             }
@@ -107,53 +193,181 @@ export default function OperationsReportClient(props: {
             Prošli mjesec
           </Link>
           <Link
-            href={href(shiftMonthYm(month, -1), compareYm)}
-            className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+            href={href(urlState, { mode: "year", yearY: nowY, compareYearY: String(cy - 1) })}
+            className={
+              "rounded-md border px-3 py-1.5 text-sm font-medium " +
+              (urlState.mode === "year" && urlState.yearY === nowY
+                ? "border-indigo-600 bg-indigo-50 text-indigo-800"
+                : "border-slate-200 bg-white hover:bg-slate-50")
+            }
           >
-            ← Prethodni
+            Ova godina
           </Link>
           <Link
-            href={href(shiftMonthYm(month, 1), compareYm)}
-            className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+            href={href(urlState, { mode: "all", compareMonthYm: null, compareYearY: null })}
+            className={
+              "rounded-md border px-3 py-1.5 text-sm font-medium " +
+              (urlState.mode === "all"
+                ? "border-indigo-600 bg-indigo-50 text-indigo-800"
+                : "border-slate-200 bg-white hover:bg-slate-50")
+            }
           >
-            Sljedeći →
+            Cijelo vrijeme
           </Link>
         </div>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-3 flex flex-wrap gap-2 text-sm">
+          <span className="font-medium text-slate-700">Razdoblje:</span>
+          <Link
+            href={href(urlState, { mode: "month" })}
+            className={
+              urlState.mode === "month"
+                ? "rounded-full bg-indigo-100 px-3 py-0.5 font-medium text-indigo-900"
+                : "rounded-full px-3 py-0.5 text-slate-600 hover:bg-slate-100"
+            }
+          >
+            Mjesec
+          </Link>
+          <Link
+            href={href(urlState, { mode: "year", compareMonthYm: null })}
+            className={
+              urlState.mode === "year"
+                ? "rounded-full bg-indigo-100 px-3 py-0.5 font-medium text-indigo-900"
+                : "rounded-full px-3 py-0.5 text-slate-600 hover:bg-slate-100"
+            }
+          >
+            Godina
+          </Link>
+          <Link
+            href={href(urlState, { mode: "all", compareMonthYm: null, compareYearY: null })}
+            className={
+              urlState.mode === "all"
+                ? "rounded-full bg-indigo-100 px-3 py-0.5 font-medium text-indigo-900"
+                : "rounded-full px-3 py-0.5 text-slate-600 hover:bg-slate-100"
+            }
+          >
+            Cijelo vrijeme
+          </Link>
+        </div>
+
         <div className="flex flex-wrap items-end gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Mjesec</span>
-            <input
-              type="month"
-              className="input h-9 w-44 text-sm"
-              value={month}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (!v) return;
-                const ym = `${v.slice(0, 4)}-${v.slice(5, 7)}`;
-                router.push(href(ym, compareYm));
-              }}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Usporedi s</span>
-            <select
-              className="input h-9 min-w-[200px] text-sm"
-              value={compareYm ?? ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                router.push(href(month, v || null));
-              }}
-            >
-              <option value="">— bez usporedbe —</option>
-              <option value={shiftMonthYm(month, -1)}>{monthLabelHr(shiftMonthYm(month, -1))}</option>
-              <option value={shiftMonthYm(month, -2)}>{monthLabelHr(shiftMonthYm(month, -2))}</option>
-              <option value={shiftMonthYm(month, 1)}>{monthLabelHr(shiftMonthYm(month, 1))}</option>
-              <option value={shiftMonthYm(nowYm, -1)}>{monthLabelHr(shiftMonthYm(nowYm, -1))} (prošli od danas)</option>
-            </select>
-          </label>
+          {urlState.mode === "month" ? (
+            <>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-slate-700">Mjesec</span>
+                <input
+                  type="month"
+                  className="input h-9 w-44 text-sm"
+                  value={urlState.monthYm}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const ym = `${v.slice(0, 4)}-${v.slice(5, 7)}`;
+                    router.push(href(urlState, { monthYm: ym }));
+                  }}
+                />
+              </label>
+              <div className="flex gap-2">
+                <Link
+                  href={href(urlState, { monthYm: shiftMonthYm(urlState.monthYm, -1) })}
+                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+                >
+                  ← Prethodni
+                </Link>
+                <Link
+                  href={href(urlState, { monthYm: shiftMonthYm(urlState.monthYm, 1) })}
+                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+                >
+                  Sljedeći →
+                </Link>
+              </div>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-slate-700">Usporedi s mjesec</span>
+                <select
+                  className="input h-9 min-w-[200px] text-sm"
+                  value={urlState.compareMonthYm ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    router.push(href(urlState, { compareMonthYm: v || null }));
+                  }}
+                >
+                  <option value="">— bez usporedbe —</option>
+                  <option value={shiftMonthYm(urlState.monthYm, -1)}>
+                    {monthLabelHr(shiftMonthYm(urlState.monthYm, -1))}
+                  </option>
+                  <option value={shiftMonthYm(urlState.monthYm, -2)}>
+                    {monthLabelHr(shiftMonthYm(urlState.monthYm, -2))}
+                  </option>
+                  <option value={shiftMonthYm(urlState.monthYm, 1)}>
+                    {monthLabelHr(shiftMonthYm(urlState.monthYm, 1))}
+                  </option>
+                  <option value={shiftMonthYm(nowYm, -1)}>{monthLabelHr(shiftMonthYm(nowYm, -1))} (prošli od danas)</option>
+                </select>
+              </label>
+            </>
+          ) : null}
+
+          {urlState.mode === "year" ? (
+            <>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-slate-700">Godina</span>
+                <select
+                  className="input h-9 w-32 text-sm"
+                  value={urlState.yearY}
+                  onChange={(e) => router.push(href(urlState, { yearY: e.target.value }))}
+                >
+                  {yearOptions(cy).map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex gap-2">
+                <Link
+                  href={href(urlState, { yearY: String(Number(urlState.yearY) - 1) })}
+                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+                >
+                  ← {Number(urlState.yearY) - 1}
+                </Link>
+                <Link
+                  href={href(urlState, { yearY: String(Number(urlState.yearY) + 1) })}
+                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50"
+                >
+                  {Number(urlState.yearY) + 1} →
+                </Link>
+              </div>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-slate-700">Usporedi s godinom</span>
+                <select
+                  className="input h-9 min-w-[120px] text-sm"
+                  value={urlState.compareYearY ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    router.push(href(urlState, { compareYearY: v || null }));
+                  }}
+                >
+                  <option value="">— bez usporedbe —</option>
+                  {Array.from({ length: 30 }, (_, i) => String(cy + 1 - i))
+                    .filter((y) => y !== urlState.yearY)
+                    .map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </>
+          ) : null}
+
+          {urlState.mode === "all" ? (
+            <p className="text-sm text-slate-600">
+              Prikaz svih servisiranih stavki u tvrtki (od najranijeg zapisa do danas). Usporedba razdoblja nije
+              dostupna u ovom načinu.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -187,7 +401,7 @@ export default function OperationsReportClient(props: {
 
       {primary.totals.serviced === 0 ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Nema servisiranih stavki u odabranom mjesecu.
+          Nema servisiranih stavki u odabranom razdoblju.
         </div>
       ) : null}
 
@@ -235,12 +449,14 @@ export default function OperationsReportClient(props: {
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-2 text-sm font-semibold text-slate-900">Servisirano po danu</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-900">
+          {primary.trendGranularity === "day" ? "Servisirano po danu" : "Servisirano po mjesecu"}
+        </h2>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={compare ? mergeByDay(primary.byDay, compare.byDay) : primary.byDay}>
+            <LineChart data={lineRows}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
-              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="x" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
@@ -258,10 +474,13 @@ export default function OperationsReportClient(props: {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        {compare ? (
+        {compare && primary.mode === "month" && compare.mode === "month" ? (
           <p className="mt-2 text-xs text-slate-500">
-            Zelena linija: usporedbeni mjesec (isti kalendar dani; dan bez servisa = 0).
+            Usporedba po istom kalendarskom danu u mjesecu (dan bez servisa = 0).
           </p>
+        ) : null}
+        {compare && primary.mode === "year" && compare.mode === "year" ? (
+          <p className="mt-2 text-xs text-slate-500">Usporedba po mjesecima u godini (siječanj–prosinac).</p>
         ) : null}
       </div>
 
@@ -280,11 +499,8 @@ export default function OperationsReportClient(props: {
         </div>
       </div>
 
-      <DataTable
-        title="Proizvođač (detalj + UP %)"
-        rows={primary.byManufacturer}
-        empty={primary.byManufacturer.length === 0}
-      />
+      <ManufacturerTable rows={primary.byManufacturer} />
+
       <DataTable
         title="Tip aparata (do 40)"
         rows={primary.byType.map((t) => ({
@@ -301,6 +517,9 @@ export default function OperationsReportClient(props: {
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Serviseri</h2>
+        <p className="mb-3 text-xs text-slate-500">
+          Klik na ime servisera otvara detaljnu analitiku u istom vremenskom rasponu.
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -315,7 +534,18 @@ export default function OperationsReportClient(props: {
             <tbody className="divide-y divide-slate-100">
               {primary.byServicer.map((s) => (
                 <tr key={s.servicerId ?? "none"}>
-                  <td className="py-2 pr-3 font-medium text-slate-900">{s.servicerName}</td>
+                  <td className="py-2 pr-3 font-medium text-slate-900">
+                    {s.servicerId ? (
+                      <Link
+                        href={`/reports/operations/servicer/${s.servicerId}?${servicerQuery}`}
+                        className="text-indigo-700 hover:underline"
+                      >
+                        {s.servicerName}
+                      </Link>
+                    ) : (
+                      s.servicerName
+                    )}
+                  </td>
                   <td className="py-2 pr-3 tabular-nums">{s.count}</td>
                   <td className="py-2 pr-3 tabular-nums">{s.distinctDays}</td>
                   <td className="py-2 pr-3 tabular-nums">{s.avgPerDay}</td>
@@ -332,22 +562,6 @@ export default function OperationsReportClient(props: {
       </div>
     </div>
   );
-}
-
-function mergeByDay(
-  a: { day: string; count: number }[],
-  b: { day: string; count: number }[],
-): Array<{ day: string; count: number; compareCount: number }> {
-  const map = new Map<string, { day: string; count: number; compareCount: number }>();
-  for (const x of a) {
-    map.set(x.day, { day: x.day, count: x.count, compareCount: 0 });
-  }
-  for (const x of b) {
-    const ex = map.get(x.day);
-    if (ex) ex.compareCount = x.count;
-    else map.set(x.day, { day: x.day, count: 0, compareCount: x.count });
-  }
-  return [...map.values()].sort((p, q) => p.day.localeCompare(q.day));
 }
 
 function KpiCard(props: {
@@ -421,6 +635,49 @@ function DataTable(props: {
                   <td className="py-2 pr-3 tabular-nums">{r.count}</td>
                   <td className="py-2 pr-3 tabular-nums">{r.internalDone}</td>
                   <td className="py-2 tabular-nums">{r.upPercent}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ManufacturerTable(props: { rows: ServiceAnalyticsSnapshot["byManufacturer"] }) {
+  const { rows } = props;
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <h2 className="mb-3 text-sm font-semibold text-slate-900">Proizvođač (detalj + UP % + starost + udio medija/izvedbe)</h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-slate-500">Nema podataka.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase text-slate-500">
+                <th className="py-2 pr-3">Naziv</th>
+                <th className="py-2 pr-3">Stavke</th>
+                <th className="py-2 pr-3">UP (kom)</th>
+                <th className="py-2 pr-3">UP %</th>
+                <th className="py-2 pr-3">Prosjek starosti (god.)</th>
+                <th className="py-2 pr-3">Medij (%)</th>
+                <th className="py-2">Izvedba (%)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((r) => (
+                <tr key={r.key}>
+                  <td className="py-2 pr-3 text-slate-800">{r.label}</td>
+                  <td className="py-2 pr-3 tabular-nums">{r.count}</td>
+                  <td className="py-2 pr-3 tabular-nums">{r.internalDone}</td>
+                  <td className="py-2 pr-3 tabular-nums">{r.upPercent}%</td>
+                  <td className="py-2 pr-3 tabular-nums text-slate-700">
+                    {r.avgDeviceAgeYears == null ? "—" : r.avgDeviceAgeYears}
+                  </td>
+                  <td className="py-2 pr-3 text-xs text-slate-600">{formatShares(r.agentSharePct)}</td>
+                  <td className="py-2 text-xs text-slate-600">{formatShares(r.constructionSharePct)}</td>
                 </tr>
               ))}
             </tbody>

@@ -87,7 +87,7 @@ export default async function AdminSettingsServicersPage() {
               {activeUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50/60">
                   <td className="table-cell table-strong">
-                    <Link href={`/admin/servicers/${u.id}`} className="hover:underline text-blue-700">
+                    <Link href={`/reports/operations/servicer/${u.id}`} className="hover:underline text-blue-700">
                       {u.fullName}
                     </Link>
                   </td>
@@ -99,9 +99,6 @@ export default async function AdminSettingsServicersPage() {
                   </td>
                   <td className="table-cell text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Link href={`/admin/servicers/${u.id}`} className="btn btn-outline px-3 py-1 text-xs">
-                        Analitika
-                      </Link>
                       <form action={`/api/admin/servicers/${u.id}/toggle`} method="post" className="inline">
                         <button className="btn btn-outline px-3 py-1 text-xs" type="submit">
                           Deaktiviraj

@@ -2,9 +2,9 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
-  currentYmUtc,
   getServiceAnalyticsSnapshot,
-  monthBoundsUtc,
+  parseOperationsReportSearchParams,
+  resolvePrimaryCompareRanges,
 } from "@/lib/serviceAnalyticsQueries";
 import OperationsReportClient from "./OperationsReportClient";
 
@@ -13,41 +13,29 @@ export const dynamic = "force-dynamic";
 export default async function OperationsReportPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; compare?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/");
 
   const sp = await searchParams;
-  const defaultYm = currentYmUtc();
-  const monthRaw = sp.month?.trim();
-  let month = defaultYm;
-  if (monthRaw && /^\d{4}-\d{2}$/.test(monthRaw)) {
-    try {
-      monthBoundsUtc(monthRaw);
-      month = monthRaw;
-    } catch {
-      month = defaultYm;
-    }
-  }
+  const raw = parseOperationsReportSearchParams({
+    get: (name) => {
+      const v = sp[name];
+      if (typeof v === "string") return v;
+      if (Array.isArray(v) && typeof v[0] === "string") return v[0];
+      return null;
+    },
+  });
 
-  let compareYm: string | null = sp.compare?.trim() ?? null;
-  if (compareYm) {
-    try {
-      monthBoundsUtc(compareYm);
-      if (compareYm === month) compareYm = null;
-    } catch {
-      compareYm = null;
-    }
-  }
-
-  const primary = await getServiceAnalyticsSnapshot(prisma, session.companyId, month);
-  const compare = compareYm ? await getServiceAnalyticsSnapshot(prisma, session.companyId, compareYm) : null;
+  const { primary, compare } = await resolvePrimaryCompareRanges(prisma, session.companyId, raw);
+  const primarySnap = await getServiceAnalyticsSnapshot(prisma, session.companyId, primary);
+  const compareSnap = compare ? await getServiceAnalyticsSnapshot(prisma, session.companyId, compare) : null;
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
-      <OperationsReportClient primary={primary} compare={compare} month={month} compareYm={compareYm} />
+      <OperationsReportClient primary={primarySnap} compare={compareSnap} urlState={raw} />
     </main>
   );
 }

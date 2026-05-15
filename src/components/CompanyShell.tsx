@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LogoutButton from "@/components/LogoutButton";
 import NowDateTime from "@/components/NowDateTime";
 import ServicerActivationDropdown from "@/components/ServicerActivationDropdown";
@@ -24,6 +24,8 @@ export type CompanyNavSection = {
   items: CompanyNavItem[];
   /** Prikaz kao neaktivna / uskoro (zasivljeno, bez navigacije). */
   inactiveSection?: boolean;
+  /** Stavke su skrivene dok korisnik ne klikne naslov sekcije (npr. Izvještaji, Admin). */
+  collapsible?: boolean;
 };
 
 function isItemActive(pathname: string, item: CompanyNavItem): boolean {
@@ -82,17 +84,43 @@ function NavItem(item: CompanyNavItem & { disabled?: boolean }) {
   );
 }
 
-function SectionHeader({ title, isActive, muted }: { title: string; isActive: boolean; muted?: boolean }) {
-  return (
-    <div
-      className={[
-        "px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider",
-        muted ? "text-white/45" : isActive ? "text-white/85" : "text-white/65",
-      ].join(" ")}
-    >
-      {title}
-    </div>
-  );
+function SectionHeader({
+  title,
+  isActive,
+  muted,
+  collapsible,
+  expanded,
+  onToggle,
+}: {
+  title: string;
+  isActive: boolean;
+  muted?: boolean;
+  collapsible?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+}) {
+  const cls = [
+    "px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider",
+    muted ? "text-white/45" : isActive ? "text-white/85" : "text-white/65",
+  ].join(" ");
+
+  if (collapsible && onToggle) {
+    return (
+      <button
+        type="button"
+        className={cls + " flex w-full items-center justify-between gap-2 text-left hover:text-white"}
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
+        <span>{title}</span>
+        <span className="text-xs opacity-80" aria-hidden>
+          {expanded ? "▾" : "▸"}
+        </span>
+      </button>
+    );
+  }
+
+  return <div className={cls}>{title}</div>;
 }
 
 export default function CompanyShell(props: {
@@ -105,6 +133,19 @@ export default function CompanyShell(props: {
   const { companyName, roleLabel, sections, topBarExtra, children } = props;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [manualSectionOpen, setManualSectionOpen] = useState<Record<string, boolean | undefined>>({});
+
+  useEffect(() => {
+    setManualSectionOpen((prev) => {
+      const next = { ...prev };
+      sections.forEach((sec, idx) => {
+        if (!sec.collapsible) return;
+        const k = sec.title ?? `nav-${idx}`;
+        if (sec.items.some((i) => isItemActive(pathname, i))) delete next[k];
+      });
+      return next;
+    });
+  }, [pathname, sections]);
 
   return (
     <div className="min-h-dvh bg-transparent">
@@ -189,6 +230,13 @@ export default function CompanyShell(props: {
                 if (section.items.length === 0) return null;
                 const sectionActive =
                   !section.inactiveSection && section.items.some((i) => isItemActive(pathname, i));
+                const sectionKey = section.title ?? `nav-${idx}`;
+                const defaultExpanded =
+                  !section.collapsible || section.items.some((i) => isItemActive(pathname, i));
+                const expanded =
+                  manualSectionOpen[sectionKey] !== undefined
+                    ? (manualSectionOpen[sectionKey] as boolean)
+                    : defaultExpanded;
                 return (
                   <div
                     key={idx}
@@ -199,13 +247,27 @@ export default function CompanyShell(props: {
                         title={section.title}
                         isActive={sectionActive}
                         muted={section.inactiveSection}
+                        collapsible={section.collapsible}
+                        expanded={section.collapsible ? expanded : undefined}
+                        onToggle={
+                          section.collapsible
+                            ? () => {
+                                setManualSectionOpen((prev) => ({
+                                  ...prev,
+                                  [sectionKey]: !expanded,
+                                }));
+                              }
+                            : undefined
+                        }
                       />
                     ) : null}
-                    <div className="space-y-1">
-                      {section.items.map((i) => (
-                        <NavItem key={i.href} {...i} disabled={section.inactiveSection} />
-                      ))}
-                    </div>
+                    {section.collapsible && !expanded ? null : (
+                      <div className="space-y-1">
+                        {section.items.map((i) => (
+                          <NavItem key={i.href} {...i} disabled={section.inactiveSection} />
+                        ))}
+                      </div>
+                    )}
                     {idx !== sections.length - 1 && <div className="my-3 h-px bg-white/10" />}
                   </div>
                 );

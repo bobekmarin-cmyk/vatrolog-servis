@@ -19,7 +19,12 @@ export const metadata: Metadata = {
 };
 
 type NavItemConfig = CompanyNavItem & { featureKey: keyof typeof FEATURE_KEYS; adminOnly?: boolean };
-type NavSectionConfig = { title?: string; items: NavItemConfig[]; inactiveSection?: boolean };
+type NavSectionConfig = {
+  title?: string;
+  items: NavItemConfig[];
+  inactiveSection?: boolean;
+  collapsible?: boolean;
+};
 
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -80,6 +85,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     },
     {
       title: "IZVJEŠTAJI",
+      collapsible: true,
       items: [
         { href: "/customers", label: "Kupci", icon: "🏢", featureKey: "CUSTOMERS" },
         { href: "/reports/monthly", label: "Plan servisa", icon: "📅", featureKey: "REPORTS_MONTHLY" },
@@ -97,6 +103,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     },
     {
       title: "Admin",
+      collapsible: true,
       items: [
         { href: "/admin/users", label: "Korisnici", icon: "👥", featureKey: "ADMIN_SETTINGS" },
         { href: "/admin/settings", label: "Postavke", icon: "⚙️", featureKey: "ADMIN_SETTINGS" },
@@ -114,6 +121,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     .map((section) => ({
       title: section.title,
       inactiveSection: section.inactiveSection,
+      collapsible: section.collapsible,
       items: section.items
         .filter((i) => {
           if (i.href === "/notifications") return session.role === "ADMIN";
