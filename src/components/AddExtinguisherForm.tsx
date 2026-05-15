@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ExtinguisherTypeCombobox from "@/components/ExtinguisherTypeCombobox";
 import PendingSubmitForm from "@/components/PendingSubmitForm";
@@ -268,11 +269,12 @@ export default function AddExtinguisherForm(props: {
           <div className="mt-3 rounded-lg border border-slate-200 bg-white p-2">
             <div className="text-xs text-slate-600">QR (interni broj)</div>
             <div className="mt-1 flex items-center gap-3">
-              <img
+              <Image
                 src={qrPreviewDataUrl}
                 alt={`QR ${qrCodeValue}`}
                 width={72}
                 height={72}
+                unoptimized
               />
               <div className="text-xs">
                 <div className="font-mono font-semibold">{qrCodeValue}</div>

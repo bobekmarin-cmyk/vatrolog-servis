@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { calcValidUntil, fmtDateHR, isStillValid } from "@/lib/validity";
@@ -241,12 +242,13 @@ export default async function ExtinguisherHistoryPage({ params }: { params: Prom
             QR naljepnica
           </div>
           <div className="mt-3 flex items-center gap-3">
-            <img
+            <Image
               src={`/api/extinguishers/${extinguisher.id}/qr`}
               alt={`QR ${extinguisher.internalCode}`}
               width={88}
               height={88}
               className="rounded-md border border-slate-200"
+              unoptimized
             />
             <div className="min-w-0">
               <div className="text-xs text-slate-500">Interni broj</div>

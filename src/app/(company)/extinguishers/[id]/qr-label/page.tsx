@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -31,11 +32,12 @@ export default async function QrLabelPage({ params }: { params: Promise<{ id: st
         <p className="text-sm text-slate-600">Interni broj aparata</p>
         <p className="mt-1 font-mono text-2xl font-bold">{extinguisher.internalCode}</p>
         <div className="mt-4 inline-flex rounded-xl border border-slate-200 bg-white p-3">
-          <img
+          <Image
             src={`/api/extinguishers/${extinguisher.id}/qr`}
             alt={`QR ${extinguisher.internalCode}`}
             width={220}
             height={220}
+            unoptimized
           />
         </div>
       </section>
