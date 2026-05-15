@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 type Company = { id: string; name: string; serviceCode: string };
 
@@ -19,8 +20,13 @@ type Row = {
 };
 
 export default function AuditClient({ companies }: { companies: Company[] }) {
-  const [companyId, setCompanyId] = useState("");
-  const [action, setAction] = useState("");
+  const searchParams = useSearchParams();
+  // Citamo `?companyId=` i `?action=` iz URL-a kao polazni filter (npr. kad
+  // dolazimo iz company detail stranice klikom "Otvori puni audit log").
+  const initialCompanyId = searchParams.get("companyId") ?? "";
+  const initialAction = searchParams.get("action") ?? "";
+  const [companyId, setCompanyId] = useState(initialCompanyId);
+  const [action, setAction] = useState(initialAction);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);

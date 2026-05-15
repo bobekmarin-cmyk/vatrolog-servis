@@ -93,3 +93,40 @@ export async function getRecentPlatformActivity(limit = 15): Promise<RecentActiv
     meta: (r.meta ?? null) as Record<string, unknown> | null,
   }));
 }
+
+/**
+ * Varijanta: zadnjih N audit eventa za SPECIFICNU tvrtku.
+ * Koristi se na company detail "Komunikacija" tabu.
+ */
+export async function getCompanyRecentActivity(
+  companyId: string,
+  limit = 10,
+): Promise<RecentActivityEntry[]> {
+  const rows = await prisma.auditLog.findMany({
+    where: { companyId },
+    orderBy: { createdAt: "desc" },
+    take: Math.max(1, Math.min(limit, 50)),
+    select: {
+      id: true,
+      createdAt: true,
+      actorType: true,
+      action: true,
+      entity: true,
+      entityId: true,
+      companyId: true,
+      meta: true,
+      company: { select: { name: true } },
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.createdAt,
+    actorType: r.actorType,
+    action: r.action,
+    entity: r.entity,
+    entityId: r.entityId,
+    companyId: r.companyId,
+    companyName: r.company?.name ?? null,
+    meta: (r.meta ?? null) as Record<string, unknown> | null,
+  }));
+}
