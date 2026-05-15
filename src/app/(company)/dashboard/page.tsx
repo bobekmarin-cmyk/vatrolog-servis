@@ -180,6 +180,10 @@ export default async function DashboardPage() {
     },
   });
 
+  const totalWorkOrdersCount = await prisma.workOrder.count({
+    where: { companyId: session.companyId },
+  });
+
   const allItems = activeOrders.flatMap((o) => o.items);
   const totalInService = allItems.length;
   const servicedCount = allItems.filter((i) => i.servicedAt).length;
@@ -347,7 +351,13 @@ export default async function DashboardPage() {
           <div className="surface-header pb-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Otvoreni nalozi</h2>
-              <p className="text-xs text-slate-500">{activeOrders.length} aktivnih radnih naloga</p>
+              <p className="text-xs text-slate-500">
+                {activeOrders.length === 0 && totalWorkOrdersCount > 0 ? (
+                  <>Riješili ste sve aktivne naloge — otvorite novi kad zatreba.</>
+                ) : (
+                  <>{activeOrders.length} aktivnih radnih naloga</>
+                )}
+              </p>
             </div>
             <Link className="text-xs font-medium text-red-600 hover:underline" href="/work-orders">
               Svi nalozi →
@@ -393,18 +403,37 @@ export default async function DashboardPage() {
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-2xl">
                   🧾
                 </div>
-                <div className="text-sm font-semibold text-slate-700">Još nema otvorenih naloga.</div>
-                <p className="mt-1 text-xs text-slate-500">
-                  Za početak dodajte prvog kupca ili odmah otvorite radni nalog.
-                </p>
-                <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
-                  <Link className="btn btn-outline px-3 text-sm" href="/customers/new">
-                    Dodaj prvog kupca
-                  </Link>
-                  <Link className="btn btn-primary px-3 text-sm" href="/work-orders/new">
-                    Otvori prvi nalog
-                  </Link>
-                </div>
+                {totalWorkOrdersCount > 0 ? (
+                  <>
+                    <div className="text-sm font-semibold text-slate-700">Riješili ste sve aktivne naloge.</div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Trenutačno ništa nije u radu — otvorite novi radni nalog kad zatreba, ili pogledajte arhivu.
+                    </p>
+                    <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+                      <Link className="btn btn-outline px-3 text-sm" href="/work-orders">
+                        Svi nalozi
+                      </Link>
+                      <Link className="btn btn-primary px-3 text-sm" href="/work-orders/new">
+                        Novi radni nalog
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm font-semibold text-slate-700">Još nema otvorenih naloga.</div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Za početak dodajte prvog kupca ili odmah otvorite radni nalog.
+                    </p>
+                    <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+                      <Link className="btn btn-outline px-3 text-sm" href="/customers/new">
+                        Dodaj prvog kupca
+                      </Link>
+                      <Link className="btn btn-primary px-3 text-sm" href="/work-orders/new">
+                        Otvori prvi nalog
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
