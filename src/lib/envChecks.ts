@@ -8,9 +8,9 @@
 
 const MIN_SECRET_LEN = 32;
 
-type Severity = "error" | "warn" | "info";
+export type Severity = "error" | "warn" | "info";
 
-type EnvIssue = { severity: Severity; key: string; message: string };
+export type EnvIssue = { severity: Severity; key: string; message: string };
 
 function checkSecret(key: string, label: string, isProd: boolean): EnvIssue | null {
   const v = process.env[key]?.trim() ?? "";

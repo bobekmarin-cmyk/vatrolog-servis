@@ -48,3 +48,48 @@ export function extractAuditMeta(req: Request): { ip: string | null; userAgent: 
   const userAgent = req.headers.get("user-agent") ?? null;
   return { ip, userAgent };
 }
+
+export type RecentActivityEntry = {
+  id: string;
+  createdAt: Date;
+  actorType: string;
+  action: string;
+  entity: string | null;
+  entityId: string | null;
+  companyName: string | null;
+  companyId: string | null;
+  meta: Record<string, unknown> | null;
+};
+
+/**
+ * Cita zadnjih N audit log entry-a sa imenom tvrtke (ako je vezana).
+ * Read-only, za platform dashboard "Recent activity" feed.
+ */
+export async function getRecentPlatformActivity(limit = 15): Promise<RecentActivityEntry[]> {
+  const rows = await prisma.auditLog.findMany({
+    orderBy: { createdAt: "desc" },
+    take: Math.max(1, Math.min(limit, 50)),
+    select: {
+      id: true,
+      createdAt: true,
+      actorType: true,
+      action: true,
+      entity: true,
+      entityId: true,
+      companyId: true,
+      meta: true,
+      company: { select: { name: true } },
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.createdAt,
+    actorType: r.actorType,
+    action: r.action,
+    entity: r.entity,
+    entityId: r.entityId,
+    companyId: r.companyId,
+    companyName: r.company?.name ?? null,
+    meta: (r.meta ?? null) as Record<string, unknown> | null,
+  }));
+}

@@ -33,6 +33,7 @@ const nav: PlatformNavSection[] = [
   {
     label: "Sustav",
     items: [
+      { href: "/platform/health", label: "Zdravlje sustava", icon: "❤️" },
       { href: "/platform/audit", label: "Audit log", icon: "🛡️" },
       { href: "/platform/settings", label: "Postavke", icon: "⚙️" },
     ],
