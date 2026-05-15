@@ -61,7 +61,7 @@ Workflow: [.github/workflows/backup-db.yml](../.github/workflows/backup-db.yml) 
 
       | Datum | Osoba | s3-key | Napomena |
       |-------|-------|--------|----------|
-      |       |       |        |          |
+      | 2026-05-15 | Marin | db-backups/2026/05/15/vatrolog-20260515-0541.dump.enc | Prvi drill nakon postavljanja pipeline-a. Audit-only (bez `--apply`): dekripcija OK, `PGDMP` magic header OK, veličina match (encrypted 195 796 B → plain 195 764 B, razlika 32 B = IV+tag). |
 
 ## 6. Onboarding pipeline (registration flow)
 

@@ -29,6 +29,9 @@ postgres.env
 # smoke-test artifacts
 .tmp-smoke-cookie.txt
 
+# restore drill artefakti (preuzeti dump-ovi, dekriptirani plaintext)
+.tmp-restore/
+
 # helper files used to pass multi-line commit messages on Windows
 .commitmsg.txt
 
