@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { signPlatformSessionToken } from "@/lib/platformAuth";
 import {
-  exchangePlatformGoogleCode,
   isEmailAllowedByPlatformPolicy,
   isPlatformGoogleLoginEnabled,
-} from "@/lib/platformGoogleAuth";
+  signPlatformSessionToken,
+} from "@/lib/platformAuth";
+import { exchangePlatformGoogleCode } from "@/lib/platformGoogleAuth";
 import {
   checkLoginRateLimit,
   clearLoginFailures,

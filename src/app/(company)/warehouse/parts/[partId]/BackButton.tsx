@@ -13,7 +13,9 @@ export default function BackButton({ fallbackHref }: { fallbackHref: string }) {
   const [canGoBack, setCanGoBack] = useState<boolean>(false);
 
   useEffect(() => {
-    setCanGoBack(typeof window !== "undefined" && window.history.length > 1);
+    queueMicrotask(() => {
+      setCanGoBack(typeof window !== "undefined" && window.history.length > 1);
+    });
   }, []);
 
   if (!canGoBack) {

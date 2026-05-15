@@ -36,7 +36,9 @@ export async function verifyOauthState(
       return { ok: false, reason: "user_mismatch" };
     }
     return { ok: true };
-  } catch (e: any) {
-    return { ok: false, reason: e?.code || "invalid_state" };
+  } catch (e: unknown) {
+    const code =
+      typeof e === "object" && e !== null && "code" in e ? (e as { code?: unknown }).code : undefined;
+    return { ok: false, reason: typeof code === "string" && code ? code : "invalid_state" };
   }
 }

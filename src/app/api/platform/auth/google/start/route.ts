@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import {
-  buildPlatformGoogleConsentUrl,
-  isPlatformGoogleLoginEnabled,
-} from "@/lib/platformGoogleAuth";
+import { isPlatformGoogleLoginEnabled } from "@/lib/platformAuth";
+import { buildPlatformGoogleConsentUrl } from "@/lib/platformGoogleAuth";
 
 const STATE_COOKIE = "vb_platform_google_state";
 const STATE_TTL_SEC = 600; // 10 min

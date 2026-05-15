@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   const includeDeleted = sp.get("includeDeleted") === "1";
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
 
-  const where: any = {};
+  const where: Prisma.CustomerWhereInput = {};
   if (companyId) where.companyId = companyId;
   if (!includeDeleted) where.deletedAt = null;
   if (q) {

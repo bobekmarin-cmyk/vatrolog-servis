@@ -3,7 +3,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { prisma } from "@/lib/prisma";
 
 import { redirectRelative } from "@/lib/httpRedirect";
-export async function POST(req: Request) {
+export async function POST() {
   const ps = await getPlatformSession();
   if (!ps) return NextResponse.json({ error: "Niste prijavljeni (platform)." }, { status: 401 });
 

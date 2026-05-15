@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { buildPlatformConsentUrl } from "@/lib/platformGmail";
 import { createOauthState } from "@/lib/platformOauthState";
 
 import { redirectRelative } from "@/lib/httpRedirect";
-export async function GET(req: NextRequest) {
+export async function GET() {
   const ps = await getPlatformSession();
   if (!ps) {
     return redirectRelative("/platform/login", 307);

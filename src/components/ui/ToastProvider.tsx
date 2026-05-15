@@ -113,7 +113,6 @@ export function useToast(): ToastContextValue {
   return {
     showToast: (message: string) => {
       if (typeof console !== "undefined") {
-        // eslint-disable-next-line no-console
         console.warn("[toast missing provider]", message);
       }
     },

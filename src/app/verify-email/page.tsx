@@ -36,11 +36,15 @@ export default async function VerifyEmailPage({ searchParams }: Props) {
         <div className="mt-6">{content}</div>
         {showResend && <VerifyEmailResendForm />}
         <div className="mt-6 text-center text-sm space-x-3">
-          <a href="/login" className="text-red-600 hover:underline">Idi na prijavu</a>
-          <span aria-hidden className="text-slate-400">·</span>
-          <a href="/" className="text-slate-600 hover:text-red-600 hover:underline">
+          <Link href="/login" className="text-red-600 hover:underline">
+            Idi na prijavu
+          </Link>
+          <span aria-hidden className="text-slate-400">
+            ·
+          </span>
+          <Link href="/" className="text-slate-600 hover:text-red-600 hover:underline">
             ← Opis proizvoda
-          </a>
+          </Link>
         </div>
       </div>
     </main>

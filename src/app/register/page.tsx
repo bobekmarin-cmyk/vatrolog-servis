@@ -30,13 +30,13 @@ export default function RegisterPage() {
         </div>
 
         <div className="mt-4 text-center text-xs text-slate-600 space-x-3">
-          <a href="/" className="hover:text-red-600 hover:underline">
+          <Link href="/" className="hover:text-red-600 hover:underline">
             ← Natrag na opis proizvoda
-          </a>
+          </Link>
           <span aria-hidden>·</span>
-          <a href="/login" className="hover:text-red-600 hover:underline">
+          <Link href="/login" className="hover:text-red-600 hover:underline">
             Već imate račun? Prijava
-          </a>
+          </Link>
         </div>
       </div>
     </main>

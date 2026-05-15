@@ -29,6 +29,15 @@ function comparePartsByName(a: PickerPart, b: PickerPart): number {
   return a.name.localeCompare(b.name, "hr") || a.code.localeCompare(b.code, "hr");
 }
 
+function filterParts(source: PickerPart[], term: string): PickerPart[] {
+  const q = term.trim().toLocaleLowerCase("hr");
+  if (!q) return source;
+  return source.filter((p) => {
+    const haystack = [p.name, p.code, p.manufacturerCode ?? ""].join(" ").toLocaleLowerCase("hr");
+    return haystack.includes(q);
+  });
+}
+
 export default function WorkOrderPartsPicker(props: {
   kind: string;
   parts: PickerPart[];
@@ -58,17 +67,21 @@ export default function WorkOrderPartsPicker(props: {
 
   useEffect(() => {
     if (scrapMode) {
-      setSelected((prev) => {
-        if (prev.size > 0) {
-          selectionBackupRef.current = new Map(prev);
-        }
-        return new Map();
+      queueMicrotask(() => {
+        setSelected((prev) => {
+          if (prev.size > 0) {
+            selectionBackupRef.current = new Map(prev);
+          }
+          return new Map();
+        });
       });
       return;
     }
     if (selectionBackupRef.current !== null) {
-      setSelected(selectionBackupRef.current);
-      selectionBackupRef.current = null;
+      queueMicrotask(() => {
+        setSelected(selectionBackupRef.current!);
+        selectionBackupRef.current = null;
+      });
     }
   }, [scrapMode]);
 
@@ -210,6 +223,7 @@ export default function WorkOrderPartsPicker(props: {
       />
 
       <EditQuantityModal
+        key={editingQty?.id ?? "__closed__"}
         row={editingQty}
         part={editingQty ? partsById.get(editingQty.id) ?? null : null}
         onClose={() => setEditingQty(null)}
@@ -235,9 +249,11 @@ function PartsSelectionModal(props: {
 
   useEffect(() => {
     if (open) {
-      setSearch("");
-      setDraft(new Map(initialSelected));
-      setQuantities(new Map(initialSelected));
+      queueMicrotask(() => {
+        setSearch("");
+        setDraft(new Map(initialSelected));
+        setQuantities(new Map(initialSelected));
+      });
     }
   }, [open, initialSelected]);
 
@@ -283,17 +299,6 @@ function PartsSelectionModal(props: {
 
   const filteredCommon = useMemo(() => filterParts(commonParts, search), [commonParts, search]);
   const filteredOther = useMemo(() => filterParts(otherParts, search), [otherParts, search]);
-
-  function filterParts(source: PickerPart[], term: string): PickerPart[] {
-    const q = term.trim().toLocaleLowerCase("hr");
-    if (!q) return source;
-    return source.filter((p) => {
-      const haystack = [p.name, p.code, p.manufacturerCode ?? ""]
-        .join(" ")
-        .toLocaleLowerCase("hr");
-      return haystack.includes(q);
-    });
-  }
 
   function renderRows(rows: PickerPart[], emptyText: string) {
     if (rows.length === 0) {
@@ -460,11 +465,7 @@ function EditQuantityModal(props: {
   onSave: (id: string, qty: number) => void;
 }) {
   const { row, part, onClose, onSave } = props;
-  const [qty, setQtyLocal] = useState(DEFAULT_QTY);
-
-  useEffect(() => {
-    if (row) setQtyLocal(row.qty);
-  }, [row]);
+  const [qty, setQtyLocal] = useState(() => row?.qty ?? DEFAULT_QTY);
 
   return (
     <Modal

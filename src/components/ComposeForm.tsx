@@ -141,8 +141,8 @@ export default function ComposeForm({
       }
       router.push(backUrl + (backUrl.includes("?") ? "&" : "?") + "sent=1");
       router.refresh();
-    } catch (e: any) {
-      setError(e.message ?? "Nepoznata greška");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Nepoznata greška");
     } finally {
       setSending(false);
     }

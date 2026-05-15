@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type FieldKey = "subject" | "greeting" | "bodyText" | "calloutText" | "closingText" | "footerNote";
@@ -43,14 +43,31 @@ export default function EmailTemplateEditor(props: Props) {
 
   const focusedField = useRef<FieldKey | null>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
-  const fieldRefs = useRef<Record<FieldKey, HTMLTextAreaElement | HTMLInputElement | null>>({
-    subject: null,
-    greeting: null,
-    bodyText: null,
-    calloutText: null,
-    closingText: null,
-    footerNote: null,
-  });
+  const subjectRef = useRef<HTMLInputElement | null>(null);
+  const greetingRef = useRef<HTMLTextAreaElement | null>(null);
+  const bodyTextRef = useRef<HTMLTextAreaElement | null>(null);
+  const calloutTextRef = useRef<HTMLTextAreaElement | null>(null);
+  const closingTextRef = useRef<HTMLTextAreaElement | null>(null);
+  const footerNoteRef = useRef<HTMLTextAreaElement | null>(null);
+
+  function getFieldElement(key: FieldKey): HTMLInputElement | HTMLTextAreaElement | null {
+    switch (key) {
+      case "subject":
+        return subjectRef.current;
+      case "greeting":
+        return greetingRef.current;
+      case "bodyText":
+        return bodyTextRef.current;
+      case "calloutText":
+        return calloutTextRef.current;
+      case "closingText":
+        return closingTextRef.current;
+      case "footerNote":
+        return footerNoteRef.current;
+      default:
+        return null;
+    }
+  }
 
   const dirty = useMemo(() => fieldsAreDifferent(fields, props.initialFields), [fields, props.initialFields]);
 
@@ -100,7 +117,7 @@ export default function EmailTemplateEditor(props: Props) {
 
   function insertVariableAtCursor(varName: string) {
     const target = focusedField.current ?? "bodyText";
-    const el = fieldRefs.current[target];
+    const el = getFieldElement(target);
     const placeholder = `{{${varName}}}`;
     const current = (fields[target] ?? "") as string;
 
@@ -203,57 +220,57 @@ export default function EmailTemplateEditor(props: Props) {
         </div>
 
         <FieldInput
+          ref={subjectRef}
           label="Subject (predmet)"
           value={fields.subject}
           onChange={(v) => setField("subject", v)}
           onFocus={() => (focusedField.current = "subject")}
-          inputRef={(el) => (fieldRefs.current.subject = el)}
         />
 
         <FieldTextarea
+          ref={greetingRef}
           label="Pozdrav"
           value={fields.greeting}
           rows={2}
           onChange={(v) => setField("greeting", v)}
           onFocus={() => (focusedField.current = "greeting")}
-          inputRef={(el) => (fieldRefs.current.greeting = el)}
         />
 
         <FieldTextarea
+          ref={bodyTextRef}
           label="Glavni tekst"
           value={fields.bodyText}
           rows={5}
           onChange={(v) => setField("bodyText", v)}
           onFocus={() => (focusedField.current = "bodyText")}
-          inputRef={(el) => (fieldRefs.current.bodyText = el)}
           help="HTML oznake <strong> i <br/> su dozvoljene; placeholderi {{ime}} se zamjenjuju u trenutku slanja."
         />
 
         <FieldTextarea
+          ref={calloutTextRef}
           label="Naglašena poruka (callout)"
           value={fields.calloutText}
           rows={3}
           onChange={(v) => setField("calloutText", v)}
           onFocus={() => (focusedField.current = "calloutText")}
-          inputRef={(el) => (fieldRefs.current.calloutText = el)}
         />
 
         <FieldTextarea
+          ref={closingTextRef}
           label="Zaključak"
           value={fields.closingText}
           rows={3}
           onChange={(v) => setField("closingText", v)}
           onFocus={() => (focusedField.current = "closingText")}
-          inputRef={(el) => (fieldRefs.current.closingText = el)}
         />
 
         <FieldTextarea
+          ref={footerNoteRef}
           label="Footer napomena (opcionalno)"
           value={fields.footerNote ?? ""}
           rows={2}
           onChange={(v) => setField("footerNote", v.trim() === "" ? null : v)}
           onFocus={() => (focusedField.current = "footerNote")}
-          inputRef={(el) => (fieldRefs.current.footerNote = el)}
         />
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -377,51 +394,55 @@ function fieldsAreDifferent(a: TemplateFields, b: TemplateFields): boolean {
   );
 }
 
-function FieldInput(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  onFocus: () => void;
-  inputRef: (el: HTMLInputElement | null) => void;
-  help?: string;
-}) {
+const FieldInput = forwardRef<
+  HTMLInputElement,
+  {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    onFocus: () => void;
+    help?: string;
+  }
+>(function FieldInput({ label, value, onChange, onFocus, help }, ref) {
   return (
     <label className="block">
-      <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{props.label}</span>
+      <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       <input
-        ref={props.inputRef}
+        ref={ref}
         type="text"
         className="input mt-1 w-full"
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        onFocus={props.onFocus}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
       />
-      {props.help && <span className="mt-1 block text-xs text-slate-500">{props.help}</span>}
+      {help ? <span className="mt-1 block text-xs text-slate-500">{help}</span> : null}
     </label>
   );
-}
+});
 
-function FieldTextarea(props: {
-  label: string;
-  value: string;
-  rows: number;
-  onChange: (v: string) => void;
-  onFocus: () => void;
-  inputRef: (el: HTMLTextAreaElement | null) => void;
-  help?: string;
-}) {
+const FieldTextarea = forwardRef<
+  HTMLTextAreaElement,
+  {
+    label: string;
+    value: string;
+    rows: number;
+    onChange: (v: string) => void;
+    onFocus: () => void;
+    help?: string;
+  }
+>(function FieldTextarea({ label, value, rows, onChange, onFocus, help }, ref) {
   return (
     <label className="block">
-      <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{props.label}</span>
+      <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
       <textarea
-        ref={props.inputRef}
+        ref={ref}
         className="input mt-1 w-full"
-        rows={props.rows}
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        onFocus={props.onFocus}
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
       />
-      {props.help && <span className="mt-1 block text-xs text-slate-500">{props.help}</span>}
+      {help ? <span className="mt-1 block text-xs text-slate-500">{help}</span> : null}
     </label>
   );
-}
+});

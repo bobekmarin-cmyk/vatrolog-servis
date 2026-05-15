@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
   const to = sp.get("to") || undefined;
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
 
-  const where: any = {};
+  const where: Prisma.EmailLogWhereInput = {};
   if (companyId) where.companyId = companyId;
   if (customerId) where.customerId = customerId;
   if (transport) where.transport = transport;

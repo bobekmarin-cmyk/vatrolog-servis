@@ -44,40 +44,6 @@ export function getPlatformGoogleRedirectUri(): string {
   return `${getPublicAppUrl()}/api/platform/auth/google/callback`;
 }
 
-function parseList(value: string | undefined): string[] {
-  if (!value) return [];
-  return value
-    .split(/[\s,]+/)
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-/**
- * Vraca true ako je platform Google login uopce omogucen:
- *  - Mora postojati GOOGLE_CLIENT_ID/SECRET, i
- *  - Mora biti popunjen barem jedan allowlist (emails ili domains).
- *
- * Ako allowlist nije popunjen, gumb se NE prikazuje (sigurnosni default).
- */
-export function isPlatformGoogleLoginEnabled(): boolean {
-  if (!getClientId() || !getClientSecret()) return false;
-  const emails = parseList(process.env.PLATFORM_GOOGLE_ALLOWED_EMAILS);
-  const domains = parseList(process.env.PLATFORM_GOOGLE_ALLOWED_DOMAINS);
-  return emails.length > 0 || domains.length > 0;
-}
-
-export function isEmailAllowedByPlatformPolicy(emailRaw: string | null | undefined): boolean {
-  const email = (emailRaw ?? "").trim().toLowerCase();
-  if (!email || !email.includes("@")) return false;
-  const emails = parseList(process.env.PLATFORM_GOOGLE_ALLOWED_EMAILS);
-  const domains = parseList(process.env.PLATFORM_GOOGLE_ALLOWED_DOMAINS);
-  if (emails.length === 0 && domains.length === 0) return false;
-  if (emails.includes(email)) return true;
-  const domain = email.split("@")[1] ?? "";
-  if (domains.includes(domain)) return true;
-  return false;
-}
-
 export function buildPlatformGoogleConsentUrl(state: string): string {
   const clientId = getClientId();
   if (!clientId) throw new Error("GOOGLE_CLIENT_ID nije postavljen.");

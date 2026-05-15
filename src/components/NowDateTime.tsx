@@ -14,7 +14,7 @@ export default function NowDateTime(props: { className?: string }) {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
+    queueMicrotask(() => setNow(new Date()));
     const t = window.setInterval(() => setNow(new Date()), 10_000);
     return () => window.clearInterval(t);
   }, []);

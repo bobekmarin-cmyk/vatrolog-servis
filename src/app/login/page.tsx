@@ -24,8 +24,12 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-4 flex justify-between text-xs text-slate-500">
-          <a href="/forgot-password" className="hover:text-red-600 hover:underline">Zaboravljena lozinka?</a>
-          <a href="/register" className="hover:text-red-600 hover:underline">Zatraži probni pristup</a>
+          <Link href="/forgot-password" className="hover:text-red-600 hover:underline">
+            Zaboravljena lozinka?
+          </Link>
+          <Link href="/register" className="hover:text-red-600 hover:underline">
+            Zatraži probni pristup
+          </Link>
         </div>
 
         <p className="mt-4 text-xs text-slate-500">
@@ -33,15 +37,15 @@ export default function LoginPage() {
         </p>
         <p className="mt-2 text-xs text-slate-500">
           Niste dobili potvrdu emaila?{" "}
-          <a href="/verify-email?status=resend" className="hover:text-red-600 hover:underline">
+          <Link href="/verify-email?status=resend" className="hover:text-red-600 hover:underline">
             Pošaljite novu potvrdu.
-          </a>
+          </Link>
         </p>
 
         <div className="mt-6 border-t border-slate-200 pt-4 text-center">
-          <a href="/" className="text-xs text-slate-500 hover:text-red-600 hover:underline">
+          <Link href="/" className="text-xs text-slate-500 hover:text-red-600 hover:underline">
             ← Natrag na opis proizvoda
-          </a>
+          </Link>
         </div>
       </div>
     </main>

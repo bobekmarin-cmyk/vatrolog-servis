@@ -89,8 +89,12 @@ export default function AddExtinguisherForm(props: {
   useEffect(() => {
     let cancelled = false;
     if (!qrCodeValue) {
-      setQrPreviewDataUrl("");
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) setQrPreviewDataUrl("");
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     QRCode.toDataURL(qrCodeValue, {
       margin: 1,
@@ -113,11 +117,11 @@ export default function AddExtinguisherForm(props: {
     const code = internalCode.trim();
 
     if (!code) {
-      setLookup({ status: "idle" });
+      queueMicrotask(() => setLookup({ status: "idle" }));
       return;
     }
 
-    setLookup({ status: "checking" });
+    queueMicrotask(() => setLookup({ status: "checking" }));
 
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(async () => {
@@ -152,19 +156,18 @@ export default function AddExtinguisherForm(props: {
   useEffect(() => {
     const codeEmpty = internalCode.trim().length === 0;
 
-    // Ako je user unio interni broj ili je aparat pronađen → preview nema smisla
     if (!codeEmpty || lookup.status === "found") {
-      setPreviewCode("");
+      queueMicrotask(() => setPreviewCode(""));
       return;
     }
 
     if (!extinguisherTypeId) {
-      setPreviewCode("");
+      queueMicrotask(() => setPreviewCode(""));
       return;
     }
 
     let cancelled = false;
-    setPreviewLoading(true);
+    queueMicrotask(() => setPreviewLoading(true));
 
     fetch(
       `/api/extinguishers/next-internal-code?extinguisherTypeId=${encodeURIComponent(extinguisherTypeId)}`

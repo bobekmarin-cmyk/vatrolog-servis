@@ -374,7 +374,7 @@ export default function EmailTemplatesSettings({ templates }: Props) {
 
   useEffect(() => {
     if (!sorted.some((t) => t.type === selectedType) && sorted[0]) {
-      setSelectedType(sorted[0].type);
+      queueMicrotask(() => setSelectedType(sorted[0].type));
     }
   }, [sorted, selectedType]);
 

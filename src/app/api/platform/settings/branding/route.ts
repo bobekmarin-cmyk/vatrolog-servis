@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { getPlatformSettings, upsertPlatformSettings } from "@/lib/platformSettings";
@@ -49,8 +49,9 @@ export async function PUT(req: NextRequest) {
   let parsed: z.infer<typeof Body>;
   try {
     parsed = Body.parse(await req.json());
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.errors?.[0]?.message ?? "Neispravan zahtjev." }, { status: 400 });
+  } catch (e: unknown) {
+    const msg = e instanceof ZodError ? (e.issues[0]?.message ?? "Neispravan zahtjev.") : "Neispravan zahtjev.";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
   const data = normalize(parsed);

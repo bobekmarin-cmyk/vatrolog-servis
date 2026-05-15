@@ -18,7 +18,7 @@ const MAX_FAILURES = 25;
 
 let redisClient: Redis | null = null;
 let loginLimiter: Ratelimit | null = null;
-let genericLimiters: Map<string, Ratelimit> = new Map();
+const genericLimiters: Map<string, Ratelimit> = new Map();
 
 function getRedis(): Redis | null {
   if (redisClient) return redisClient;

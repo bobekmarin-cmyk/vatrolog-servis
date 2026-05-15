@@ -37,8 +37,9 @@ export async function GET(req: NextRequest) {
     });
 
     return redirectRelative("/admin/settings/mail?gmail=connected", 307);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Gmail callback error:", e);
-    return redirectRelative(`/admin/settings/mail?gmail=error&reason=${encodeURIComponent(e.message?.slice(0, 100) ?? "unknown")}`, 307);
+    const msg = e instanceof Error ? e.message.slice(0, 100) : "unknown";
+    return redirectRelative(`/admin/settings/mail?gmail=error&reason=${encodeURIComponent(msg)}`, 307);
   }
 }

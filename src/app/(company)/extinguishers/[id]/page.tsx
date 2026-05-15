@@ -143,8 +143,8 @@ export default async function ExtinguisherHistoryPage({ params }: { params: Prom
 
   if (!extinguisher) notFound();
 
-  const anyEx: any = extinguisher as any;
-  const isScrapped = anyEx.status === "SCRAPPED" || !!anyEx.scrapReason || !!anyEx.scrappedAt;
+  const isScrapped =
+    extinguisher.status === "SCRAPPED" || !!extinguisher.scrapReason || !!extinguisher.scrappedAt;
   const isOk = !isScrapped;
 
   const serviceHistory = extinguisher.workItems.filter((wi) => wi.servicedAt);
@@ -173,7 +173,7 @@ export default async function ExtinguisherHistoryPage({ params }: { params: Prom
       ?.labelNumber ?? null;
 
   const typeLabel = extinguisher.type ? formatExtinguisherTypeName(extinguisher.type) : "—";
-  const scrapNote = (anyEx.scrapReason ?? "").trim();
+  const scrapNote = (extinguisher.scrapReason ?? "").trim();
 
   const validityOk = !!validUntil && isStillValid(validUntil);
   const validityTone: InfoCardTone = validityOk ? "success" : "warning";

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useMemo, useState, type ReactNode } from "react";
 import Modal, { type ModalVariant } from "./Modal";
 
 export type AlertOptions = {
@@ -41,17 +41,17 @@ export const DialogContext = createContext<DialogApi | null>(null);
 
 export default function DialogProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<Request[]>([]);
-  const queueRef = useRef(queue);
-  queueRef.current = queue;
 
   const current = queue[0] ?? null;
 
   const closeCurrent = useCallback((result?: boolean) => {
-    const head = queueRef.current[0];
-    if (!head) return;
-    if (head.kind === "alert") head.resolve();
-    else head.resolve(result === true);
-    setQueue((q) => q.slice(1));
+    setQueue((q) => {
+      const head = q[0];
+      if (!head) return q;
+      if (head.kind === "alert") head.resolve();
+      else head.resolve(result === true);
+      return q.slice(1);
+    });
   }, []);
 
   const alertFn = useCallback((opts: AlertOptions): Promise<void> => {

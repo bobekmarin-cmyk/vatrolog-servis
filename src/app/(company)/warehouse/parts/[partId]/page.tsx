@@ -204,9 +204,7 @@ export default async function PartStockCardPage({
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="text-xs uppercase tracking-wide text-slate-500">Minimalna zaliha</div>
           <MinStockEditor partId={part.id} initial={minStockQty} />
-          <div className="mt-2 text-xs text-slate-500">
-            Postavite 0 za „bez upozorenja".
-          </div>
+          <div className="mt-2 text-xs text-slate-500">{"Postavite 0 za „bez upozorenja\"."}</div>
         </div>
 
         <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-5">

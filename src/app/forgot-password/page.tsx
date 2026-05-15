@@ -26,13 +26,13 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="mt-4 text-center text-xs text-slate-600 space-x-3">
-          <a href="/login" className="hover:text-red-600 hover:underline">
+          <Link href="/login" className="hover:text-red-600 hover:underline">
             Natrag na prijavu
-          </a>
+          </Link>
           <span aria-hidden>·</span>
-          <a href="/" className="hover:text-red-600 hover:underline">
+          <Link href="/" className="hover:text-red-600 hover:underline">
             ← Opis proizvoda
-          </a>
+          </Link>
         </div>
       </div>
     </main>

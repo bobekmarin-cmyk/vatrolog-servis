@@ -26,13 +26,13 @@ export default async function ResetPasswordPage({ searchParams }: Props) {
           {token ? <ResetPasswordForm token={token} /> : <p className="text-sm text-red-700 bg-red-50 p-3 rounded">Link nije valjan. Zatražite novi reset.</p>}
         </div>
         <div className="mt-4 text-center text-xs text-slate-600 space-x-3">
-          <a href="/login" className="hover:text-red-600 hover:underline">
+          <Link href="/login" className="hover:text-red-600 hover:underline">
             Natrag na prijavu
-          </a>
+          </Link>
           <span aria-hidden>·</span>
-          <a href="/" className="hover:text-red-600 hover:underline">
+          <Link href="/" className="hover:text-red-600 hover:underline">
             ← Opis proizvoda
-          </a>
+          </Link>
         </div>
       </div>
     </main>

@@ -15,7 +15,6 @@ export async function register() {
     } catch (err) {
       // U produkciji `reportLaunchEnv` baca — to je namjerno. Na taj način se
       // ne pokrene aplikacija s nedostatnim secretima.
-      // eslint-disable-next-line no-console
       console.error(JSON.stringify({ lvl: "error", evt: "env_check_failed", err: String(err) }));
       if (process.env.NODE_ENV === "production") {
         throw err;
@@ -53,10 +52,8 @@ export async function register() {
       Sentry.captureException(err, ctx ? { contexts: { fields: ctx as Record<string, unknown> } } : undefined);
     };
 
-    // eslint-disable-next-line no-console
     console.log(JSON.stringify({ lvl: "info", evt: "sentry_initialized", runtime: process.env.NEXT_RUNTIME }));
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.warn(JSON.stringify({ lvl: "warn", evt: "sentry_init_failed", err: String(err) }));
   }
 }

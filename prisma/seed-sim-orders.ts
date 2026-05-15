@@ -40,7 +40,7 @@ function sameMonthEndAs(referenceDate: Date, year: number): Date {
 /** Zadnjih N radnih dana (bez subote i nedjelje), od jučer unazad */
 function lastWorkingDays(n: number): Date[] {
   const out: Date[] = [];
-  let d = new Date();
+  const d = new Date();
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - 1); // start from yesterday
   while (out.length < n) {

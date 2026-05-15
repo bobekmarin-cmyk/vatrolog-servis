@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   const to = sp.get("to") || undefined;
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
 
-  const where: any = {};
+  const where: Prisma.AuditLogWhereInput = {};
   if (companyId) where.companyId = companyId;
   if (actorId) where.actorId = actorId;
   if (action) where.action = { contains: action, mode: "insensitive" };

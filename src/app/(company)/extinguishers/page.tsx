@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { calcValidUntil, fmtDateHR, isStillValid } from "@/lib/validity";
@@ -51,7 +52,7 @@ export default async function ExtinguishersPage({
 
   const year = yearRaw ? Number(yearRaw) : undefined;
 
-  const where: any = {
+  const where: Prisma.ExtinguisherWhereInput = {
     AND: [
       { companyId: session.companyId },
       internalCode ? { internalCode: { contains: internalCode, mode: "insensitive" } } : {},

@@ -71,3 +71,37 @@ export async function requirePlatformSession(): Promise<PlatformSessionPayload> 
   return ps;
 }
 
+function parsePlatformGoogleEnvList(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(/[\s,]+/)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/**
+ * Vraca true ako je platform Google login uopce omogucen:
+ * GOOGLE_CLIENT_ID/SECRET + barem jedan allowlist (emails ili domains).
+ * Koristi se na /platform/login i Google OAuth rutama.
+ */
+export function isPlatformGoogleLoginEnabled(): boolean {
+  const id = process.env.GOOGLE_CLIENT_ID?.trim();
+  const secret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  if (!id || !secret) return false;
+  const emails = parsePlatformGoogleEnvList(process.env.PLATFORM_GOOGLE_ALLOWED_EMAILS);
+  const domains = parsePlatformGoogleEnvList(process.env.PLATFORM_GOOGLE_ALLOWED_DOMAINS);
+  return emails.length > 0 || domains.length > 0;
+}
+
+export function isEmailAllowedByPlatformPolicy(emailRaw: string | null | undefined): boolean {
+  const email = (emailRaw ?? "").trim().toLowerCase();
+  if (!email || !email.includes("@")) return false;
+  const emails = parsePlatformGoogleEnvList(process.env.PLATFORM_GOOGLE_ALLOWED_EMAILS);
+  const domains = parsePlatformGoogleEnvList(process.env.PLATFORM_GOOGLE_ALLOWED_DOMAINS);
+  if (emails.length === 0 && domains.length === 0) return false;
+  if (emails.includes(email)) return true;
+  const domain = email.split("@")[1] ?? "";
+  if (domains.includes(domain)) return true;
+  return false;
+}
+

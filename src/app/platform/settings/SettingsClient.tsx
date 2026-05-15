@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type TabKey = "email" | "branding" | "health";
+export type TabKey = "email" | "branding" | "health";
 
 type VendorStatus = {
   connected: boolean;
@@ -92,8 +92,8 @@ function EmailTab({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Slanje neuspješno.");
       setMsg("Testni mail poslan.");
-    } catch (e: any) {
-      setErr(e.message ?? "Slanje neuspješno.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Slanje neuspješno.");
     } finally {
       setPending(false);
     }
@@ -109,8 +109,8 @@ function EmailTab({
       });
       if (!res.ok) throw new Error("Disconnect neuspješan.");
       window.location.href = "/platform/settings?tab=email&gmail=disconnected";
-    } catch (e: any) {
-      alert(e.message);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Greška.");
       setPending(false);
     }
   };
@@ -346,8 +346,8 @@ function BrandingTab({ initial }: { initial: Branding }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Spremanje neuspješno.");
       setMsg("Spremljeno.");
-    } catch (e: any) {
-      setErr(e.message ?? "Spremanje neuspješno.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Spremanje neuspješno.");
     } finally {
       setPending(false);
     }
@@ -418,8 +418,16 @@ function Field(props: {
   );
 }
 
+type HealthPayload = {
+  db?: { ok?: boolean; latencyMs?: number | null };
+  vendorGmail?: { connected?: boolean; email?: string | null };
+  smtp?: { configured?: boolean; host?: string | null };
+  stripe?: { ok?: boolean; mode?: string; configured?: boolean };
+  env?: { googleClient?: boolean; authSecret?: boolean; platformAuthSecret?: boolean };
+};
+
 function HealthTab() {
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<HealthPayload | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -428,11 +436,11 @@ function HealthTab() {
     setErr(null);
     try {
       const res = await fetch("/api/platform/health", { cache: "no-store" });
-      const d = await res.json();
+      const d = (await res.json()) as HealthPayload & { error?: string };
       if (!res.ok) throw new Error(d.error ?? "Greška.");
       setData(d);
-    } catch (e: any) {
-      setErr(e.message ?? "Greška.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Greška.");
     } finally {
       setLoading(false);
     }

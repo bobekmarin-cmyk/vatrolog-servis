@@ -116,7 +116,7 @@ export async function sendSystemMail(input: SendMailInput): Promise<SendMailResu
         logInfo("system_mail_sent", { transport: "VENDOR_GMAIL", to: input.to, subject: input.subject });
         await logEmail(input, { status: "SENT", transport: "VENDOR_GMAIL" });
         return { ok: true, transport: "VENDOR_GMAIL" };
-      } catch (e: any) {
+      } catch (e: unknown) {
         logError("system_mail_vendor_send_failed", e, { to: input.to, subject: input.subject });
         // continue to SMTP/dev fallback
       }

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import PlatformLoginForm from "./PlatformLoginForm";
-import { isPlatformGoogleLoginEnabled } from "@/lib/platformGoogleAuth";
-import { getPlatformSession } from "@/lib/platformAuth";
+import { getPlatformSession, isPlatformGoogleLoginEnabled } from "@/lib/platformAuth";
 
 const GOOGLE_ERROR_LABELS: Record<string, string> = {
   google_disabled: "Google prijava za platformu trenutno nije aktivna.",

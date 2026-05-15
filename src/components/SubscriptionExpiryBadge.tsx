@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 
@@ -17,11 +17,11 @@ function formatDaysHr(days: number): string {
 
 export default function SubscriptionExpiryBadge({ daysUntilExpiry, activeUntilIso }: Props) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => typeof document !== "undefined",
+    () => false,
+  );
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

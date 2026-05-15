@@ -360,8 +360,8 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
               const isServiced = !!item.servicedAt;
               const isPlaceholder = !!item.isPlaceholder;
 
-              const anyEx: any = ex as any;
-              const isScrapped = !!ex && (anyEx.status === "SCRAPPED" || !!anyEx.scrapReason || !!anyEx.scrappedAt);
+              const isScrapped =
+                !!ex && (ex.status === "SCRAPPED" || !!ex.scrapReason || !!ex.scrappedAt);
 
               const internalCode = ex?.internalCode ?? "-";
               const manufacturer = ex ? displayManufacturer(ex.manufacturer) : "-";

@@ -15,7 +15,7 @@ export async function GET() {
     await prisma.$queryRawUnsafe("SELECT 1");
     dbOk = true;
     dbLatencyMs = Date.now() - t0;
-  } catch (e: any) {
+  } catch {
     dbOk = false;
   }
 

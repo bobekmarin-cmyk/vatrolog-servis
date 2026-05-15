@@ -20,6 +20,10 @@
     "db:migrate": "prisma migrate deploy && prisma generate",
     "db:setup": "docker compose up -d && prisma migrate deploy && prisma generate && prisma db seed",
     "typecheck": "tsc --noEmit",
+    "audit:tenant": "node scripts/audit-tenant-isolation.mjs",
+    "backup:db": "node scripts/backup-db.mjs",
+    "restore:db": "node scripts/restore-db.mjs",
+    "verify:prod-env": "ts-node -P tsconfig.seed.json scripts/verify-prod-env.ts",
     "version:bump": "node scripts/bump-app-version.mjs",
     "mockups:gen": "node scripts/generate-mockup-pngs.mjs",
     "icons:build": "node scripts/build-favicons.mjs"

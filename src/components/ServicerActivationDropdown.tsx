@@ -30,11 +30,11 @@ export default function ServicerActivationDropdown() {
   }, []);
 
   useEffect(() => {
-    fetchServicers();
+    queueMicrotask(() => void fetchServicers());
   }, [fetchServicers]);
 
   useEffect(() => {
-    if (open) fetchServicers();
+    if (open) queueMicrotask(() => void fetchServicers());
   }, [open, fetchServicers]);
 
   useEffect(() => {

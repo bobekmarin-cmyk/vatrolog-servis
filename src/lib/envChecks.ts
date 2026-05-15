@@ -125,12 +125,21 @@ export function validateLaunchEnv(): EnvIssue[] {
   // između tenanata.
   const s3Endpoint = process.env.S3_ENDPOINT?.trim();
   const s3Bucket = process.env.S3_BUCKET?.trim();
+  const s3AccessKey = process.env.S3_ACCESS_KEY?.trim();
+  const s3SecretKey = process.env.S3_SECRET_KEY?.trim();
   if (!s3Endpoint || !s3Bucket) {
     issues.push({
       severity: isProd ? "error" : "info",
       key: "S3_ENDPOINT",
       message:
         "S3 storage nije konfiguriran — PDF-ovi se zapisuju lokalno (samo dev / single-server).",
+    });
+  } else if (!s3AccessKey || !s3SecretKey) {
+    issues.push({
+      severity: isProd ? "error" : "warn",
+      key: "S3_ACCESS_KEY",
+      message:
+        "S3_ENDPOINT je postavljen, ali S3_ACCESS_KEY/S3_SECRET_KEY nedostaju — upload PDF-ova neće raditi.",
     });
   }
 
@@ -147,6 +156,21 @@ export function validateLaunchEnv(): EnvIssue[] {
       key: "SMTP_HOST",
       message:
         "Niti Vendor Gmail (GOOGLE_CLIENT_ID/SECRET) niti SMTP nisu postavljeni — sistemski mailovi neće raditi.",
+    });
+  }
+
+  // Stripe — provjeri samo ako billing nije eksplicitno "manual" i ako je nešto
+  // od Stripe ključeva postavljeno (delimično konfiguriranje je gotovo uvijek bug).
+  const billingMode = process.env.BILLING_MODE?.trim().toLowerCase();
+  const stripeSecret = process.env.STRIPE_SECRET_KEY?.trim();
+  const stripeWebhook = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  const stripeEnabled = billingMode !== "manual" && !!stripeSecret;
+  if (stripeEnabled && !stripeWebhook) {
+    issues.push({
+      severity: isProd ? "error" : "warn",
+      key: "STRIPE_WEBHOOK_SECRET",
+      message:
+        "STRIPE_SECRET_KEY je postavljen, ali STRIPE_WEBHOOK_SECRET fali — webhook potvrde plaćanja će biti odbijene.",
     });
   }
 
@@ -167,7 +191,6 @@ export function reportLaunchEnv(issues: EnvIssue[]): void {
 
   for (const i of [...errors, ...warns, ...infos]) {
     const evt = `env_check_${i.severity}`;
-    // eslint-disable-next-line no-console
     console.warn(JSON.stringify({ lvl: i.severity, evt, key: i.key, message: i.message }));
   }
 

@@ -43,9 +43,25 @@ lokalno s prod env-om kao smoke test.
 ## 5. Baza i migracije
 
 - [ ] `prisma migrate deploy` pokrenut na produkciji nakon merga.
-- [ ] Backup baze automatiziran (pg_dump dnevno, retencija ≥ 14 dana).
+- [ ] Backup baze automatiziran (vidi 5.1 dolje).
 - [ ] Read-only replica (po želji) za platform analitiku.
 - [ ] Testni vraćanje (restore) iz backupa bar jednom prije launch-a.
+
+### 5.1 Backup pipeline (S3 + Google Drive)
+
+Workflow: [.github/workflows/backup-db.yml](../.github/workflows/backup-db.yml) pokreće `npm run backup:db` (`scripts/backup-db.mjs`) svaki dan u 02:15 UTC. Skripta radi `pg_dump --format=custom`, AES-256-GCM enkripciju s `BACKUP_ENCRYPTION_KEY`, upload na S3 (`BACKUP_S3_BUCKET` ili `S3_BUCKET`) i, ako su postavljeni, kopiju na Google Drive preko service accounta.
+
+- [ ] `BACKUP_ENCRYPTION_KEY` generiran (`openssl rand -hex 32`) i stavljen u GitHub Actions secret + Railway env (za on-demand `npm run backup:db`). **Drži ga odvojeno od `AUTH_SECRET` / `ENCRYPTION_KEY`** — kompromis aplikacije ne smije otključati backupe.
+- [ ] S3 secrets postavljeni u GH Actions (`S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` ili `BACKUP_S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`); ključ ima samo write pristup na backup prefix (`db-backups/*`).
+- [ ] **Google Drive (sekundarno)**: kreiran Google Cloud service account → JSON ključ stavljen u secret `GOOGLE_DRIVE_SA_JSON` (jedan red, escape-an); ciljna Drive mapa podijeljena s emailom service accounta, `GOOGLE_DRIVE_FOLDER_ID` postavljen.
+- [ ] Lifecycle pravilo na S3 bucketu: backupi stariji od 30 dana → IA / Glacier (R2 nema tier, ali postavi expiry za ≥ 90 dana).
+- [ ] **Restore drill (mjesečno)**: na čistoj test bazi pokreni
+      `RESTORE_TARGET_DATABASE_URL=postgres://... node scripts/restore-db.mjs --s3-key <key> --apply`
+      i provjeri da Prisma migracije ne pokušavaju ponovno migrirati. Zabilježi datum i ime osobe ovdje:
+
+      | Datum | Osoba | s3-key | Napomena |
+      |-------|-------|--------|----------|
+      |       |       |        |          |
 
 ## 6. Onboarding pipeline (registration flow)
 

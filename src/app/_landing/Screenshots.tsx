@@ -720,29 +720,3 @@ function Label({
     </div>
   );
 }
-
-function MiniPart({ title, qty }: { title: string; qty: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-      <span className="font-semibold text-slate-800">{title}</span>
-      <span className="text-slate-500">{qty}</span>
-    </div>
-  );
-}
-
-function PartCheckbox({ title, checked = false }: { title: string; checked?: boolean }) {
-  return (
-    <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-      <span
-        className={`flex h-4 w-4 items-center justify-center rounded border text-[10px] font-bold ${
-          checked
-            ? "border-red-600 bg-red-600 text-white"
-            : "border-slate-300 bg-white text-transparent"
-        }`}
-      >
-        ✓
-      </span>
-      <span className="font-semibold text-slate-800">{title}</span>
-    </div>
-  );
-}

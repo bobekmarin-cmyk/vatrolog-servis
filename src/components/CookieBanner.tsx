@@ -12,7 +12,7 @@ export default function CookieBanner(): React.ReactElement | null {
     try {
       if (typeof window === "undefined") return;
       const acked = window.localStorage.getItem(STORAGE_KEY);
-      if (!acked) setVisible(true);
+      if (!acked) queueMicrotask(() => setVisible(true));
     } catch {
       // ignore
     }

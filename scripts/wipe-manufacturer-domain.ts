@@ -55,13 +55,6 @@ async function main() {
     })
   ).map((s) => s.id);
 
-  const extinguisherIds = (
-    await prisma.extinguisher.findMany({
-      where: { manufacturerId: { in: manufacturerIds } },
-      select: { id: true },
-    })
-  ).map((e) => e.id);
-
   const steps: Step[] = [
     {
       label: "WorkOrderLabelConsumption (by serviceLabel)",

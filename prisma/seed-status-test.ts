@@ -33,7 +33,7 @@ async function main() {
   const company = await prisma.company.findFirst();
   if (!company) throw new Error("Nema tvrtke. Pokreni: npx prisma db seed");
 
-  let customer = await prisma.customer.findFirst({ where: { companyId: company.id } });
+  const customer = await prisma.customer.findFirst({ where: { companyId: company.id } });
   if (!customer) throw new Error("Nema kupca. Pokreni: npx prisma db seed");
 
   const servicers = await prisma.user.findMany({
@@ -186,7 +186,7 @@ async function main() {
     }
 
     // Create order with receipt
-    const order = await prisma.workOrder.create({
+    await prisma.workOrder.create({
       data: {
         companyId: company.id,
         orderNumber,

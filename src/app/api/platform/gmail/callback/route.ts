@@ -47,8 +47,9 @@ export async function GET(req: NextRequest) {
     });
 
     return redirectRelative("/platform/settings?tab=email&gmail=connected", 307);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("Platform Gmail callback error:", e);
-    return redirectErr(req, (e?.message ?? "unknown").toString().slice(0, 100));
+    const msg = (e instanceof Error ? e.message : "unknown").toString().slice(0, 100);
+    return redirectErr(req, msg);
   }
 }

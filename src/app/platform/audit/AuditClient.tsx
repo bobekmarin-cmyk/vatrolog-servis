@@ -46,8 +46,8 @@ export default function AuditClient({ companies }: { companies: Company[] }) {
       if (!res.ok) throw new Error(data.error ?? "Greška.");
       setRows(data.rows);
       setTotal(data.total);
-    } catch (e: any) {
-      setErr(e.message ?? "Greška.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Greška.");
     } finally {
       setLoading(false);
     }

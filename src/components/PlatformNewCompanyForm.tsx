@@ -37,7 +37,7 @@ export default function PlatformNewCompanyForm() {
   useEffect(() => {
     if (slugTouched) return;
     const auto = deriveUsernameSlug(name);
-    setUsernameSlug(auto ?? "");
+    queueMicrotask(() => setUsernameSlug(auto ?? ""));
   }, [name, slugTouched]);
 
   const normalizedCode = useMemo(() => onlyDigits(serviceCode).slice(0, 2), [serviceCode]);

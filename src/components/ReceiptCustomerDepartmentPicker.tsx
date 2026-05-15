@@ -27,6 +27,8 @@ export default function ReceiptCustomerDepartmentPicker({
   const [departmentId, setDepartmentId] = useState(defaultDepartmentId);
   const [showDeptSelect, setShowDeptSelect] = useState(!defaultDepartmentId);
   const prevCustomerId = useRef(customerId);
+  const departmentIdRef = useRef(departmentId);
+  departmentIdRef.current = departmentId;
 
   useEffect(() => {
     let alive = true;
@@ -51,7 +53,8 @@ export default function ReceiptCustomerDepartmentPicker({
           setShowDeptSelect(true);
         } else {
           // Ako imamo default department i postoji u listi, ostavi ga i prikaži "Odabrano".
-          const ok = departmentId && items.some((d) => d.id === departmentId);
+          const curDept = departmentIdRef.current;
+          const ok = curDept && items.some((d) => d.id === curDept);
           if (!ok) {
             setDepartmentId("");
             setShowDeptSelect(true);

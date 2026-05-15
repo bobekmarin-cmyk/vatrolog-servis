@@ -165,8 +165,10 @@ function ServicesSelectionModal(props: {
 
   useEffect(() => {
     if (open) {
-      setSearch("");
-      setDraft(new Set(initialSelected));
+      queueMicrotask(() => {
+        setSearch("");
+        setDraft(new Set(initialSelected));
+      });
     }
   }, [open, initialSelected]);
 

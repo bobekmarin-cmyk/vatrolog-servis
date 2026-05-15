@@ -1,7 +1,7 @@
 import { requirePlatformSession } from "@/lib/platformAuth";
 import { getVendorStatus } from "@/lib/platformGmail";
 import { getPlatformSettings } from "@/lib/platformSettings";
-import SettingsClient from "./SettingsClient";
+import SettingsClient, { type TabKey } from "./SettingsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,10 @@ export default async function PlatformSettingsPage({
 
   const [vendor, settings] = await Promise.all([getVendorStatus(), getPlatformSettings()]);
 
+  const rawTab = sp.tab ?? "email";
+  const initialTab: TabKey =
+    rawTab === "email" || rawTab === "branding" || rawTab === "health" ? rawTab : "email";
+
   return (
     <main className="space-y-6">
       <div>
@@ -25,7 +29,7 @@ export default async function PlatformSettingsPage({
       </div>
 
       <SettingsClient
-        initialTab={(sp.tab ?? "email") as any}
+        initialTab={initialTab}
         gmailFlash={sp.gmail ?? null}
         gmailReason={sp.reason ?? null}
         vendor={{

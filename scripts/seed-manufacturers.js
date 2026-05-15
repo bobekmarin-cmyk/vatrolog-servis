@@ -1,4 +1,3 @@
-/* eslint-disable */
 /**
  * Idempotentni seed proizvođača + 3 servisne naljepnice po proizvođaču.
  *

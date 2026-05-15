@@ -259,7 +259,7 @@ export default async function WorkOrderReportPage({ params }: { params: Promise<
   const unservicedItems = filledItems.filter((i) => !i.servicedAt);
 
   const scrapItems = filledItems.filter((i) => {
-    const e: any = i.extinguisher;
+    const e = i.extinguisher;
     return e && (e.status === "SCRAPPED" || e.scrapReason || e.scrappedAt);
   });
 
@@ -348,8 +348,7 @@ export default async function WorkOrderReportPage({ params }: { params: Promise<
         <h2 className="text-lg font-semibold">Detalji po stavci ({filledItems.length} popunjenih)</h2>
         {filledItems.map((item, idx) => {
           const ex = item.extinguisher;
-          const anyItem: any = ex;
-          const isScrapped = anyItem && (anyItem.status === "SCRAPPED" || anyItem.scrapReason || anyItem.scrappedAt);
+          const isScrapped = !!ex && (ex.status === "SCRAPPED" || !!ex.scrapReason || !!ex.scrappedAt);
           const parts = item.parts.map((p) => `${p.snapshotCode ?? p.part.code} ${p.snapshotName ?? p.part.name}`);
 
           return (
@@ -376,7 +375,9 @@ export default async function WorkOrderReportPage({ params }: { params: Promise<
                 {parts.length > 0 && <div className="col-span-2">Dijelovi: {parts.join(", ")}</div>}
                 {item.partsText && <div className="col-span-2">Dijelovi (tekst): {item.partsText}</div>}
                 {item.serviceNote && <div className="col-span-2">Napomena: {item.serviceNote}</div>}
-                {isScrapped && anyItem.scrapReason && <div className="col-span-2 text-red-700">Razlog rashodovanja: {anyItem.scrapReason}</div>}
+                {isScrapped && ex?.scrapReason && (
+                  <div className="col-span-2 text-red-700">Razlog rashodovanja: {ex.scrapReason}</div>
+                )}
                 <div>Kreiran: {fmtTs(item.createdAt)}</div>
                 <div>Ažuriran: {fmtTs(item.updatedAt)}</div>
               </div>
