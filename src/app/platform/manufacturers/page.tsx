@@ -5,7 +5,7 @@ import { requirePlatformSession } from "@/lib/platformAuth";
 export default async function PlatformManufacturersPage() {
   await requirePlatformSession();
   const manufacturers = await prisma.manufacturer.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     include: {
       _count: { select: { supportedTypes: true, parts: { where: { companyId: null } }, extinguishers: true } },
     },

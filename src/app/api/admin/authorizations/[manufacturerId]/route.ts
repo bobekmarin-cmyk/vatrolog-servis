@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/auth";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
+import { validateLabelCodes } from "@/lib/labelCodeValidation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -60,6 +61,47 @@ export const POST = apiHandler(
           ? undefined
           : parsed.data.cylinderMassLabelCode ?? null,
     };
+
+    // Učitaj postojeće šifre da bismo mogli validirati i polja koja korisnik
+    // nije poslao (undefined → ostavi staru vrijednost). Ako ovo nije prvi
+    // upsert, naredne tri šifre čitamo iz baze.
+    const previous = await prisma.companyManufacturerAuthorization.findUnique({
+      where: {
+        companyId_manufacturerId: {
+          companyId: session.companyId,
+          manufacturerId,
+        },
+      },
+      select: {
+        periodicLabelCode: true,
+        apparatusMassLabelCode: true,
+        cylinderMassLabelCode: true,
+      },
+    });
+
+    const effectiveCodes = {
+      periodicLabelCode:
+        data.periodicLabelCode === undefined
+          ? previous?.periodicLabelCode ?? null
+          : data.periodicLabelCode,
+      apparatusMassLabelCode:
+        data.apparatusMassLabelCode === undefined
+          ? previous?.apparatusMassLabelCode ?? null
+          : data.apparatusMassLabelCode,
+      cylinderMassLabelCode:
+        data.cylinderMassLabelCode === undefined
+          ? previous?.cylinderMassLabelCode ?? null
+          : data.cylinderMassLabelCode,
+    };
+
+    const validation = await validateLabelCodes(prisma, {
+      companyId: session.companyId,
+      manufacturerId,
+      codes: effectiveCodes,
+    });
+    if (!validation.ok) {
+      throw new AppValidationError(validation.reason);
+    }
 
     const upserted = await prisma.companyManufacturerAuthorization.upsert({
       where: {

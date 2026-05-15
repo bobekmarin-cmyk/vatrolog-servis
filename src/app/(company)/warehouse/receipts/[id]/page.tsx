@@ -27,7 +27,11 @@ export default async function ReceiptDetailPage({
             include: { manufacturer: { select: { id: true, name: true, displayName: true } } },
           },
         },
-        orderBy: [{ part: { manufacturer: { name: "asc" } } }, { part: { name: "asc" } }],
+        orderBy: [
+          { part: { manufacturer: { sortOrder: "asc" } } },
+          { part: { manufacturer: { name: "asc" } } },
+          { part: { name: "asc" } },
+        ],
       },
     },
   });

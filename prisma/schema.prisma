@@ -102,10 +102,10 @@ model PlatformUser {
 
   /// Email koji se koristi za Google prijavu i interne notifikacije (može biti različit od username-a).
   /// Mapiranje na Google `sub` se događa pri prvoj uspješnoj prijavi (vidi `googleSub`).
-  email     String? @unique
+  email             String?   @unique
   /// Stabilan Google identifikator. Postavlja ga callback ruta nakon prve uspješne prijave;
   /// nakon toga prijava se mapira po `googleSub`, ne više po emailu (otporno na promjenu emaila).
-  googleSub String? @unique
+  googleSub         String?   @unique
   /// Vrijeme zadnje uspješne Google prijave (analytics + revocation podsjetnik).
   lastGoogleLoginAt DateTime?
 
@@ -250,7 +250,7 @@ model Company {
 
   /// Aktivni provider za slanje mailova kupcima ako su konfigurirana oba.
   /// Vrijednosti: "GMAIL" | "SMTP" | null. Null = automatski (Gmail prefer ako oba).
-  mailProvider      String?
+  mailProvider String?
 
   /// Soft delete — ne hard cascade; scrub job nakon 30 dana.
   deletedAt DateTime?
@@ -476,7 +476,12 @@ model Manufacturer {
   contactPerson String?
   contactEmail  String?
 
+  /// Ručni redoslijed iz PUCZ obrasca; manji broj = prije u prikazu. Default 0
+  /// znači "nije eksplicitno postavljen" pa se takvi sortiraju na kraj abecedno.
+  sortOrder Int @default(0)
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   extinguishers       Extinguisher[]
   supportedTypes      ManufacturerExtinguisherType[]
@@ -484,6 +489,8 @@ model Manufacturer {
   serviceLabels       ServiceLabel[]
   authorizations      CompanyManufacturerAuthorization[]
   partCatalogSettings CompanyPartCatalogSetting[]
+
+  @@index([sortOrder, name])
 }
 
 model ManufacturerExtinguisherType {
@@ -1682,12 +1689,10 @@ model WorkOrderLabelConsumption {
  * =======================
  * OBAVIJESTI (PLATFORM → TENANT ADMIN)
  * =======================
- *
  * Vendor (platform owner) piše obavijesti koje se distribuiraju adminima svih
  * tvrtki. Pročitanost se vodi po (notificationId, accountUserId) — svaki admin
  * zasebno mora otvoriti i pročitati poruku. Sidebar prikazuje crveni broj
  * nepročitanih za trenutnog admina.
- *
  * Kategorije su slobodne (vendor ih dodaje), ali jedna od njih može biti
  * `isUpdate = true` što tretiramo posebno u UI-u (release-notes layout).
  */
@@ -1735,7 +1740,7 @@ model Notification {
   category   NotificationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   /// Naslov poruke prikazan u listi i u detaljima.
-  title String
+  title   String
   /// Kratki sažetak (1-2 rečenice) za listu.
   summary String?
 

@@ -147,7 +147,31 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
       }, 1500);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Greška.";
-      setRow(id, { status: "error", error: msg });
+      const orig = originalCodes[id] ?? {
+        periodicLabelCode: "",
+        apparatusMassLabelCode: "",
+        cylinderMassLabelCode: "",
+      };
+      // Rollback šifri na original kako korisnik ne bi mislio da je nevaljana
+      // vrijednost spremljena. Status (active/expiresAt) zadržavamo onakvim
+      // kakvim je korisnik pokušao spremiti — vraćamo ih u rollback samo kad
+      // je validacija šifre odbijena (najčešći slučaj greške ovdje).
+      setStates((prev) => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          periodicLabelCode: orig.periodicLabelCode,
+          apparatusMassLabelCode: orig.apparatusMassLabelCode,
+          cylinderMassLabelCode: orig.cylinderMassLabelCode,
+          status: "error",
+          error: msg,
+          locks: {
+            periodicLabelCode: orig.periodicLabelCode.length > 0,
+            apparatusMassLabelCode: orig.apparatusMassLabelCode.length > 0,
+            cylinderMassLabelCode: orig.cylinderMassLabelCode.length > 0,
+          },
+        },
+      }));
       await dialog.alert({
         title: "Nije moguće spremiti ovlaštenje",
         message: msg,
@@ -197,6 +221,25 @@ export default function AuthorizationsTable({ rows }: { rows: AuthorizationRow[]
 
   return (
     <div className="space-y-3">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        <div className="font-semibold">Pravilo šifri naljepnica</div>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5">
+          <li>
+            Za <b>jednu vrstu</b> naljepnice (npr. masa aparata) sve šifre kroz aktivne proizvođače
+            moraju biti <b>ili sve iste</b> (zajednička šifra koja se onda na otpremnici prikazuje
+            kao jedna stavka sa zbrojenom količinom), <b>ili sve različite</b> (zasebna stavka po
+            proizvođaču na otpremnici).
+          </li>
+          <li>
+            Mješavina nije dozvoljena — npr. Pastor=0001, Klaleda=0001, Tornado=0002 sustav će odbiti.
+          </li>
+          <li>
+            Šifre <b>između</b> vrsta naljepnica istog proizvođača moraju biti različite (PP, masa
+            aparata i masa bočice ne mogu dijeliti istu šifru).
+          </li>
+        </ul>
+      </div>
+
       <MinimalSearchInput
         value={filter}
         onChange={setFilter}

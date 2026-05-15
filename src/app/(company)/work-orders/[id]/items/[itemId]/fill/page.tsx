@@ -58,7 +58,11 @@ export default async function FillItemPage({
 
   const manufacturers = authorizations
     .map((a) => a.manufacturer)
-    .sort((a, b) => a.name.localeCompare(b.name, "hr"));
+    .sort((a, b) => {
+      const so = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+      if (so !== 0) return so;
+      return a.name.localeCompare(b.name, "hr");
+    });
 
   return (
     <main className="max-w-3xl">

@@ -49,7 +49,7 @@ export default async function EditItemPage({
 
   const [manufacturers, types] = await Promise.all([
     prisma.manufacturer.findMany({
-      orderBy: { name: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       include: { supportedTypes: { select: { extinguisherTypeId: true } } },
     }),
     prisma.extinguisherType.findMany({

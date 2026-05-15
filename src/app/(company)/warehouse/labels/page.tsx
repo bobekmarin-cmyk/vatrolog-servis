@@ -29,7 +29,7 @@ export default async function ServiceLabelsWarehousePage() {
     prisma.companyManufacturerAuthorization.findMany({
       where: { companyId: session.companyId, active: true },
       include: {
-        manufacturer: { select: { id: true, name: true, displayName: true } },
+        manufacturer: { select: { id: true, name: true, displayName: true, sortOrder: true } },
       },
     }),
     prisma.serviceLabel.findMany({
@@ -63,9 +63,11 @@ export default async function ServiceLabelsWarehousePage() {
 
   const sortedAuths = auths
     .slice()
-    .sort((a, b) =>
-      displayManufacturer(a.manufacturer).localeCompare(displayManufacturer(b.manufacturer), "hr"),
-    );
+    .sort((a, b) => {
+      const so = (a.manufacturer.sortOrder ?? 0) - (b.manufacturer.sortOrder ?? 0);
+      if (so !== 0) return so;
+      return displayManufacturer(a.manufacturer).localeCompare(displayManufacturer(b.manufacturer), "hr");
+    });
 
   return (
     <main className="space-y-6">

@@ -194,13 +194,29 @@ export async function revertLabelConsumptionOnUnlock(
  * Koristi se za otpremnicu: ako je nalog zaključan → čita snimku iz
  * WorkOrderLabelConsumption, inače kalkulira „live" iz items-a.
  *
- * Vraća grupirano po proizvođaču i kind-u, sa šiframa iz
- * CompanyManufacturerAuthorization.
+ * Grupiranje per kind (PERIODIC / APPARATUS_MASS / CYLINDER_MASS):
+ *   - Ako svi proizvođači u toj kind imaju ISTU non-null šifru (i postoji
+ *     bar 2 proizvođača za tu kind ili je šifra zadana), vraća se JEDAN
+ *     red bez manufacturer-a u nazivu, sa zbrojenom količinom i zajedničkom
+ *     šifrom.
+ *   - Inače: per-manufacturer redovi s nazivom "Naljepnica … (PASTOR …)".
  */
 export type LabelDeliveryRow = {
+  /** Prazan string kad je red grupiran preko više proizvođača. */
   manufacturerName: string;
   kind: ServiceLabelKind;
   kindLabel: string;
+  code: string | null;
+  quantity: number;
+  /** true ako red predstavlja zbroj kroz više proizvođača iste kind sa zajedničkom šifrom. */
+  grouped: boolean;
+};
+
+type RawRow = {
+  manufacturerId: string;
+  manufacturerName: string;
+  manufacturerSortOrder: number;
+  kind: ServiceLabelKind;
   code: string | null;
   quantity: number;
 };
@@ -234,7 +250,7 @@ export async function collectLabelRowsForDeliveryNote(
     select: {
       id: true,
       kind: true,
-      manufacturer: { select: { id: true, name: true, displayName: true } },
+      manufacturer: { select: { id: true, name: true, displayName: true, sortOrder: true } },
     },
   });
   const labelById = new Map(labels.map((l) => [l.id, l]));
@@ -248,30 +264,79 @@ export async function collectLabelRowsForDeliveryNote(
   });
   const authByManu = new Map(auths.map((a) => [a.manufacturerId, a]));
 
-  const rows: LabelDeliveryRow[] = [];
+  const raw: RawRow[] = [];
   for (const u of usage) {
     const lbl = labelById.get(u.serviceLabelId);
     if (!lbl) continue;
     const auth = authByManu.get(lbl.manufacturer.id) ?? null;
     const display = displayManufacturer(lbl.manufacturer);
-    const kindLabelFull = kindToFullLabel(lbl.kind as ServiceLabelKind, display);
     const code = codeForKind(lbl.kind as ServiceLabelKind, auth);
-    rows.push({
+    raw.push({
+      manufacturerId: lbl.manufacturer.id,
       manufacturerName: display,
+      manufacturerSortOrder: lbl.manufacturer.sortOrder ?? 0,
       kind: lbl.kind as ServiceLabelKind,
-      kindLabel: kindLabelFull,
       code,
       quantity: u.quantity,
     });
   }
 
-  rows.sort((a, b) => {
+  // Grupiraj po kind i pokušaj sažeti u jedan red ako su sve šifre iste i non-null.
+  const byKind = new Map<ServiceLabelKind, RawRow[]>();
+  for (const r of raw) {
+    const arr = byKind.get(r.kind) ?? [];
+    arr.push(r);
+    byKind.set(r.kind, arr);
+  }
+
+  const groupedRows: LabelDeliveryRow[] = [];
+  const perManuRows: LabelDeliveryRow[] = [];
+
+  for (const [kind, items] of byKind.entries()) {
+    const distinctManu = new Set(items.map((i) => i.manufacturerId)).size;
+    const allCodes = items.map((i) => i.code);
+    const firstCode = allCodes[0];
+    const allSameNonNull =
+      firstCode != null &&
+      firstCode.trim().length > 0 &&
+      allCodes.every((c) => c != null && c.trim() === firstCode.trim());
+
+    if (distinctManu >= 2 && allSameNonNull) {
+      const sum = items.reduce((s, i) => s + i.quantity, 0);
+      groupedRows.push({
+        manufacturerName: "",
+        kind,
+        kindLabel: kindToShortLabel(kind),
+        code: firstCode!.trim(),
+        quantity: sum,
+        grouped: true,
+      });
+    } else {
+      for (const r of items) {
+        perManuRows.push({
+          manufacturerName: r.manufacturerName,
+          kind: r.kind,
+          kindLabel: kindToFullLabel(r.kind, r.manufacturerName),
+          code: r.code,
+          quantity: r.quantity,
+          grouped: false,
+        });
+      }
+    }
+  }
+
+  groupedRows.sort((a, b) => kindOrder(a.kind) - kindOrder(b.kind));
+  perManuRows.sort((a, b) => {
+    const so = raw.find((r) => r.manufacturerName === a.manufacturerName)?.manufacturerSortOrder ?? 0;
+    const sb = raw.find((r) => r.manufacturerName === b.manufacturerName)?.manufacturerSortOrder ?? 0;
+    const d = so - sb;
+    if (d !== 0) return d;
     const n = a.manufacturerName.localeCompare(b.manufacturerName, "hr");
     if (n !== 0) return n;
     return kindOrder(a.kind) - kindOrder(b.kind);
   });
 
-  return rows;
+  return [...groupedRows, ...perManuRows];
 }
 
 function kindOrder(k: ServiceLabelKind): number {
@@ -293,6 +358,21 @@ function kindToFullLabel(kind: ServiceLabelKind, manufacturerName: string): stri
       return `Naljepnica mase aparata (${manufacturerName})`;
     case "CYLINDER_MASS":
       return `Naljepnica mase bočice (${manufacturerName})`;
+  }
+}
+
+/**
+ * Naziv bez manufacturer-a — koristi se kad je red zajednički preko više
+ * proizvođača s istom šifrom.
+ */
+function kindToShortLabel(kind: ServiceLabelKind): string {
+  switch (kind) {
+    case "PERIODIC":
+      return "Naljepnica periodičnog pregleda";
+    case "APPARATUS_MASS":
+      return "Naljepnica mase aparata";
+    case "CYLINDER_MASS":
+      return "Naljepnica mase bočice";
   }
 }
 

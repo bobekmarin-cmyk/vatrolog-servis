@@ -26,7 +26,11 @@ export default async function LabelReceiptDetailPage({
       items: {
         include: {
           serviceLabel: {
-            include: { manufacturer: { select: { id: true, name: true, displayName: true } } },
+            include: {
+              manufacturer: {
+                select: { id: true, name: true, displayName: true, sortOrder: true },
+              },
+            },
           },
         },
       },
@@ -35,6 +39,10 @@ export default async function LabelReceiptDetailPage({
   if (!receipt) notFound();
 
   const items = [...receipt.items].sort((a, b) => {
+    const so =
+      (a.serviceLabel.manufacturer.sortOrder ?? 0) -
+      (b.serviceLabel.manufacturer.sortOrder ?? 0);
+    if (so !== 0) return so;
     const n = displayManufacturer(a.serviceLabel.manufacturer).localeCompare(
       displayManufacturer(b.serviceLabel.manufacturer),
       "hr",

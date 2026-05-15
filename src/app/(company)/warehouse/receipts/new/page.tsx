@@ -17,7 +17,7 @@ export default async function NewReceiptPage({
   const { partId } = await searchParams;
 
   const manufacturers = await prisma.manufacturer.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,

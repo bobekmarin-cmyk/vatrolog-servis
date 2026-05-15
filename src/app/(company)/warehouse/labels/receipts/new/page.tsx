@@ -22,7 +22,11 @@ export default async function NewLabelReceiptPage({
   const [auths, labels] = await Promise.all([
     prisma.companyManufacturerAuthorization.findMany({
       where: { companyId: session.companyId, active: true },
-      include: { manufacturer: { select: { id: true, name: true, displayName: true } } },
+      include: {
+        manufacturer: {
+          select: { id: true, name: true, displayName: true, sortOrder: true },
+        },
+      },
     }),
     prisma.serviceLabel.findMany({
       select: {
@@ -50,10 +54,15 @@ export default async function NewLabelReceiptPage({
       return {
         id: a.manufacturerId,
         name: displayManufacturer(a.manufacturer),
+        sortOrder: a.manufacturer.sortOrder ?? 0,
         labels: items,
       };
     })
-    .sort((a, b) => a.name.localeCompare(b.name, "hr"));
+    .sort((a, b) => {
+      const so = a.sortOrder - b.sortOrder;
+      if (so !== 0) return so;
+      return a.name.localeCompare(b.name, "hr");
+    });
 
   const prefillLabel = labelId
     ? labels.find((l) => l.id === labelId) ?? null

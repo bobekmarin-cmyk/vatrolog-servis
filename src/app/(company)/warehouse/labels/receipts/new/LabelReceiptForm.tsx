@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import type { ServiceLabelKind } from "@prisma/client";
 
 type LabelItem = { id: string; kind: ServiceLabelKind; label: string };
-export type LabelManufacturer = { id: string; name: string; labels: LabelItem[] };
+export type LabelManufacturer = {
+  id: string;
+  name: string;
+  sortOrder?: number;
+  labels: LabelItem[];
+};
 
 type Item = {
   key: string;

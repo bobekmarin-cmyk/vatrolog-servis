@@ -8,12 +8,18 @@ import {
   WorkOrderStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { createRequire } from "node:module";
 import {
   buildAdminUsername,
   buildLocationLabel,
   buildLocationUsername,
   deriveUsernameSlug,
 } from "../src/lib/companyAccountNaming";
+
+const require = createRequire(import.meta.url);
+const { MANUFACTURERS } = require("../scripts/manufacturers-data.js") as {
+  MANUFACTURERS: { name: string; sortOrder: number }[];
+};
 
 const prisma = new PrismaClient();
 
@@ -192,19 +198,18 @@ async function main() {
     throw new Error("Catalog seed failed");
   }
 
-  // MANUFACTURERS
-  await prisma.manufacturer.createMany({
-    data: [
-      { name: "Pastor" },
-      { name: "Total" },
-      { name: "Klaleda" },
-    ],
-    skipDuplicates: true,
-  });
+  // MANUFACTURERS - PUCZ obrazac iz centralnog popisa (idempotentno upsert).
+  for (const { name, sortOrder } of MANUFACTURERS) {
+    await prisma.manufacturer.upsert({
+      where: { name },
+      create: { name, sortOrder },
+      update: { sortOrder },
+    });
+  }
 
-  const mPastor = await prisma.manufacturer.findUnique({ where: { name: "Pastor" } });
-  const mTotal = await prisma.manufacturer.findUnique({ where: { name: "Total" } });
-  const mKlaleda = await prisma.manufacturer.findUnique({ where: { name: "Klaleda" } });
+  const mPastor = await prisma.manufacturer.findUnique({ where: { name: "PASTOR T.V.A. d.o.o." } });
+  const mTotal = await prisma.manufacturer.findUnique({ where: { name: "PASTOR INŽENJERING d.d." } });
+  const mKlaleda = await prisma.manufacturer.findUnique({ where: { name: "KLALEDA d.o.o." } });
 
   // CUSTOMER
   await prisma.customer.createMany({

@@ -12,7 +12,7 @@ export default async function AuthorizationsPage() {
 
   const [manufacturers, existing] = await Promise.all([
     prisma.manufacturer.findMany({
-      orderBy: { name: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true },
     }),
     prisma.companyManufacturerAuthorization.findMany({
