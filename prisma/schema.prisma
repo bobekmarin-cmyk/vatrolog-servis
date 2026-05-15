@@ -261,6 +261,9 @@ model Company {
   /// Vrijednosti: "GMAIL" | "SMTP" | null. Null = automatski (Gmail prefer ako oba).
   mailProvider String?
 
+  /// Prvi segment broja otpremnice (npr. 10 u 10-260001). Null = automatski iz serviceCode.
+  deliveryNoteNumberPrefix String? @db.VarChar(4)
+
   /// Strategija unosa šifri naljepnica (na razini cijele tvrtke).
   ///   SHARED           = jedan set od 3 šifre za sve proizvođače
   ///   PER_MANUFACTURER = svaki proizvođač ima vlastiti set
@@ -325,6 +328,9 @@ model Company {
   serviceLabelReceipts    ServiceLabelReceipt[]
   serviceLabelAdjustments ServiceLabelAdjustment[]
 
+  deliveryNotes            DeliveryNote[]
+  deliveryNoteYearCounters DeliveryNoteYearCounter[]
+
   @@index([deletedAt])
 }
 
@@ -372,6 +378,8 @@ model AccountUser {
   serviceLabelAdjustments ServiceLabelAdjustment[]
 
   workOrdersCreated WorkOrder[] @relation("WorkOrderCreatedByAccountUser")
+
+  deliveryNotesIssued DeliveryNote[] @relation("DeliveryNoteIssuedBy")
 
   notificationReads NotificationRead[]
 
@@ -939,6 +947,8 @@ model WorkOrder {
 
   labelConsumptions WorkOrderLabelConsumption[]
 
+  deliveryNotes DeliveryNote[]
+
   @@unique([companyId, orderNumber])
   @@index([companyId, createdAt])
   @@index([companyId, status, createdAt])
@@ -946,6 +956,52 @@ model WorkOrder {
   @@index([companyId, receivedAt])
   @@index([companyId, serviceLocationId])
   @@index([companyId, createdByAccountUserId])
+}
+
+/// Redni broj otpremnica po tvrtki i kalendarskoj godini (Europe/Zagreb).
+model DeliveryNoteYearCounter {
+  companyId String
+  year      Int
+  lastSeq   Int @default(0)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, year])
+}
+
+/// Izdana otpremnica: službeni broj i zamrznuti PDF u storageu.
+model DeliveryNote {
+  id        String @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  /// Puni broj npr. 10-260001
+  number String
+
+  year Int
+  seq  Int
+
+  issuedAt DateTime @default(now())
+
+  issuedByAccountUserId String?
+  issuedByAccountUser   AccountUser? @relation("DeliveryNoteIssuedBy", fields: [issuedByAccountUserId], references: [id], onDelete: SetNull)
+
+  /// Postavljeno kad admin izda novu otpremnicu za isti nalog.
+  supersededAt DateTime?
+
+  /// Povratna vrijednost savePdf (lokalna putanja ili s3://...). Null dok generiranje nije završilo.
+  pdfStoragePath String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, number])
+  @@index([companyId, issuedAt])
+  @@index([workOrderId])
+  @@index([companyId, workOrderId, supersededAt])
 }
 
 /**

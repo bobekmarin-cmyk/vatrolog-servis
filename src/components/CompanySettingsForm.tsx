@@ -13,6 +13,8 @@ type Props = {
   iban: string;
   email: string;
   phone: string;
+  /** Prvi segment broja otpremnice (2 znaka). Prazno = automatski iz šifre servisa. */
+  deliveryNoteNumberPrefix?: string | null;
 };
 
 export default function CompanySettingsForm(props: Props) {
@@ -159,6 +161,22 @@ export default function CompanySettingsForm(props: Props) {
                 placeholder="npr. 091 123 4567"
                 autoComplete="tel"
               />
+            </div>
+            <div className="border-t border-slate-100 pt-4">
+              <label className="label">Prefiks broja otpremnice</label>
+              <input
+                name="deliveryNoteNumberPrefix"
+                className="input font-mono uppercase max-w-[8rem]"
+                defaultValue={props.deliveryNoteNumberPrefix ?? ""}
+                maxLength={4}
+                placeholder="auto"
+                title="Dva znaka npr. 10 u broju 10-260001. Prazno = iz šifre servisa."
+                spellCheck={false}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Dva znaka na početku službenog broja otpremnice (npr. <span className="font-mono">10-260001</span>).
+                Ostavite prazno za automatski izračun iz šifre servisa.
+              </p>
             </div>
           </div>
         </div>

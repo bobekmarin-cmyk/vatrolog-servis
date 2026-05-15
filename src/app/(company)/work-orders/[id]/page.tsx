@@ -19,6 +19,7 @@ import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay"
 import PendingSubmitForm from "@/components/PendingSubmitForm";
 import PendingNavigationLink from "@/components/PendingNavigationLink";
 import { getTenantMailStatus } from "@/lib/tenantMail";
+import ConfirmForm from "@/components/ConfirmForm";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -105,12 +106,20 @@ function ValidUntilBadge({
   );
 }
 
-export default async function ServiceViewPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ServiceViewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ dn?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
 
   const { id } = await params;
   if (!id) notFound();
+
+  const dnFlash = searchParams ? (await searchParams).dn : undefined;
 
   const order = await prisma.workOrder.findFirst({
     where: { id, companyId: session.companyId },
@@ -126,6 +135,16 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
           extinguisher: { include: { manufacturer: true, type: { include: { agent: true, construction: true } } } },
         },
       },
+      deliveryNotes: {
+        orderBy: { issuedAt: "asc" },
+        select: {
+          id: true,
+          number: true,
+          issuedAt: true,
+          supersededAt: true,
+          pdfStoragePath: true,
+        },
+      },
     },
   });
 
@@ -139,19 +158,55 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
   const isLocked = order.status === "LOCKED";
   const hasAnyServiced = order.items.some((i) => !!i.servicedAt || !!i.labelNumber);
 
+  const issuedDeliveryNotes = order.deliveryNotes.filter((n) => n.pdfStoragePath);
+  const activeDeliveryNote = issuedDeliveryNotes.find((n) => !n.supersededAt) ?? null;
+  const hasShippedDeliveryNote = !!activeDeliveryNote;
+  const canOpenDeliveryNotePdf = isLocked && hasShippedDeliveryNote;
+
   const remaining = Math.max(0, total - servicedCount);
   const pct = total > 0 ? Math.round((servicedCount / total) * 100) : 0;
   const allDone = total > 0 && servicedCount === total;
 
+  const dnFlashMessage: Record<string, { tone: "ok" | "err"; text: string }> = {
+    issued_ok: { tone: "ok", text: "Otpremnica je izdana i spremljena." },
+    reissued_ok: { tone: "ok", text: "Nova otpremnica je izdana; prethodna je označena kao zamijenjena." },
+    not_locked: { tone: "err", text: "Nalog mora biti zaključen prije izdavanja otpremnice." },
+    already: { tone: "err", text: "Otpremnica je već izdana." },
+    no_active: { tone: "err", text: "Nema aktivne otpremnice za zamjenu." },
+    fail: { tone: "err", text: "Izdavanje otpremnice nije uspjelo. Pokušajte ponovno ili kontaktirajte podršku." },
+  };
+  const flash = dnFlash && dnFlashMessage[dnFlash] ? dnFlashMessage[dnFlash] : null;
+
   return (
     <main className="space-y-6">
+      {flash ? (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            flash.tone === "ok"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-red-200 bg-red-50 text-red-900"
+          }`}
+        >
+          {flash.text}
+        </div>
+      ) : null}
+
+      {issuedDeliveryNotes.length >= 2 ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Izdane su više otpremnice:{" "}
+          <span className="font-mono font-semibold">{issuedDeliveryNotes.map((n) => n.number).join(", ")}</span>.
+          Za ispis i slanje kupcu vrijedi aktivna:{" "}
+          <span className="font-mono font-semibold">{activeDeliveryNote?.number ?? "—"}</span>.
+        </div>
+      ) : null}
+
       {/* NASLOV + SVI GUMBI U JEDNOM REDU */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold leading-none">Servisni nalog</h1>
           <span className="text-lg leading-none text-slate-600 font-medium">{order.orderNumber}</span>
           <span className="text-sm leading-none text-slate-500">{fmtDotDate(order.receivedAt)}</span>
-          <WorkOrderStatusBadge status={order.status} />
+          <WorkOrderStatusBadge status={order.status} hasShippedDeliveryNote={hasShippedDeliveryNote} />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -178,6 +233,34 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             customerEmail={order.customer.email}
             mailConnected={mailConnected}
           />
+          {isLocked && !hasShippedDeliveryNote ? (
+            <PendingSubmitForm
+              action={`/api/work-orders/${order.id}/delivery-notes/issue`}
+              method="post"
+              className="inline"
+              pendingTitle="Izdajem otpremnicu..."
+              pendingMessage="Molimo pričekajte, generira se PDF i broj otpremnice."
+            >
+              <button type="submit" className="btn btn-primary px-3 text-sm">
+                Izdaj otpremnicu
+              </button>
+            </PendingSubmitForm>
+          ) : null}
+          {isLocked && hasShippedDeliveryNote && session.role === "ADMIN" ? (
+            <ConfirmForm
+              action={`/api/work-orders/${order.id}/delivery-notes/reissue`}
+              method="post"
+              className="inline"
+              confirmTitle="Nova otpremnica (zamjena)"
+              confirmMessage="Dodijelit će se novi službeni broj. Stara otpremnica ostaje u arhivi. Nastaviti?"
+              confirmLabel="Izdaj novu"
+              danger
+            >
+              <button type="submit" className="btn btn-outline px-3 text-sm text-amber-800 border-amber-300">
+                Nova otpremnica
+              </button>
+            </ConfirmForm>
+          ) : null}
           <PdfActionButton
             label="Otpremnica"
             kind="delivery-note"
@@ -187,8 +270,12 @@ export default async function ServiceViewPage({ params }: { params: Promise<{ id
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
             mailConnected={mailConnected}
-            disabled={!isLocked}
-            disabledTitle="Zaključaj radni nalog prije izdavanja ili slanja otpremnice."
+            disabled={!canOpenDeliveryNotePdf}
+            disabledTitle={
+              !isLocked
+                ? "Zaključaj radni nalog prije izdavanja ili slanja otpremnice."
+                : "Prvo izdajte otpremnicu (gumb lijevo), zatim otvorite PDF ili pošaljite mail."
+            }
           />
           {session.role === "ADMIN" && (
             <PendingNavigationLink

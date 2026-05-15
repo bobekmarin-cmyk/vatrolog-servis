@@ -1,5 +1,7 @@
 import { getOperationsStats } from "@/lib/companyDetailStats";
 import { Section, KpiTile, StatusPill, fmtDate, fmtDateTime, fmtEur } from "./shared";
+import WorkOrderStatusBadge from "@/components/WorkOrderStatusBadge";
+import type { WorkOrderStatus } from "@prisma/client";
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   REGISTER_VIEW: "Upisnik (pregled)",
@@ -47,7 +49,10 @@ export default async function OperationsTab({ companyId }: { companyId: string }
                     <td className="p-2 font-mono text-xs">{w.orderNumber}</td>
                     <td className="p-2 text-xs">{w.customerName}</td>
                     <td className="p-2">
-                      <StatusPill status={w.status} />
+                      <WorkOrderStatusBadge
+                        status={w.status as WorkOrderStatus}
+                        hasShippedDeliveryNote={w.hasShippedDeliveryNote}
+                      />
                     </td>
                     <td className="p-2 text-xs text-slate-500 whitespace-nowrap">{fmtDate(w.receivedAt)}</td>
                     <td className="p-2 text-xs text-slate-500 whitespace-nowrap">{fmtDate(w.finishedAt)}</td>

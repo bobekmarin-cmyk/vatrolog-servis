@@ -427,6 +427,7 @@ export type OperationsStats = {
     finishedAt: Date | null;
     lockedAt: Date | null;
     createdAt: Date;
+    hasShippedDeliveryNote: boolean;
   }[];
   invoiceCounts: {
     total: number;
@@ -480,6 +481,11 @@ export async function getOperationsStats(companyId: string): Promise<OperationsS
         lockedAt: true,
         createdAt: true,
         customer: { select: { name: true } },
+        deliveryNotes: {
+          where: { supersededAt: null, pdfStoragePath: { not: null } },
+          select: { id: true },
+          take: 1,
+        },
       },
     }),
     prisma.invoice.groupBy({
@@ -550,6 +556,7 @@ export async function getOperationsStats(companyId: string): Promise<OperationsS
       finishedAt: w.finishedAt,
       lockedAt: w.lockedAt,
       createdAt: w.createdAt,
+      hasShippedDeliveryNote: w.deliveryNotes.length > 0,
     })),
     invoiceCounts: {
       total: invoiceGroup.reduce((s, g) => s + g._count._all, 0),

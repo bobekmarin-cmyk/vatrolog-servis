@@ -31,6 +31,7 @@ export default async function AdminSettingsPage({
       iban: true,
       email: true,
       phone: true,
+      deliveryNoteNumberPrefix: true,
     },
   });
   if (!company) redirect("/");
@@ -58,6 +59,7 @@ export default async function AdminSettingsPage({
         iban={company.iban ?? ""}
         email={company.email ?? ""}
         phone={company.phone ?? ""}
+        deliveryNoteNumberPrefix={company.deliveryNoteNumberPrefix}
       />
     </div>
   );

@@ -118,6 +118,11 @@ export default async function WorkOrdersPage({
         items: true,
         serviceLocation: { select: { kind: true, label: true } },
         createdByAccountUser: { select: { username: true } },
+        deliveryNotes: {
+          where: { supersededAt: null, pdfStoragePath: { not: null } },
+          select: { id: true },
+          take: 1,
+        },
       },
       skip: (pageNum - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -336,7 +341,10 @@ export default async function WorkOrdersPage({
                       })()}
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap">
-                      <WorkOrderStatusBadge status={o.status} />
+                      <WorkOrderStatusBadge
+                        status={o.status}
+                        hasShippedDeliveryNote={o.deliveryNotes.length > 0}
+                      />
                     </td>
 
                     <td className="px-2 py-2 text-right whitespace-nowrap">

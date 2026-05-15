@@ -25,11 +25,19 @@ export async function POST(req: Request) {
   if (!email.includes("@")) return badRequest("E-mail nije ispravan.");
   if (!phone) return badRequest("Kontakt broj je obavezan.");
 
+  const dnPrefixRaw = String(form.get("deliveryNoteNumberPrefix") ?? "").trim().toUpperCase();
+  const cleanedPrefix = dnPrefixRaw.replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  const deliveryNoteNumberPrefix =
+    cleanedPrefix.length === 0 ? null : cleanedPrefix.length >= 2 ? cleanedPrefix : null;
+  if (cleanedPrefix.length === 1) {
+    return badRequest("Prefiks otpremnice mora imati najmanje 2 znaka ili ostaviti prazno za automatski.");
+  }
+
   const wasSetupComplete = session.setupComplete === true;
 
   const company = await prisma.company.update({
     where: { id: session.companyId },
-    data: { street, city, postalCode, iban, email, phone },
+    data: { street, city, postalCode, iban, email, phone, deliveryNoteNumberPrefix },
     select: { iban: true, email: true, phone: true },
   });
 

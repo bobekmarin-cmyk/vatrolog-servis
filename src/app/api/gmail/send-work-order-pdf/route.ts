@@ -16,6 +16,8 @@ import {
   type TemplateType,
 } from "@/lib/emailTemplates";
 import { buildWorkOrderPdfNames, type WorkOrderDocSlug } from "@/lib/workOrderDocumentNames";
+import { getActiveDeliveryNote } from "@/lib/deliveryNoteIssue";
+import { readPdf } from "@/lib/pdfStorage";
 
 export const runtime = "nodejs";
 
@@ -109,30 +111,51 @@ export async function POST(req: NextRequest) {
     kindToDocSlug(kind),
   );
 
-  // Interni fetch PDF-a (reuse postojećih GET ruta s istom sesijom).
-  // Na Railway/Vercel-u self-fetch na javnu domenu često padne zbog DNS-a kontejnera
-  // (`vatrolog.com` izvana radi, iz containera ne) — koristimo loopback bazu.
-  const cookieHdr = req.headers.get("cookie") ?? "";
-  const port = process.env.PORT?.trim() || "3000";
-  const internalBase = `http://127.0.0.1:${port}`;
-  const path = `/work-orders/${workOrderId}/${meta.slug}/pdf`;
   let pdfBuffer: Buffer;
-  try {
-    const pdfRes = await fetch(internalBase + path, {
-      headers: { cookie: cookieHdr },
-      cache: "no-store",
-    });
-    if (!pdfRes.ok) {
-      const detail = await pdfRes.text().catch(() => "");
+  let pdfFilename = pdfNames.fileName;
+
+  if (kind === "delivery-note") {
+    const activeDn = await getActiveDeliveryNote(prisma, session.companyId, workOrderId);
+    if (!activeDn?.pdfStoragePath) {
       return NextResponse.json(
-        { error: `Generiranje PDF-a nije uspjelo (${pdfRes.status})${detail ? `: ${detail.slice(0, 200)}` : ""}` },
-        { status: 500 },
+        {
+          error:
+            "Prvo izdajte otpremnicu na stranici radnog naloga (gumb „Izdaj otpremnicu“), zatim ponovno pošaljite mail.",
+        },
+        { status: 400 },
       );
     }
-    pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Nepoznata greška";
-    return NextResponse.json({ error: `PDF fetch (${internalBase}${path}): ${msg}` }, { status: 500 });
+    try {
+      pdfBuffer = await readPdf(activeDn.pdfStoragePath);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Nepoznata greška";
+      return NextResponse.json({ error: `Čitanje arhivske otpremnice nije uspjelo: ${msg}` }, { status: 500 });
+    }
+    const safeNum = activeDn.number.replace(/[^a-zA-Z0-9-]+/g, "_");
+    pdfFilename = `otpremnica_${safeNum}.pdf`;
+  } else {
+    // Interni fetch PDF-a (reuse postojećih GET ruta s istom sesijom).
+    const cookieHdr = req.headers.get("cookie") ?? "";
+    const port = process.env.PORT?.trim() || "3000";
+    const internalBase = `http://127.0.0.1:${port}`;
+    const path = `/work-orders/${workOrderId}/${meta.slug}/pdf`;
+    try {
+      const pdfRes = await fetch(internalBase + path, {
+        headers: { cookie: cookieHdr },
+        cache: "no-store",
+      });
+      if (!pdfRes.ok) {
+        const detail = await pdfRes.text().catch(() => "");
+        return NextResponse.json(
+          { error: `Generiranje PDF-a nije uspjelo (${pdfRes.status})${detail ? `: ${detail.slice(0, 200)}` : ""}` },
+          { status: 500 },
+        );
+      }
+      pdfBuffer = Buffer.from(await pdfRes.arrayBuffer());
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Nepoznata greška";
+      return NextResponse.json({ error: `PDF fetch (${internalBase}${path}): ${msg}` }, { status: 500 });
+    }
   }
 
   const custName = customerDisplayName(order.customer);
@@ -161,7 +184,6 @@ export async function POST(req: NextRequest) {
   const subject = renderSubject(tpl, vars);
   const html = renderTemplateHtml(tpl, vars);
 
-  const pdfFilename = pdfNames.fileName;
   const monthTag = `WO-${order.orderNumber}`;
 
   try {

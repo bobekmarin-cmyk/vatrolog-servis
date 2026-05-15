@@ -55,6 +55,14 @@ export default async function CompanyLayout({ children }: { children: React.Reac
       items: [
         { href: "/work-orders", label: "Radni nalozi", icon: "🧾", featureKey: "WORK_ORDERS" },
         {
+          href: "/work-orders/delivery-notes",
+          label: "Otpremnice",
+          icon: "📄",
+          featureKey: "WORK_ORDERS",
+          adminOnly: true,
+          activePathPrefixes: ["/work-orders/delivery-notes"],
+        },
+        {
           href: "/warehouse/parts",
           label: "Skladište – dijelovi",
           icon: "📦",
