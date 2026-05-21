@@ -93,6 +93,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/portal/")) return true;
   if (pathname.startsWith("/legal/")) return true;
+  // SEO / crawler datoteke — Googlebot mora dobiti XML/TXT, nikako redirect na /login.
+  if (pathname === "/sitemap.xml" || pathname === "/robots.txt") return true;
   // Favicon / PWA / OG slike (bez sesije — preglednici i društvene mreže).
   if (
     pathname === "/icon" ||
@@ -348,8 +350,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // sve osim Next internals i statike (favicon, public assete poput /landing/* i /portal/* mockup PNG-ova)
-    "/((?!_next/static|_next/image|favicon.ico|landing/).*)",
+    // sve osim Next internals, statike i SEO/crawler ruta. Sitemap/robots MORAJU biti izvan
+    // middleware-a — inače Googlebot dobije redirect na /login i sitemap se tretira kao HTML.
+    "/((?!_next/static|_next/image|favicon\\.ico|landing/|sitemap\\.xml|robots\\.txt).*)",
   ],
 };
 
