@@ -5,6 +5,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Prijava",
   alternates: { canonical: "/login" },
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 };
 
 export default function LoginPage() {

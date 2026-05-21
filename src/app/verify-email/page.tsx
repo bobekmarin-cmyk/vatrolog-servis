@@ -5,6 +5,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Potvrda email adrese",
   alternates: { canonical: "/verify-email" },
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 };
 
 type Props = { searchParams: Promise<{ status?: string }> };

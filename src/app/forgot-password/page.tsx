@@ -5,6 +5,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Zaboravljena lozinka",
   alternates: { canonical: "/forgot-password" },
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 };
 
 export default function ForgotPasswordPage() {

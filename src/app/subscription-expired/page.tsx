@@ -1,6 +1,11 @@
 import Link from "next/link";
 import VatroLogLogo from "@/components/VatroLogLogo";
 
+export const metadata = {
+  title: "Pristup onemogućen",
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+};
+
 export default function SubscriptionExpiredPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">
