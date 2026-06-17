@@ -19,28 +19,38 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
   if (!session) redirect("/korisnik/login");
 
   let inspectionDueCount = 0;
+  let companyName: string | null = null;
   try {
     const links = await getOwnerActiveLinks(session.ownerId);
+    companyName = links[0]?.customerName ?? null;
     if (links.length > 0) {
       const exts = await getOwnerExtinguishers(links);
-      const states = await getOwnerInspectionStates(session.ownerId, exts.map((e) => e.id));
+      const states = await getOwnerInspectionStates(
+        session.ownerId,
+        exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
+      );
       inspectionDueCount = [...states.values()].filter((s) => s.overdue).length;
     }
   } catch {
     inspectionDueCount = 0;
   }
 
+  // Tvrtka (kupac) gore, ime korisnika ispod. Bez veza koristimo ime/email.
+  const primaryName = companyName ?? session.name ?? session.email;
+  const secondaryName = companyName && session.name ? session.name : null;
+
   return (
     <div className="min-h-dvh bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
-          <Link href="/korisnik" className="shrink-0">
+          <Link href="/korisnik" className="shrink-0 leading-tight">
             <VatroLogLogo size="md" />
+            <div className="text-xs font-medium text-slate-500">Korisnički portal</div>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="hidden text-right text-sm sm:block">
-              <div className="font-semibold text-slate-900">{session.name ?? session.email}</div>
-              <div className="text-xs text-slate-500">Korisnički portal</div>
+            <div className="hidden text-right text-sm leading-tight sm:block">
+              <div className="font-semibold text-slate-900">{primaryName}</div>
+              {secondaryName ? <div className="text-xs text-slate-500">{secondaryName}</div> : null}
             </div>
             <OwnerLogoutButton />
           </div>

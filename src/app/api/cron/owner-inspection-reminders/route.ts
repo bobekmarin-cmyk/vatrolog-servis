@@ -57,7 +57,10 @@ export async function GET(req: Request): Promise<Response> {
       continue;
     }
 
-    const states = await getOwnerInspectionStates(owner.id, exts.map((e) => e.id));
+    const states = await getOwnerInspectionStates(
+      owner.id,
+      exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
+    );
     const dueCount = [...states.values()].filter((s) => s.overdue).length;
     if (dueCount === 0) {
       skippedNoDue++;

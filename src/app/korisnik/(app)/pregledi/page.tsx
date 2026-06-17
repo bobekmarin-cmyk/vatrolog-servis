@@ -32,7 +32,10 @@ export default async function OwnerInspectionsPage({ searchParams }: PageProps) 
   const { spremljeno } = await searchParams;
   const links = await getOwnerActiveLinks(session.ownerId);
   const exts = await getOwnerExtinguishers(links);
-  const states = await getOwnerInspectionStates(session.ownerId, exts.map((e) => e.id));
+  const states = await getOwnerInspectionStates(
+    session.ownerId,
+    exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
+  );
   const history = await getOwnerInspectionHistory(session.ownerId, 100);
 
   const rows = exts.map((e) => ({ ext: e, state: states.get(e.id) ?? null }));

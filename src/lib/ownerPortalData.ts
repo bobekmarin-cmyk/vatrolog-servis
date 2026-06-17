@@ -38,10 +38,13 @@ export type OwnerExtinguisher = {
   id: string;
   internalCode: string;
   serialNumber: string;
+  productionYear: number;
   typeCode: string | null;
   manufacturerName: string;
   status: string;
   nextPeriodicDue: Date | null;
+  lastPeriodicAt: Date | null;
+  currentLabel: string | null;
   servicerName: string;
   companyId: string;
   departmentName: string | null;
@@ -56,11 +59,12 @@ export async function getOwnerExtinguishers(links: OwnerLinkInfo[]): Promise<Own
   const out: OwnerExtinguisher[] = [];
 
   for (const link of links) {
-    // Stavke naloga ovog kupca → posljednje viđeno odjeljenje po aparatu (latest-first).
+    // Stavke naloga ovog kupca → posljednje viđeno odjeljenje i naljepnica po aparatu (latest-first).
     const items = await prisma.workOrderItem.findMany({
       where: { companyId: link.companyId, workOrder: { customerId: link.customerId } },
       select: {
         extinguisherId: true,
+        labelNumber: true,
         workOrder: { select: { receivedAt: true, department: { select: { name: true } } } },
       },
       orderBy: { workOrder: { receivedAt: "desc" } },
@@ -68,10 +72,15 @@ export async function getOwnerExtinguishers(links: OwnerLinkInfo[]): Promise<Own
     });
 
     const deptByExt = new Map<string, string | null>();
+    const labelByExt = new Map<string, string | null>();
     for (const it of items) {
       if (!it.extinguisherId) continue;
       if (!deptByExt.has(it.extinguisherId)) {
         deptByExt.set(it.extinguisherId, it.workOrder?.department?.name ?? null);
+      }
+      // Prva neprazna naljepnica (najnoviji nalog prvi) = trenutna naljepnica.
+      if (!labelByExt.get(it.extinguisherId) && it.labelNumber) {
+        labelByExt.set(it.extinguisherId, it.labelNumber);
       }
     }
 
@@ -93,10 +102,13 @@ export async function getOwnerExtinguishers(links: OwnerLinkInfo[]): Promise<Own
         id: e.id,
         internalCode: e.internalCode,
         serialNumber: e.serialNumber,
+        productionYear: e.productionYear,
         typeCode: e.type?.code ?? null,
         manufacturerName: manufacturerLabel(e.manufacturer),
         status: e.status,
         nextPeriodicDue: e.nextPeriodicDue,
+        lastPeriodicAt: e.lastPeriodicAt,
+        currentLabel: labelByExt.get(e.id) ?? null,
         servicerName: link.companyName,
         companyId: link.companyId,
         departmentName: deptByExt.get(e.id) ?? null,
@@ -114,8 +126,10 @@ export type OwnerWorkOrder = {
   servicerName: string;
   receivedAt: Date;
   finishedAt: Date | null;
+  locked: boolean;
   itemsTotal: number;
   itemsServiced: number;
+  deliveryNote: { id: string; number: string } | null;
 };
 
 export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Promise<OwnerWorkOrder[]> {
@@ -142,7 +156,14 @@ export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Pro
       orderNumber: true,
       receivedAt: true,
       finishedAt: true,
+      status: true,
       items: { select: { id: true, servicedAt: true } },
+      deliveryNotes: {
+        where: { supersededAt: null, pdfStoragePath: { not: null } },
+        select: { id: true, number: true },
+        orderBy: { issuedAt: "desc" },
+        take: 1,
+      },
     },
     take,
   });
@@ -154,8 +175,10 @@ export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Pro
     servicerName: nameByCompany.get(o.companyId) ?? "—",
     receivedAt: o.receivedAt,
     finishedAt: o.finishedAt,
+    locked: o.status === "LOCKED",
     itemsTotal: o.items.length,
     itemsServiced: o.items.filter((i) => i.servicedAt).length,
+    deliveryNote: o.deliveryNotes[0] ?? null,
   }));
 }
 
@@ -204,6 +227,20 @@ export async function getOwnerDeliveryNotes(links: OwnerLinkInfo[], take = 100):
     servicerName: nameByCompany.get(n.companyId) ?? "—",
     orderNumber: n.workOrder.orderNumber,
   }));
+}
+
+/** Provjeri da vlasnik ima ACTIVE vezu s kupcem ovog radnog naloga. */
+export async function ownerCanAccessWorkOrder(ownerId: string, workOrderId: string): Promise<boolean> {
+  const order = await prisma.workOrder.findUnique({
+    where: { id: workOrderId },
+    select: { companyId: true, customerId: true },
+  });
+  if (!order) return false;
+  const link = await prisma.ownerCustomerLink.findFirst({
+    where: { ownerId, status: "ACTIVE", companyId: order.companyId, customerId: order.customerId },
+    select: { id: true },
+  });
+  return !!link;
 }
 
 /** Provjeri da prijavljeni vlasnik ima ACTIVE vezu s kupcem ove otpremnice. */

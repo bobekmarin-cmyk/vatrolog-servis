@@ -120,19 +120,33 @@ export async function resolveOwnerExtinguishersByCode(
 
 export type InspectionState = {
   lastInspectedAt: Date | null;
+  /** Sidro rasporeda: zadnji redovni pregled ili (ako ga nema) periodični servis. */
+  anchor: Date | null;
+  anchorIsPeriodic: boolean;
   nextDue: Date | null;
   overdue: boolean;
   dueSoon: boolean;
+  /** Nema rasporeda jer aparat još nije periodično servisiran niti ima redovni pregled. */
+  noSchedule: boolean;
 };
 
-/** Zadnji pregled + izračunati rok za svaki aparat (za prikaz i brojanje). */
+export type InspectionStateInput = { id: string; lastPeriodicAt: Date | null };
+
+/**
+ * Zadnji pregled + izračunati rok za svaki aparat.
+ *
+ * Pravilo (po dogovoru): prvi redovni pregled je 3 mjeseca NAKON periodičnog
+ * servisa, a svaki sljedeći 3 mjeseca nakon zadnjeg redovnog pregleda. Stoga je
+ * sidro = zadnji redovni pregled, a ako ga nema = datum periodičnog servisa.
+ */
 export async function getOwnerInspectionStates(
   ownerId: string,
-  extinguisherIds: string[],
+  exts: InspectionStateInput[],
 ): Promise<Map<string, InspectionState>> {
   const map = new Map<string, InspectionState>();
-  if (extinguisherIds.length === 0) return map;
+  if (exts.length === 0) return map;
 
+  const extinguisherIds = exts.map((e) => e.id);
   const rows = await prisma.regularInspection.findMany({
     where: { ownerId, extinguisherId: { in: extinguisherIds } },
     select: { extinguisherId: true, inspectedAt: true },
@@ -147,18 +161,30 @@ export async function getOwnerInspectionStates(
   const now = new Date();
   const soonCutoff = new Date(now.getTime() + DUE_SOON_DAYS * 24 * 60 * 60 * 1000);
 
-  for (const extId of extinguisherIds) {
-    const last = lastByExt.get(extId) ?? null;
-    if (!last) {
-      map.set(extId, { lastInspectedAt: null, nextDue: null, overdue: true, dueSoon: false });
+  for (const ext of exts) {
+    const last = lastByExt.get(ext.id) ?? null;
+    const anchor = last ?? ext.lastPeriodicAt;
+    if (!anchor) {
+      map.set(ext.id, {
+        lastInspectedAt: last,
+        anchor: null,
+        anchorIsPeriodic: false,
+        nextDue: null,
+        overdue: false,
+        dueSoon: false,
+        noSchedule: true,
+      });
       continue;
     }
-    const nextDue = addMonths(last, REGULAR_INSPECTION_INTERVAL_MONTHS);
-    map.set(extId, {
+    const nextDue = addMonths(anchor, REGULAR_INSPECTION_INTERVAL_MONTHS);
+    map.set(ext.id, {
       lastInspectedAt: last,
+      anchor,
+      anchorIsPeriodic: !last,
       nextDue,
       overdue: nextDue < now,
       dueSoon: nextDue >= now && nextDue <= soonCutoff,
+      noSchedule: false,
     });
   }
 

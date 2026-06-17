@@ -50,7 +50,10 @@ export default async function OwnerDashboardPage() {
   const overdue = exts.filter((e) => e.nextPeriodicDue && e.nextPeriodicDue < now);
   const dueSoon = exts.filter((e) => e.nextPeriodicDue && e.nextPeriodicDue >= now && e.nextPeriodicDue <= inOneMonth);
 
-  const inspectionStates = await getOwnerInspectionStates(session.ownerId, exts.map((e) => e.id));
+  const inspectionStates = await getOwnerInspectionStates(
+    session.ownerId,
+    exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
+  );
   const inspectionDue = [...inspectionStates.values()].filter((s) => s.overdue).length;
 
   return (
