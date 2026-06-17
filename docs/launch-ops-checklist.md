@@ -81,7 +81,8 @@ Workflow: [.github/workflows/backup-db.yml](../.github/workflows/backup-db.yml) 
 ## 8. SEO i public flow
 
 - [ ] `/` prikazuje landing (s "Otvori aplikaciju" za prijavljene, "Prijava" za anonimne); stari `/landing` URL vraća 308 na `/`.
-- [ ] `/sitemap.xml` i `/robots.txt` vraćaju ispravan sadržaj.
+- [ ] `/sitemap.xml` i `/robots.txt` vraćaju ispravan sadržaj (ne HTML redirect na `/login`). Vidi `docs/post-deploy-verification.md` i `npm run smoke:prod`.
+- [ ] Google Search Console: sitemap submitan, status **Success** (7 javnih URL-ova).
 - [ ] Open Graph slika se generira na `/opengraph-image` (1200x630) i prikazuje u Slack/Twitter/LinkedIn unfurl-u.
 - [ ] Pravne stranice (`/legal/terms`, `/legal/privacy`, `/legal/dpa`, `/legal/impressum`) redovne i pristupačne s landing footera.
 - [ ] Cookie banner se pojavljuje, kategorije ne uvjetuju prikaz osnovnog sadržaja.
@@ -94,6 +95,7 @@ Kreiraj demo tenant kroz odobreni request i proveri:
 - [ ] Dovrši company settings → preusmjeren na `/dashboard`.
 - [ ] Dodaj prvog kupca preko UI-ja.
 - [ ] Otvori prvi radni nalog s 1 aparatom; servisiraj; lock-aj nalog.
+- [ ] **Izdaj otpremnicu** → provjeri broj (`XX-YY0001`), PDF arhiva i status **Otpremljeno**.
 - [ ] Provjeri PDF generaciju (delivery note) i da se nalazi u S3.
 - [ ] Pošalji mail s portala (test email log).
 
@@ -101,7 +103,7 @@ Kreiraj demo tenant kroz odobreni request i proveri:
 
 - [ ] Definiran SLA za odgovor na registracijske zahtjeve (npr. 1 radni dan).
 - [ ] Definiran on-call kontakt (telefon + e-mail) za hitne greške.
-- [ ] Postavljen status-page (BetterStack / Statuspage / vlastita stranica) s healthcheck-om `/api/health`.
+- [ ] Postavljen uptime monitor na **`/api/health`** (ne na `/` — landing može timeoutati). Detalji: `docs/post-deploy-verification.md` § Sentry.
 - [ ] Dokumentirana procedura: kako rotirati `AUTH_SECRET`, kako rotirati `ENCRYPTION_KEY` (re-enkripcija Gmail tokena), kako resetirati admin lozinku ručno.
 
 ## 11. Pravno i compliance

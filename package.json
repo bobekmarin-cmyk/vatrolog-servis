@@ -26,6 +26,8 @@
     "backup:db": "node scripts/backup-db.mjs",
     "restore:db": "node scripts/restore-db.mjs",
     "verify:prod-env": "ts-node -P tsconfig.seed.json scripts/verify-prod-env.ts",
+    "smoke:prod": "node scripts/smoke-prod-deploy.mjs",
+    "smoke:delivery-note": "ts-node -P tsconfig.seed.json scripts/smoke-delivery-note-number.ts",
     "version:bump": "node scripts/bump-app-version.mjs",
     "mockups:gen": "node scripts/generate-mockup-pngs.mjs",
     "icons:build": "node scripts/build-favicons.mjs"
