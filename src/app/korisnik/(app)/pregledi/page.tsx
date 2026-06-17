@@ -74,7 +74,7 @@ export default async function OwnerInspectionsPage({ searchParams }: PageProps) 
         </header>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left">
+            <thead className="bg-red-50/60 text-left">
               <tr>
                 <th className="px-3 py-2">Oznaka</th>
                 <th className="px-3 py-2">Tip</th>
@@ -127,7 +127,7 @@ export default async function OwnerInspectionsPage({ searchParams }: PageProps) 
         </header>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left">
+            <thead className="bg-red-50/60 text-left">
               <tr>
                 <th className="px-3 py-2">Datum</th>
                 <th className="px-3 py-2">Oznaka</th>

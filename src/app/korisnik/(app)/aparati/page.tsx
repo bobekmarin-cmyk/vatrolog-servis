@@ -68,7 +68,7 @@ export default async function OwnerAparatiPage({ searchParams }: PageProps) {
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left">
+            <thead className="bg-red-50/60 text-left">
               <tr>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Interni broj</th>

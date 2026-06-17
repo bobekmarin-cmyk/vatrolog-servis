@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import VatroLogLogo from "@/components/VatroLogLogo";
 import { getOwnerSession } from "@/lib/ownerAuth";
 import { getOwnerActiveLinks, getOwnerExtinguishers } from "@/lib/ownerPortalData";
 import { getOwnerInspectionStates } from "@/lib/ownerInspections";
@@ -40,17 +39,20 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
   const secondaryName = companyName && session.name ? session.name : null;
 
   return (
-    <div className="min-h-dvh bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-dvh bg-gradient-to-b from-red-50/60 via-slate-50 to-slate-50">
+      <header className="bg-gradient-to-br from-red-700 to-red-900 text-white shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
           <Link href="/korisnik" className="shrink-0 leading-tight">
-            <VatroLogLogo size="md" />
-            <div className="text-xs font-medium text-slate-500">Korisnički portal</div>
+            <span className="text-xl font-extrabold tracking-tight">
+              <span className="text-white">Vatro</span>
+              <span className="text-red-200">Log</span>
+            </span>
+            <div className="text-xs font-medium text-red-100">Korisnički portal</div>
           </Link>
           <div className="flex items-center gap-3">
             <div className="hidden text-right text-sm leading-tight sm:block">
-              <div className="font-semibold text-slate-900">{primaryName}</div>
-              {secondaryName ? <div className="text-xs text-slate-500">{secondaryName}</div> : null}
+              <div className="font-semibold text-white">{primaryName}</div>
+              {secondaryName ? <div className="text-xs text-red-100/90">{secondaryName}</div> : null}
             </div>
             <OwnerLogoutButton />
           </div>

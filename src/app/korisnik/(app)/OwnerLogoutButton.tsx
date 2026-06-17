@@ -7,7 +7,7 @@ export default function OwnerLogoutButton() {
   return (
     <button
       type="button"
-      className="btn btn-outline h-9 text-sm"
+      className="inline-flex h-9 items-center rounded-md border border-white/30 bg-white/10 px-3 text-sm font-medium text-white transition hover:bg-white/20 disabled:opacity-60"
       disabled={busy}
       onClick={async () => {
         setBusy(true);
