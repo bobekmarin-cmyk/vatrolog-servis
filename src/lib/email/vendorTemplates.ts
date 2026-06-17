@@ -32,6 +32,9 @@ export const VENDOR_TEMPLATE_TYPES = [
   "REGISTRATION_REQUEST_REJECTED",
   "REGISTRATION_REQUEST_VENDOR_ALERT",
   "SUBSCRIPTION_EXPIRING",
+  "OWNER_PORTAL_INVITE",
+  "OWNER_PORTAL_NEW_SERVICER",
+  "OWNER_INSPECTION_REMINDER",
 ] as const;
 
 export type VendorTemplateType = (typeof VENDOR_TEMPLATE_TYPES)[number];
@@ -252,6 +255,75 @@ export const VENDOR_TEMPLATE_DEFAULTS: Record<VendorTemplateType, VendorTemplate
       { name: "billingUrl", description: "Link na billing/obnovu pretplate.", example: "https://vatrolog.com/billing" },
     ],
   },
+
+  OWNER_PORTAL_INVITE: {
+    type: "OWNER_PORTAL_INVITE",
+    label: "Pozivnica vlasniku (Korisnički portal)",
+    description:
+      "Šalje se vlasniku vatrogasnih aparata kad ga serviser pozove na Korisnički portal. Sadrži ime servisera koji poziva i CTA za postavljanje lozinke (link vrijedi 14 dana).",
+    fields: {
+      subject: "{{appName}} — pozivnica na Korisnički portal",
+      greeting: "Pozdrav,",
+      bodyText:
+        "Servis <strong>{{servicerName}}</strong> poziva Vas (<strong>{{customerName}}</strong>) na <strong>{{appName}}</strong> Korisnički portal. U portalu na jednom mjestu vidite svoje vatrogasne aparate, servisne naloge i dokumente te vodite evidenciju redovnih pregleda.",
+      calloutText:
+        "Klikom na gumb ispod postavljate lozinku i aktivirate svoj pristup. Link vrijedi 14 dana.",
+      closingText:
+        "Ako niste očekivali ovu pozivnicu, slobodno ignorirajte ovu poruku.",
+      footerNote: null,
+    },
+    variables: [
+      { name: "appName", description: "Naziv platforme.", example: "VatroLog" },
+      { name: "servicerName", description: "Naziv servisa koji šalje pozivnicu.", example: "Vatrospas d.o.o." },
+      { name: "customerName", description: "Naziv kupca/vlasnika kojem se šalje.", example: "Konzum d.d." },
+      { name: "acceptUrl", description: "Link za postavljanje lozinke i aktivaciju portala.", example: "https://vatrolog.com/korisnik/invite/abc123" },
+    ],
+  },
+
+  OWNER_PORTAL_NEW_SERVICER: {
+    type: "OWNER_PORTAL_NEW_SERVICER",
+    label: "Novi servis dodan u portal (vlasnik)",
+    description:
+      "Obavještava vlasnika da je novi servis podijelio svoje aparate pa se sada vide u Korisničkom portalu.",
+    fields: {
+      subject: "{{appName}} — novi servis u vašem portalu",
+      greeting: "Pozdrav,",
+      bodyText:
+        "Servis <strong>{{servicerName}}</strong> dodao je svoje aparate u vaš <strong>{{appName}}</strong> Korisnički portal. Sada na jednom mjestu vidite i aparate koje servisira ovaj servis.",
+      calloutText: "Otvorite portal da pregledate sve svoje aparate i naloge.",
+      closingText: "Ako mislite da je ovo pogreška, obratite se servisu koji vas je dodao.",
+      footerNote: null,
+    },
+    variables: [
+      { name: "appName", description: "Naziv platforme.", example: "VatroLog" },
+      { name: "servicerName", description: "Naziv servisa koji je podijelio aparate.", example: "Vatrospas Split d.o.o." },
+      { name: "portalUrl", description: "Link na Korisnički portal.", example: "https://vatrolog.com/korisnik" },
+    ],
+  },
+
+  OWNER_INSPECTION_REMINDER: {
+    type: "OWNER_INSPECTION_REMINDER",
+    label: "Podsjetnik na redovni pregled (vlasnik)",
+    description:
+      "Mjesečni podsjetnik vlasniku da određen broj aparata treba redovni (tromjesečni) pregled. Sadrži CTA na portal.",
+    fields: {
+      subject: "{{appName}} — vrijeme je za redovni pregled aparata",
+      greeting: "Pozdrav,",
+      bodyText:
+        "U vašem <strong>{{appName}}</strong> Korisničkom portalu <strong>{{dueCount}}</strong> {{dueLabel}} redovni (tromjesečni) pregled koji obavlja vlasnik aparata.",
+      calloutText:
+        "Redovni pregled možete unijeti izravno u portalu — ručno ili skeniranjem QR koda na aparatu.",
+      closingText:
+        "Uočene nedostatke potrebno je odmah otkloniti, samostalno ili uz pomoć ovlaštenog servisa.",
+      footerNote: null,
+    },
+    variables: [
+      { name: "appName", description: "Naziv platforme.", example: "VatroLog" },
+      { name: "dueCount", description: "Broj aparata koji trebaju redovni pregled.", example: "5" },
+      { name: "dueLabel", description: "Sklonidba uz broj (aparat treba / aparata treba).", example: "aparata treba" },
+      { name: "portalUrl", description: "Link na redovne preglede u portalu.", example: "https://vatrolog.com/korisnik/pregledi" },
+    ],
+  },
 };
 
 export function isVendorTemplateType(value: string): value is VendorTemplateType {
@@ -438,6 +510,24 @@ function buildExtraHtml(
       return (
         emailButton({ href: vars.billingUrl ?? "#", label: "Obnovi pretplatu", brandColor: branding.brandColor }) +
         urlFallback(vars.billingUrl ?? "")
+      );
+
+    case "OWNER_PORTAL_INVITE":
+      return (
+        emailButton({ href: vars.acceptUrl ?? "#", label: "Aktiviraj pristup", brandColor: branding.brandColor }) +
+        urlFallback(vars.acceptUrl ?? "")
+      );
+
+    case "OWNER_PORTAL_NEW_SERVICER":
+      return (
+        emailButton({ href: vars.portalUrl ?? "#", label: "Otvori portal", brandColor: branding.brandColor }) +
+        urlFallback(vars.portalUrl ?? "")
+      );
+
+    case "OWNER_INSPECTION_REMINDER":
+      return (
+        emailButton({ href: vars.portalUrl ?? "#", label: "Unesi redovni pregled", brandColor: branding.brandColor }) +
+        urlFallback(vars.portalUrl ?? "")
       );
 
     case "REGISTRATION_REQUEST_RECEIVED":

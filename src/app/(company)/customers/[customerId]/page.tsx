@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import EditCustomerFormWithLookup from "@/components/EditCustomerFormWithLookup";
 import CustomerPortalLinkCard from "./CustomerPortalLinkCard";
+import CustomerPortalInviteCard from "./CustomerPortalInviteCard";
+import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
 
 export default async function CustomerEditPage({
   params,
@@ -23,10 +25,18 @@ export default async function CustomerEditPage({
     where: { id: customerId, companyId: session.companyId },
     include: {
       departments: { orderBy: { name: "asc" } },
+      ownerLink: { select: { status: true, invitedEmail: true, acceptedAt: true, invitedAt: true } },
     },
   });
 
   if (!customer) notFound();
+
+  // Cross-serviser: ako ovaj kupac (po OIB-u) već ima aktivan portal kod drugog
+  // servisera, a kod nas još nije aktivan, ponudi dijeljenje umjesto pozivnice.
+  const existingPortalForOib =
+    customer.ownerLink?.status === "ACTIVE"
+      ? false
+      : !!(await findExistingPortalOwnerByOib(customer.oib, session.companyId));
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -192,6 +202,14 @@ export default async function CustomerEditPage({
           </div>
         </details>
       </section>
+
+      <CustomerPortalInviteCard
+        customerId={customer.id}
+        customerEmail={customer.email}
+        initialStatus={customer.ownerLink?.status ?? null}
+        initialInvitedEmail={customer.ownerLink?.invitedEmail ?? null}
+        existingPortalForOib={existingPortalForOib}
+      />
 
       <CustomerPortalLinkCard customerId={customer.id} initialSecret={customer.portalSecret} />
     </main>

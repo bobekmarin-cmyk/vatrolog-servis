@@ -63,6 +63,8 @@ export type SystemMailKind =
   | "EMAIL_VERIFY"
   | "SUBSCRIPTION_EXPIRY"
   | "MONTHLY_REMINDER"
+  | "OWNER_PORTAL_INVITE"
+  | "OWNER_INSPECTION_REMINDER"
   | "OTHER";
 
 export type SendMailInput = {
@@ -332,6 +334,68 @@ export async function registrationRequestRejectedEmail(input: {
       companyName: input.companyName,
       greetingLine: greetingLineFor(input.contactName),
       reasonLine,
+    },
+  });
+}
+
+/**
+ * Pozivnica vlasniku aparata na Korisnički portal. Vendor-branded mail koji
+ * jasno navodi servisera koji poziva.
+ */
+export async function ownerPortalInviteEmail(input: {
+  servicerName: string;
+  customerName: string;
+  acceptUrl: string;
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "OWNER_PORTAL_INVITE",
+    branding,
+    vars: {
+      appName: branding.fromName,
+      servicerName: input.servicerName,
+      customerName: input.customerName,
+      acceptUrl: input.acceptUrl,
+    },
+  });
+}
+
+/**
+ * Obavijest vlasniku da je novi servis podijelio svoje aparate u portal.
+ */
+export async function ownerNewServicerEmail(input: {
+  servicerName: string;
+  portalUrl: string;
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "OWNER_PORTAL_NEW_SERVICER",
+    branding,
+    vars: {
+      appName: branding.fromName,
+      servicerName: input.servicerName,
+      portalUrl: input.portalUrl,
+    },
+  });
+}
+
+/**
+ * Mjesečni podsjetnik vlasniku da određeni broj aparata treba redovni pregled.
+ */
+export async function ownerInspectionReminderEmail(input: {
+  dueCount: number;
+  portalUrl: string;
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  const dueLabel = input.dueCount === 1 ? "aparat treba" : "aparata treba";
+  return renderVendorTemplate({
+    type: "OWNER_INSPECTION_REMINDER",
+    branding,
+    vars: {
+      appName: branding.fromName,
+      dueCount: String(input.dueCount),
+      dueLabel,
+      portalUrl: input.portalUrl,
     },
   });
 }

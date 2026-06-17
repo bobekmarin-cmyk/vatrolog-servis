@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-import { resolveAuthJwtSecret, resolvePlatformJwtSecret } from "@/lib/authEnv";
+import { resolveAuthJwtSecret, resolveOwnerJwtSecret, resolvePlatformJwtSecret } from "@/lib/authEnv";
 import { getAppBaseUrl, getPublicAppUrl } from "@/lib/appVersion";
 
 type AccountRole = "ADMIN" | "WORKSHOP";
@@ -75,6 +75,35 @@ async function readPlatformSession(req: NextRequest): Promise<null | { role: Pla
   } catch {
     return null;
   }
+}
+
+async function readOwnerSession(req: NextRequest): Promise<null | { ownerId: string }> {
+  const token = req.cookies.get("vb_owner_session")?.value;
+  if (!token) return null;
+
+  const secret = resolveOwnerJwtSecret();
+  if (!secret) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    if (payload.kind !== "owner" || typeof payload.ownerId !== "string") return null;
+    return { ownerId: payload.ownerId };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Javne (bez Owner sesije) stranice korisničkog portala: prijava, registracija,
+ * pozivnica, reset/verify. Sve ostalo pod /korisnik traži Owner sesiju.
+ */
+function isPublicOwnerPath(pathname: string): boolean {
+  if (pathname === "/korisnik/login") return true;
+  if (pathname === "/korisnik/forgot-password") return true;
+  if (pathname === "/korisnik/reset-password") return true;
+  if (pathname.startsWith("/korisnik/invite/")) return true;
+  if (pathname.startsWith("/api/portal/auth/")) return true;
+  return false;
 }
 
 function isPublicPath(pathname: string): boolean {
@@ -247,6 +276,30 @@ export async function middleware(req: NextRequest) {
       }
       const url = req.nextUrl.clone();
       url.pathname = "/platform/login";
+      return NextResponse.redirect(url);
+    }
+
+    return NextResponse.next();
+  }
+
+  // Korisnički portal (vlasnici aparata) — zasebna Owner sesija.
+  const isOwnerPath =
+    pathname === "/korisnik" ||
+    pathname.startsWith("/korisnik/") ||
+    pathname.startsWith("/api/portal/");
+
+  if (isOwnerPath) {
+    if (isPublicOwnerPath(pathname)) {
+      return NextResponse.next();
+    }
+
+    const os = await readOwnerSession(req);
+    if (!os) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Niste prijavljeni." }, { status: 401 });
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = "/korisnik/login";
       return NextResponse.redirect(url);
     }
 

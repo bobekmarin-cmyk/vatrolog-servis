@@ -42,11 +42,22 @@ export default async function CustomersPage({
     prisma.customer.findMany({
       where,
       orderBy: { name: "asc" },
-      include: { _count: { select: { departments: true } } },
+      include: { _count: { select: { departments: true } }, ownerLink: { select: { status: true } } },
       skip: (pageNum - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
   ]);
+
+  // Cross-serviser: koji od OIB-a na ovoj stranici već imaju aktivan portal kod
+  // DRUGOG servisera (pa se mogu podijeliti).
+  const pageOibs = customers.map((c) => c.oib);
+  const externalActive = pageOibs.length
+    ? await prisma.ownerCustomerLink.findMany({
+        where: { status: "ACTIVE", companyId: { not: session.companyId }, customer: { oib: { in: pageOibs } } },
+        select: { customer: { select: { oib: true } } },
+      })
+    : [];
+  const externalPortalOibs = new Set(externalActive.map((l) => l.customer.oib));
 
   return (
     <main className="space-y-6">
@@ -101,6 +112,7 @@ export default async function CustomersPage({
               <th className="px-2 py-2">Adresa</th>
               <th className="px-2 py-2">Kontakt</th>
               <th className="px-2 py-2">Odj.</th>
+              <th className="px-2 py-2">Portal</th>
               <th className="px-2 py-2 text-right">Akcija</th>
             </tr>
           </thead>
@@ -118,6 +130,23 @@ export default async function CustomersPage({
                   {[c.contactPerson, c.phone, c.email].filter(Boolean).join(" · ") || "-"}
                 </td>
                 <td className="px-2 py-2">{c._count.departments}</td>
+                <td className="px-2 py-2">
+                  {c.ownerLink?.status === "ACTIVE" ? (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Aktivan</span>
+                  ) : c.ownerLink?.status === "PENDING_INVITE" ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">Pozvan</span>
+                  ) : externalPortalOibs.has(c.oib) ? (
+                    <Link
+                      href={`/customers/${c.id}`}
+                      className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800 hover:bg-blue-200"
+                      title="Ovaj kupac već koristi portal kod drugog servisa — možete podijeliti svoje aparate."
+                    >
+                      Dostupno
+                    </Link>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
                 <td className="px-2 py-2 text-right">
                   <div className="flex items-center justify-end gap-1">
                     <Link
@@ -154,7 +183,7 @@ export default async function CustomersPage({
 
             {customers.length === 0 && (
               <tr>
-                <td className="p-0" colSpan={6}>
+                <td className="p-0" colSpan={7}>
                   {query ? (
                     <div className="px-4 py-6 text-center text-sm text-slate-500">
                       Nema kupaca koji odgovaraju pretrazi <b>{query}</b>.{" "}

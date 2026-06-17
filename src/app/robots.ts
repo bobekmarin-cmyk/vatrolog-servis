@@ -33,6 +33,7 @@ export default function robots(): MetadataRoute.Robots {
           "/notifications",
           "/auth/",
           "/portal/",
+          "/korisnik",
           "/capture/",
           "/setup-required",
           "/subscription-expired",

@@ -331,6 +331,9 @@ model Company {
   deliveryNotes            DeliveryNote[]
   deliveryNoteYearCounters DeliveryNoteYearCounter[]
 
+  ownerLinks         OwnerCustomerLink[]
+  regularInspections RegularInspection[]
+
   @@index([deletedAt])
 }
 
@@ -380,6 +383,8 @@ model AccountUser {
   workOrdersCreated WorkOrder[] @relation("WorkOrderCreatedByAccountUser")
 
   deliveryNotesIssued DeliveryNote[] @relation("DeliveryNoteIssuedBy")
+
+  ownerLinksInvited OwnerCustomerLink[] @relation("OwnerLinkInvitedBy")
 
   notificationReads NotificationRead[]
 
@@ -455,6 +460,9 @@ model Customer {
 
   backlogSnoozes CustomerBacklogSnooze[]
   emailLogs      EmailLog[]
+
+  /// Veza na korisnički portal (jedan kupac = najviše jedna veza s vlasnikom).
+  ownerLink OwnerCustomerLink?
 
   @@unique([companyId, oib])
   @@index([companyId])
@@ -878,6 +886,8 @@ model Extinguisher {
   updatedAt DateTime @updatedAt
 
   workItems WorkOrderItem[]
+
+  regularInspections RegularInspection[]
 
   extinguisherTypeId String
   type               ExtinguisherType @relation(fields: [extinguisherTypeId], references: [id])
@@ -1341,6 +1351,9 @@ enum AuthTokenType {
   EMAIL_VERIFY
   ACCOUNT_INVITE
   SUBACCOUNT_PASSWORD_SETUP
+  OWNER_INVITE
+  OWNER_PASSWORD_RESET
+  OWNER_EMAIL_VERIFY
 }
 
 model AuthToken {
@@ -1351,6 +1364,10 @@ model AuthToken {
 
   accountUserId String?
   accountUser   AccountUser? @relation(fields: [accountUserId], references: [id], onDelete: Cascade)
+
+  /// Vlasnik aparata (korisnički portal) — za OWNER_* tipove tokena.
+  ownerId String?
+  owner   Owner?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   /// SHA-256 tokena; nikad ne spremamo plaintext.
   tokenHash String @unique
@@ -1370,7 +1387,132 @@ model AuthToken {
 
   @@index([companyId])
   @@index([accountUserId])
+  @@index([ownerId])
   @@index([type, expiresAt])
+}
+
+/**
+ * =======================
+ * KORISNIČKI PORTAL (vlasnici aparata)
+ * =======================
+ * Owner je nadtenantski identitet (jedan login po e-mailu), neovisan o tvrtki.
+ * Pristup pojedinom kupcu (po tvrtki) ide kroz OwnerCustomerLink uz privolu servisera.
+ */
+
+model Owner {
+  id           String  @id @default(cuid())
+  /// Jedinstveni e-mail vlasnika (lowercase). Identitet za agregaciju kroz servisere.
+  email        String  @unique
+  /// Null dok vlasnik ne postavi lozinku preko pozivnice.
+  passwordHash String?
+  name         String?
+  phone        String?
+
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  /// Force-logout marker (sve sesije izdane prije ovog vremena su nevažeće).
+  sessionsValidAfter DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  links              OwnerCustomerLink[]
+  authTokens         AuthToken[]
+  regularInspections RegularInspection[]
+
+  @@index([email])
+}
+
+enum OwnerLinkStatus {
+  /// Pozivnica poslana, vlasnik još nije aktivirao.
+  PENDING_INVITE
+  /// Aktivna veza — vlasnik vidi ovog kupca u portalu.
+  ACTIVE
+  /// Vlasnik/serviser odbio.
+  DECLINED
+  /// Serviser povukao pristup.
+  REVOKED
+}
+
+/// Veza vlasnik ↔ kupac (po tvrtki). Jedan kupac ima najviše jednu vezu.
+model OwnerCustomerLink {
+  id String @id @default(cuid())
+
+  /// Null dok vlasnik ne registrira račun (pozivnica zna samo invitedEmail).
+  ownerId String?
+  owner   Owner?  @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  status OwnerLinkStatus @default(PENDING_INVITE)
+
+  /// E-mail na koji je pozivnica poslana (prije nego Owner postoji).
+  invitedEmail String
+
+  invitedByAccountUserId String?
+  invitedByAccountUser   AccountUser? @relation("OwnerLinkInvitedBy", fields: [invitedByAccountUserId], references: [id], onDelete: SetNull)
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId])
+  @@index([ownerId])
+  @@index([companyId, status])
+  @@index([invitedEmail])
+}
+
+enum RegularInspectionResult {
+  OK
+  ISSUES
+}
+
+/**
+ * Redovni (tromjesečni) pregled aparata koji obavlja vlasnik. PRIVATNO za vlasnika
+ * — serviser ne vidi ove zapise. Rok idućeg pregleda se računa iz zadnjeg
+ * pregleda (3 mjeseca), ne dira servisne rokove na Extinguisheru.
+ */
+model RegularInspection {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// Tvrtka (tenant) kojoj aparat pripada — za scoping i brisanje.
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  extinguisherId String
+  extinguisher   Extinguisher @relation(fields: [extinguisherId], references: [id], onDelete: Cascade)
+
+  inspectedAt DateTime @default(now())
+
+  /// Checklist (zakonski tekst): dostupnost/položaj, oznake, kompletnost, oštećenja, plomba.
+  accessibilityOk Boolean
+  markingsOk      Boolean
+  complete        Boolean
+  noDamage        Boolean
+  sealOk          Boolean
+  /// Manometar u zelenom polju — relevantno samo za "P" aparate sa stalnim tlakom. Null = nije primjenjivo.
+  pressureGaugeOk Boolean?
+
+  result RegularInspectionResult @default(OK)
+
+  note            String?
+  performedByName String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ownerId, extinguisherId, inspectedAt])
+  @@index([companyId])
+  @@index([extinguisherId])
 }
 
 /**
