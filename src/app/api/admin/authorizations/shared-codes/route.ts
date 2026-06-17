@@ -80,8 +80,6 @@ export const POST = apiHandler(async (req: Request) => {
     cylinderMassLabelCode: codes.cylinderMassLabelCode,
   };
 
-  let result: { upsertedCount: number; updated: number; created: number };
-
   const txResult = await prisma.$transaction(
     async (tx) => {
       await tx.company.update({
@@ -110,7 +108,7 @@ export const POST = apiHandler(async (req: Request) => {
     { timeout: 60_000, maxWait: 15_000 },
   );
 
-  result = {
+  const result = {
     upsertedCount: txResult.updated + txResult.created,
     updated: txResult.updated,
     created: txResult.created,

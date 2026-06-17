@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import LogoutButton from "@/components/LogoutButton";
 import NowDateTime from "@/components/NowDateTime";
 import ServicerActivationDropdown from "@/components/ServicerActivationDropdown";
@@ -135,18 +135,6 @@ export default function CompanyShell(props: {
   const pathname = usePathname();
   const [manualSectionOpen, setManualSectionOpen] = useState<Record<string, boolean | undefined>>({});
 
-  useEffect(() => {
-    setManualSectionOpen((prev) => {
-      const next = { ...prev };
-      sections.forEach((sec, idx) => {
-        if (!sec.collapsible) return;
-        const k = sec.title ?? `nav-${idx}`;
-        if (sec.items.some((i) => isItemActive(pathname, i))) delete next[k];
-      });
-      return next;
-    });
-  }, [pathname, sections]);
-
   return (
     <div className="min-h-dvh bg-transparent">
       {/* TOP BAR */}
@@ -231,12 +219,12 @@ export default function CompanyShell(props: {
                 const sectionActive =
                   !section.inactiveSection && section.items.some((i) => isItemActive(pathname, i));
                 const sectionKey = section.title ?? `nav-${idx}`;
-                const defaultExpanded =
-                  !section.collapsible || section.items.some((i) => isItemActive(pathname, i));
-                const expanded =
-                  manualSectionOpen[sectionKey] !== undefined
+                const hasActiveInSection = section.items.some((i) => isItemActive(pathname, i));
+                const expanded = hasActiveInSection
+                  ? true
+                  : manualSectionOpen[sectionKey] !== undefined
                     ? (manualSectionOpen[sectionKey] as boolean)
-                    : defaultExpanded;
+                    : !section.collapsible;
                 return (
                   <div
                     key={idx}
