@@ -106,6 +106,26 @@ npx prisma migrate deploy
 
 Tablice: `DeliveryNote`, `DeliveryNoteYearCounter`, stupac `Company.deliveryNoteNumberPrefix`.
 
+### Migracija `20260518120000_owner_membership_role`
+
+Dodaje `OwnerMembershipRole` (ADMIN/MEMBER), stupce `OwnerOrgMembership.role` i
+`OwnerOrgMembership.invitedByOwnerId`. Backfill: svi postojeći aktivni računi → `ADMIN`.
+Pokreće se automatski (`prisma migrate deploy` na startu).
+
+---
+
+## 6. Smoke test — delegirana administracija računa (ručno)
+
+Nakon deploya s migracijom `20260518120000_owner_membership_role`:
+
+1. **Serviser → kupac → kartica „Korisnički portal“**: ako portal nije aktivan, vidi se forma
+   „Pošalji pozivnicu administratoru“ (jedan e-mail). Nakon što admin postoji, serviser vidi samo
+   status „Portal aktivan“ + povlačenje/dijeljenje **svojih** aparata (nema popisa računa).
+2. **Vlasnik-admin → portal → tab „Korisnici“**: pozovi kolegu (Član/Administrator), promijeni ulogu,
+   reset lozinke, povuci pristup. Provjeri da se ne može povući vlastiti račun ni ostaviti tvrtku bez admina.
+3. **Pozvani kolega**: prima mail (`OWNER_MEMBER_INVITE`), postavlja lozinku, ulazi u istu tvrtku.
+4. **Vendor → `/platform/owners/[orgId]`**: tablica računa prikazuje ulogu; „Povuci“ i promjena uloge rade.
+
 ---
 
 ## Povijest provjera
@@ -113,3 +133,4 @@ Tablice: `DeliveryNote`, `DeliveryNoteYearCounter`, stupac `Company.deliveryNote
 | Datum | Deploy / commit | smoke:prod | Napomena |
 |-------|-----------------|------------|----------|
 | 2026-05-21 | `848d9ed` (sitemap middleware) | OK | health 1.1.0, sitemap XML 7 URL-ova, robots OK |
+| 2026-06-18 | `90a2f42` (delegirana administracija računa) | — | migracija `owner_membership_role`; smoke 6 ručno |
