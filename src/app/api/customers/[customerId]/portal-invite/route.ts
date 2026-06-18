@@ -41,46 +41,11 @@ export const POST = apiHandler(
     if (!customer) throw new AppValidationError("Kupac ne postoji.");
 
     const body = (await req.json().catch(() => ({}))) as { action?: string; email?: string; ownerId?: string };
-    const KNOWN_ACTIONS = [
-      "revoke",
-      "share",
-      "approve",
-      "decline",
-      "cancelInvite",
-      "revokeAccount",
-      "resetPassword",
-    ] as const;
+    const KNOWN_ACTIONS = ["revoke", "share", "approve", "decline", "cancelInvite", "resetPassword"] as const;
     const action = (KNOWN_ACTIONS as readonly string[]).includes(body.action ?? "")
       ? (body.action as (typeof KNOWN_ACTIONS)[number])
       : "invite";
     const audit = extractAuditMeta(req);
-
-    // Povuci pristup pojedinom računu (membership je na razini vlasnika/OIB-a —
-    // račun gubi pristup cijelom portalu vlasnika kod svih povezanih servisa).
-    if (action === "revokeAccount") {
-      const targetOwnerId = String(body.ownerId ?? "");
-      if (!targetOwnerId) throw new AppValidationError("Nedostaje račun.");
-      if (!customer.oib) throw new AppValidationError("Kupac nema OIB.");
-      const org = await prisma.ownerOrg.findUnique({ where: { oib: customer.oib }, select: { id: true } });
-      if (org) {
-        await prisma.ownerOrgMembership.updateMany({
-          where: { ownerId: targetOwnerId, ownerOrgId: org.id },
-          data: { status: "REVOKED", revokedAt: new Date() },
-        });
-      }
-      await logAudit({
-        companyId: session.companyId,
-        actorId: session.accountUserId,
-        actorType: "ACCOUNT_USER",
-        action: "customer.portal.account.revoke",
-        entity: "Owner",
-        entityId: targetOwnerId,
-        meta: { customerId },
-        ip: audit.ip,
-        userAgent: audit.userAgent,
-      });
-      return NextResponse.json({ ok: true });
-    }
 
     // Pošalji vlasniku mail za reset lozinke (serviser ne vidi ni ne postavlja lozinku).
     if (action === "resetPassword") {

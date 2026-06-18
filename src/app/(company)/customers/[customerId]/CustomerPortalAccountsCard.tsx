@@ -57,7 +57,7 @@ export default function CustomerPortalAccountsCard({
   const [error, setError] = useState<string | null>(null);
 
   async function call(
-    action: "invite" | "revoke" | "share" | "approve" | "decline" | "cancelInvite" | "revokeAccount" | "resetPassword",
+    action: "invite" | "revoke" | "share" | "approve" | "decline" | "cancelInvite" | "resetPassword",
     payload: { email?: string; ownerId?: string } = {},
     busyKey: string = action,
   ): Promise<boolean> {
@@ -176,18 +176,6 @@ export default function CustomerPortalAccountsCard({
                         >
                           {busy === `reset-${a.ownerId}` ? "…" : "Reset lozinke"}
                         </button>
-                        <button
-                          type="button"
-                          className="btn h-8 border border-red-300 bg-white px-2 text-xs text-red-700 hover:bg-red-50"
-                          disabled={busy !== null}
-                          onClick={() => {
-                            if (confirm(`Povući ovlaštenje za ${a.email}? Račun gubi pristup portalu ovog vlasnika.`)) {
-                              void call("revokeAccount", { ownerId: a.ownerId }, `revoke-${a.ownerId}`);
-                            }
-                          }}
-                        >
-                          {busy === `revoke-${a.ownerId}` ? "…" : "Povuci"}
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -264,18 +252,25 @@ export default function CustomerPortalAccountsCard({
         </div>
 
         {linkStatus === "ACTIVE" || linkStatus === "PENDING_INVITE" ? (
-          <button
-            type="button"
-            className="text-xs font-medium text-red-700 hover:underline"
-            disabled={busy !== null}
-            onClick={() => {
-              if (confirm("Povući pristup vašim aparatima iz portala ovog vlasnika?")) {
-                void call("revoke");
-              }
-            }}
-          >
-            Povuci pristup mojim aparatima
-          </button>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="text-sm font-semibold text-slate-800">Povuci pristup mojim aparatima</div>
+            <p className="mt-1 text-xs text-slate-600">
+              Vlasnik više neće vidjeti aparate, naloge i dokumente koje servisira <strong>vaš</strong> servis. Aparati
+              drugih servisa i korisnički računi ostaju aktivni — ovo utječe samo na vaše podatke.
+            </p>
+            <button
+              type="button"
+              className="btn mt-2 h-9 border border-red-300 bg-white text-red-700 hover:bg-red-50"
+              disabled={busy !== null}
+              onClick={() => {
+                if (confirm("Povući pristup vašim aparatima iz portala ovog vlasnika? Aparati drugih servisa ostaju vidljivi.")) {
+                  void call("revoke");
+                }
+              }}
+            >
+              {busy === "revoke" ? "Povlačenje…" : "Povuci pristup mojim aparatima"}
+            </button>
+          </div>
         ) : null}
 
         {msg ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{msg}</div> : null}
