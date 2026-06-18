@@ -19,6 +19,7 @@ export const FEATURE_KEYS = {
   SALES_WAREHOUSE: "SALES_WAREHOUSE",
   SCHEDULING: "SCHEDULING",
   CUSTOMER_PORTAL: "CUSTOMER_PORTAL",
+  QR_LABELS: "QR_LABELS",
   API_KEYS: "API_KEYS",
 } as const;
 
@@ -48,6 +49,7 @@ export const DEFAULT_FEATURES: Record<FeatureKey, FeatureAccess> = {
   SALES_WAREHOUSE: { enabledForAdmin: true, enabledForWorkshop: false },
   SCHEDULING: { enabledForAdmin: true, enabledForWorkshop: true },
   CUSTOMER_PORTAL: { enabledForAdmin: true, enabledForWorkshop: false },
+  QR_LABELS: { enabledForAdmin: true, enabledForWorkshop: true },
   API_KEYS: { enabledForAdmin: true, enabledForWorkshop: false },
 };
 

@@ -76,6 +76,13 @@ export default async function CompanyLayout({ children }: { children: React.Reac
           featureKey: "WAREHOUSE",
           activePathPrefixes: ["/warehouse/labels"],
         },
+        {
+          href: "/qr-naljepnice",
+          label: "QR naljepnice",
+          icon: "🔳",
+          featureKey: "QR_LABELS",
+          activePathPrefixes: ["/qr-naljepnice"],
+        },
       ],
     },
     {
