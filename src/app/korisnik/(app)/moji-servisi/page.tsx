@@ -75,7 +75,7 @@ export default async function OwnerServisiPage() {
 
       {activeCount > 0 && servicers.some((s) => s.status === "NONE") && (
         <p className="text-xs text-slate-500">
-          Vidite servis koji vam servisira aparate, a nije povezan? Kliknite „Zatraži pristup" — kad
+          Vidite servis koji vam servisira aparate, a nije povezan? Kliknite „Zatraži pristup” — kad
           ga serviser odobri, njegovi aparati i dokumenti pojavit će se u vašem portalu.
         </p>
       )}

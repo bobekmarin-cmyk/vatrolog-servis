@@ -1,0 +1,16 @@
+#!/bin/sh
+# Pokreće iste provjere kao CI (.github/workflows/ci.yml) prije pusha.
+# Zaobići u iznimnom slučaju: `git push --no-verify`.
+echo "[pre-push] ESLint + TypeScript (kao CI)…"
+
+npm run lint || {
+  echo "\n[pre-push] ESLint greške — push zaustavljen. Popravi pa ponovi (ili --no-verify za preskok)." >&2
+  exit 1
+}
+
+npm run typecheck || {
+  echo "\n[pre-push] TypeScript greške — push zaustavljen. Popravi pa ponovi (ili --no-verify za preskok)." >&2
+  exit 1
+}
+
+echo "[pre-push] OK"

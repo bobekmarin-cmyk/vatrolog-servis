@@ -96,7 +96,7 @@ export default async function PlatformOwnerDetailPage({
         <div className="surface-body">
           <ServicerTable orgId={detail.id} servicers={detail.servicers} />
           <p className="mt-3 text-xs text-slate-500">
-            „Prisilno uključi" aktivira servis bez odobrenja servisera (override). „Sakrij" uklanja
+            „Prisilno uključi” aktivira servis bez odobrenja servisera (override). „Sakrij” uklanja
             servis iz vlasnikovog portala bez brisanja veze.
           </p>
         </div>

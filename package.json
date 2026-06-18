@@ -8,6 +8,8 @@
     "start": "prisma migrate deploy && next start",
     "postinstall": "prisma generate",
     "lint": "eslint",
+    "verify": "npm run lint && npm run typecheck",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "seed": "prisma db seed",
     "seed:platform-user": "node scripts/seed-platform-user.js",
     "seed:mfr": "node scripts/seed-manufacturers.js",
