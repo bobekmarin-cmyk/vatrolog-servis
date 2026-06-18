@@ -64,6 +64,7 @@ export type SystemMailKind =
   | "SUBSCRIPTION_EXPIRY"
   | "MONTHLY_REMINDER"
   | "OWNER_PORTAL_INVITE"
+  | "OWNER_PORTAL_ACCESS_REQUEST"
   | "OWNER_INSPECTION_REMINDER"
   | "OTHER";
 
@@ -375,6 +376,29 @@ export async function ownerNewServicerEmail(input: {
       appName: branding.fromName,
       servicerName: input.servicerName,
       portalUrl: input.portalUrl,
+    },
+  });
+}
+
+/**
+ * Serviseru: vlasnik je zatražio pristup aparatima koje taj servis servisira.
+ */
+export async function ownerAccessRequestEmail(input: {
+  ownerName: string;
+  ownerEmail: string;
+  customerName: string;
+  reviewUrl: string;
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "OWNER_PORTAL_ACCESS_REQUEST",
+    branding,
+    vars: {
+      appName: branding.fromName,
+      ownerName: input.ownerName,
+      ownerEmail: input.ownerEmail,
+      customerName: input.customerName,
+      reviewUrl: input.reviewUrl,
     },
   });
 }

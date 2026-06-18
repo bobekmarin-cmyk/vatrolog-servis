@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/korisnik/aparati", label: "Aparati" },
   { href: "/korisnik/pregledi", label: "Redovni pregledi", badgeKey: "inspectionDue" as const },
   { href: "/korisnik/nalozi", label: "Servisni nalozi i dokumenti" },
+  { href: "/korisnik/moji-servisi", label: "Moji servisi" },
 ];
 
 export default function OwnerNav({ inspectionDueCount = 0 }: { inspectionDueCount?: number }) {

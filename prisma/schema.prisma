@@ -1426,6 +1426,8 @@ model Owner {
 enum OwnerLinkStatus {
   /// Pozivnica poslana, vlasnik još nije aktivirao.
   PENDING_INVITE
+  /// Vlasnik je zatražio pristup aparatima ovog servisa — čeka odobrenje servisera.
+  REQUESTED
   /// Aktivna veza — vlasnik vidi ovog kupca u portalu.
   ACTIVE
   /// Vlasnik/serviser odbio.

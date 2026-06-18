@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 
-type Status = "PENDING_INVITE" | "ACTIVE" | "DECLINED" | "REVOKED" | null;
+type Status = "PENDING_INVITE" | "REQUESTED" | "ACTIVE" | "DECLINED" | "REVOKED" | null;
 
 const STATUS_LABEL: Record<NonNullable<Status>, { label: string; cls: string }> = {
   PENDING_INVITE: { label: "Pozvan (čeka aktivaciju)", cls: "border-amber-200 bg-amber-50 text-amber-800" },
+  REQUESTED: { label: "Zahtjev za pristup", cls: "border-amber-200 bg-amber-50 text-amber-800" },
   ACTIVE: { label: "Aktivan", cls: "border-emerald-200 bg-emerald-50 text-emerald-800" },
   DECLINED: { label: "Odbijeno", cls: "border-slate-200 bg-slate-50 text-slate-700" },
   REVOKED: { label: "Pristup povučen", cls: "border-slate-200 bg-slate-50 text-slate-700" },
@@ -30,7 +31,7 @@ export default function CustomerPortalInviteCard({
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function call(action: "invite" | "revoke" | "share") {
+  async function call(action: "invite" | "revoke" | "share" | "approve" | "decline") {
     setBusy(true);
     setMsg(null);
     setError(null);
@@ -51,7 +52,11 @@ export default function CustomerPortalInviteCard({
           ? "Pristup je povučen."
           : action === "share"
             ? "Vaši aparati su povezani s postojećim računom vlasnika."
-            : `Pozivnica poslana na ${data.email}.`,
+            : action === "approve"
+              ? "Zahtjev je odobren — vlasnik sada vidi vaše aparate."
+              : action === "decline"
+                ? "Zahtjev je odbijen."
+                : `Pozivnica poslana na ${data.email}.`,
       );
     } finally {
       setBusy(false);
@@ -78,7 +83,31 @@ export default function CustomerPortalInviteCard({
           aparate, naloge i otpremnice te vodi evidenciju redovnih pregleda.
         </p>
 
-        {existingPortalForOib && status !== "ACTIVE" ? (
+        {status === "REQUESTED" ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <div className="text-sm font-semibold text-amber-900">Vlasnik traži pristup vašim aparatima</div>
+            <p className="mt-1 text-sm text-amber-800">
+              Vlasnik{initialInvitedEmail ? ` (${initialInvitedEmail})` : ""} zatražio je da u svom
+              Korisničkom portalu vidi i aparate koje vaš servis servisira za ovog kupca. Odobravanjem
+              dajete privolu da se vaši aparati prikažu vlasniku.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button type="button" className="btn btn-primary h-9" disabled={busy} onClick={() => call("approve")}>
+                {busy ? "Obrada…" : "Odobri"}
+              </button>
+              <button
+                type="button"
+                className="btn h-9 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                disabled={busy}
+                onClick={() => call("decline")}
+              >
+                Odbij
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {existingPortalForOib && status !== "ACTIVE" && status !== "REQUESTED" ? (
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
             <div className="text-sm font-semibold text-blue-900">Ovaj kupac već koristi Korisnički portal</div>
             <p className="mt-1 text-sm text-blue-800">

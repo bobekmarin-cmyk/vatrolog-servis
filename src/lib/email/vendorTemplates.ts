@@ -34,6 +34,7 @@ export const VENDOR_TEMPLATE_TYPES = [
   "SUBSCRIPTION_EXPIRING",
   "OWNER_PORTAL_INVITE",
   "OWNER_PORTAL_NEW_SERVICER",
+  "OWNER_PORTAL_ACCESS_REQUEST",
   "OWNER_INSPECTION_REMINDER",
 ] as const;
 
@@ -301,6 +302,31 @@ export const VENDOR_TEMPLATE_DEFAULTS: Record<VendorTemplateType, VendorTemplate
     ],
   },
 
+  OWNER_PORTAL_ACCESS_REQUEST: {
+    type: "OWNER_PORTAL_ACCESS_REQUEST",
+    label: "Zahtjev vlasnika za pristup aparatima (serviser)",
+    description:
+      "Šalje se serviseru kad vlasnik u Korisničkom portalu zatraži da vidi i aparate koje servisira taj servis. Serviser zahtjev odobrava na detalju kupca.",
+    fields: {
+      subject: "{{appName}} — vlasnik traži pristup aparatima u portalu",
+      greeting: "Pozdrav,",
+      bodyText:
+        "Vlasnik <strong>{{ownerName}}</strong> ({{ownerEmail}}) zatražio je da u svom <strong>{{appName}}</strong> Korisničkom portalu vidi i aparate koje vaš servis servisira za kupca <strong>{{customerName}}</strong>.",
+      calloutText:
+        "Zahtjev odobravate (ili odbijate) na detalju kupca u aplikaciji. Tek nakon vašeg odobrenja vlasnik vidi te aparate.",
+      closingText:
+        "Ako ne želite dijeliti svoje podatke s vlasnikom, jednostavno odbijte zahtjev.",
+      footerNote: null,
+    },
+    variables: [
+      { name: "appName", description: "Naziv platforme.", example: "VatroLog" },
+      { name: "ownerName", description: "Ime/naziv vlasnika koji traži pristup.", example: "Konzum d.d." },
+      { name: "ownerEmail", description: "E-mail vlasnika.", example: "vlasnik@konzum.hr" },
+      { name: "customerName", description: "Naziv kupca kod ovog servisa.", example: "Konzum — poslovnica Split" },
+      { name: "reviewUrl", description: "Link na detalj kupca gdje se zahtjev odobrava.", example: "https://vatrolog.com/customers/abc123" },
+    ],
+  },
+
   OWNER_INSPECTION_REMINDER: {
     type: "OWNER_INSPECTION_REMINDER",
     label: "Podsjetnik na redovni pregled (vlasnik)",
@@ -522,6 +548,12 @@ function buildExtraHtml(
       return (
         emailButton({ href: vars.portalUrl ?? "#", label: "Otvori portal", brandColor: branding.brandColor }) +
         urlFallback(vars.portalUrl ?? "")
+      );
+
+    case "OWNER_PORTAL_ACCESS_REQUEST":
+      return (
+        emailButton({ href: vars.reviewUrl ?? "#", label: "Otvori i odobri", brandColor: branding.brandColor }) +
+        urlFallback(vars.reviewUrl ?? "")
       );
 
     case "OWNER_INSPECTION_REMINDER":

@@ -41,7 +41,15 @@ export const POST = apiHandler(
 
     const body = (await req.json().catch(() => ({}))) as { action?: string; email?: string };
     const action =
-      body.action === "revoke" ? "revoke" : body.action === "share" ? "share" : "invite";
+      body.action === "revoke"
+        ? "revoke"
+        : body.action === "share"
+          ? "share"
+          : body.action === "approve"
+            ? "approve"
+            : body.action === "decline"
+              ? "decline"
+              : "invite";
     const audit = extractAuditMeta(req);
 
     // Cross-serviser: poveži ovog kupca s postojećim Owner računom (po OIB-u).
@@ -103,6 +111,66 @@ export const POST = apiHandler(
         userAgent: audit.userAgent,
       });
 
+      return NextResponse.json({ ok: true, status: "ACTIVE" });
+    }
+
+    // Serviser odobrava / odbija vlasnikov zahtjev za pristup (REQUESTED).
+    if (action === "approve" || action === "decline") {
+      if (!customer.ownerLink || customer.ownerLink.status !== "REQUESTED") {
+        throw new AppValidationError("Nema zahtjeva za odobrenje.");
+      }
+
+      if (action === "decline") {
+        await prisma.ownerCustomerLink.update({
+          where: { id: customer.ownerLink.id },
+          data: { status: "DECLINED" },
+        });
+        await logAudit({
+          companyId: session.companyId,
+          actorId: session.accountUserId,
+          actorType: "ACCOUNT_USER",
+          action: "customer.portal.requestDecline",
+          entity: "Customer",
+          entityId: customerId,
+          ip: audit.ip,
+          userAgent: audit.userAgent,
+        });
+        return NextResponse.json({ ok: true, status: "DECLINED" });
+      }
+
+      await prisma.ownerCustomerLink.update({
+        where: { id: customer.ownerLink.id },
+        data: { status: "ACTIVE", acceptedAt: new Date(), revokedAt: null },
+      });
+
+      // Obavijesti vlasnika da su aparati sad dostupni (best-effort).
+      try {
+        const tpl = await ownerNewServicerEmail({
+          servicerName: customer.company.name,
+          portalUrl: `${getAppBaseUrl()}/korisnik`,
+        });
+        await sendSystemMail({
+          to: customer.ownerLink.invitedEmail,
+          subject: tpl.subject,
+          html: tpl.html,
+          text: tpl.text,
+          kind: "OWNER_PORTAL_INVITE",
+          companyId: session.companyId,
+        });
+      } catch {
+        /* best-effort */
+      }
+
+      await logAudit({
+        companyId: session.companyId,
+        actorId: session.accountUserId,
+        actorType: "ACCOUNT_USER",
+        action: "customer.portal.requestApprove",
+        entity: "Customer",
+        entityId: customerId,
+        ip: audit.ip,
+        userAgent: audit.userAgent,
+      });
       return NextResponse.json({ ok: true, status: "ACTIVE" });
     }
 
