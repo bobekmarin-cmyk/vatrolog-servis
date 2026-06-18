@@ -21,7 +21,9 @@
 /build
 
 # misc
-.cursor/
+.cursor/*
+# Bugbot upute za pregled moraju biti u repou da ih Bugbot procita
+!.cursor/BUGBOT.md
 
 # local Docker DB creds (copy from postgres.env.example)
 postgres.env
