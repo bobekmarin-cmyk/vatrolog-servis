@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { ownerCanAccessDeliveryNote } from "@/lib/ownerPortalData";
 import { readPdf } from "@/lib/pdfStorage";
 import { prisma } from "@/lib/prisma";
@@ -16,7 +17,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
   const { id } = await params;
-  const access = await ownerCanAccessDeliveryNote(session.ownerId, id);
+  const orgId = await getActiveOwnerOrgId(session.ownerId);
+  const access = await ownerCanAccessDeliveryNote(orgId, id);
   if (!access) return new NextResponse("Not found", { status: 404 });
 
   const note = await prisma.deliveryNote.findUnique({ where: { id }, select: { number: true } });

@@ -4,10 +4,10 @@ import { requireActiveSession } from "@/lib/auth";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 import { generateToken } from "@/lib/authTokens";
-import { ownerPortalInviteEmail, ownerNewServicerEmail, sendSystemMail } from "@/lib/systemMail";
+import { ownerPortalInviteEmail, ownerNewServicerEmail, passwordResetEmail, sendSystemMail } from "@/lib/systemMail";
 import { normalizeOwnerEmail } from "@/lib/ownerAuth";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
-import { ensureOwnerOrgForOib, attachOwnerToOrg } from "@/lib/ownerOrg";
+import { ensureOwnerOrgForOib, ensureMembership } from "@/lib/ownerOrg";
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 
@@ -40,18 +40,109 @@ export const POST = apiHandler(
     });
     if (!customer) throw new AppValidationError("Kupac ne postoji.");
 
-    const body = (await req.json().catch(() => ({}))) as { action?: string; email?: string };
-    const action =
-      body.action === "revoke"
-        ? "revoke"
-        : body.action === "share"
-          ? "share"
-          : body.action === "approve"
-            ? "approve"
-            : body.action === "decline"
-              ? "decline"
-              : "invite";
+    const body = (await req.json().catch(() => ({}))) as { action?: string; email?: string; ownerId?: string };
+    const KNOWN_ACTIONS = [
+      "revoke",
+      "share",
+      "approve",
+      "decline",
+      "cancelInvite",
+      "revokeAccount",
+      "resetPassword",
+    ] as const;
+    const action = (KNOWN_ACTIONS as readonly string[]).includes(body.action ?? "")
+      ? (body.action as (typeof KNOWN_ACTIONS)[number])
+      : "invite";
     const audit = extractAuditMeta(req);
+
+    // Povuci pristup pojedinom računu (membership je na razini vlasnika/OIB-a —
+    // račun gubi pristup cijelom portalu vlasnika kod svih povezanih servisa).
+    if (action === "revokeAccount") {
+      const targetOwnerId = String(body.ownerId ?? "");
+      if (!targetOwnerId) throw new AppValidationError("Nedostaje račun.");
+      if (!customer.oib) throw new AppValidationError("Kupac nema OIB.");
+      const org = await prisma.ownerOrg.findUnique({ where: { oib: customer.oib }, select: { id: true } });
+      if (org) {
+        await prisma.ownerOrgMembership.updateMany({
+          where: { ownerId: targetOwnerId, ownerOrgId: org.id },
+          data: { status: "REVOKED", revokedAt: new Date() },
+        });
+      }
+      await logAudit({
+        companyId: session.companyId,
+        actorId: session.accountUserId,
+        actorType: "ACCOUNT_USER",
+        action: "customer.portal.account.revoke",
+        entity: "Owner",
+        entityId: targetOwnerId,
+        meta: { customerId },
+        ip: audit.ip,
+        userAgent: audit.userAgent,
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    // Pošalji vlasniku mail za reset lozinke (serviser ne vidi ni ne postavlja lozinku).
+    if (action === "resetPassword") {
+      const targetOwnerId = String(body.ownerId ?? "");
+      if (!targetOwnerId) throw new AppValidationError("Nedostaje račun.");
+      const owner = await prisma.owner.findUnique({ where: { id: targetOwnerId }, select: { email: true } });
+      if (!owner?.email) throw new AppValidationError("Račun ne postoji.");
+      const { plaintext, hash } = generateToken();
+      await prisma.authToken.create({
+        data: {
+          type: "OWNER_PASSWORD_RESET",
+          tokenHash: hash,
+          ownerId: targetOwnerId,
+          email: owner.email,
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        },
+      });
+      const resetUrl = `${getAppBaseUrl()}/korisnik/reset-password?token=${encodeURIComponent(plaintext)}`;
+      const mail = await passwordResetEmail(resetUrl);
+      const sent = await sendSystemMail({
+        to: owner.email,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
+        kind: "PASSWORD_RESET",
+        companyId: session.companyId,
+      });
+      if (!sent.ok) return NextResponse.json({ error: `Slanje e-maila nije uspjelo: ${sent.error}` }, { status: 500 });
+      await logAudit({
+        companyId: session.companyId,
+        actorId: session.accountUserId,
+        actorType: "ACCOUNT_USER",
+        action: "customer.portal.account.resetPassword",
+        entity: "Owner",
+        entityId: targetOwnerId,
+        ip: audit.ip,
+        userAgent: audit.userAgent,
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    // Otkaži pending pozivnicu za određeni e-mail.
+    if (action === "cancelInvite") {
+      const target = normalizeOwnerEmail(body.email ?? "");
+      if (!target) throw new AppValidationError("Nedostaje e-mail.");
+      await prisma.authToken.updateMany({
+        where: { type: "OWNER_INVITE", usedAt: null, email: target },
+        data: { usedAt: new Date() },
+      });
+      await logAudit({
+        companyId: session.companyId,
+        actorId: session.accountUserId,
+        actorType: "ACCOUNT_USER",
+        action: "customer.portal.invite.cancel",
+        entity: "Customer",
+        entityId: customerId,
+        meta: { email: target },
+        ip: audit.ip,
+        userAgent: audit.userAgent,
+      });
+      return NextResponse.json({ ok: true });
+    }
 
     // Cross-serviser: poveži ovog kupca s postojećim Owner računom (po OIB-u).
     // Serviser ovime daje privolu da se njegovi aparati prikažu vlasniku.
@@ -62,7 +153,10 @@ export const POST = apiHandler(
       }
 
       const ownerOrgId = await ensureOwnerOrgForOib(customer.oib, customer.shortName ?? customer.name);
-      await attachOwnerToOrg(existing.ownerId, ownerOrgId);
+      await ensureMembership(existing.ownerId, ownerOrgId, {
+        invitedEmail: existing.ownerEmail,
+        invitedByCompanyId: session.companyId,
+      });
 
       await prisma.ownerCustomerLink.upsert({
         where: { customerId },
@@ -231,7 +325,11 @@ export const POST = apiHandler(
 
     // Org po OIB-u — veza ga uvijek nosi (i prije nego vlasnik registrira račun).
     const ownerOrgId = await ensureOwnerOrgForOib(customer.oib, customer.shortName ?? customer.name);
-    if (existingOwner) await attachOwnerToOrg(existingOwner.id, ownerOrgId);
+
+    // Ne degradiraj već aktivnu vezu (drugi račun je možda već aktivan) —
+    // pozivanje dodatnog računa ne smije sakriti aparate ostalim računima.
+    const alreadyActive = customer.ownerLink?.status === "ACTIVE";
+    const linkStatus = alreadyActive ? "ACTIVE" : "PENDING_INVITE";
 
     const link = await prisma.ownerCustomerLink.upsert({
       where: { customerId },
@@ -240,17 +338,15 @@ export const POST = apiHandler(
         customerId,
         invitedEmail: email,
         invitedByAccountUserId: session.accountUserId,
-        ownerId: existingOwner?.id ?? null,
         ownerOrgId,
         status: "PENDING_INVITE",
       },
       update: {
         invitedEmail: email,
         invitedByAccountUserId: session.accountUserId,
-        ownerId: existingOwner?.id ?? null,
         ownerOrgId,
-        status: "PENDING_INVITE",
-        revokedAt: null,
+        status: linkStatus,
+        ...(alreadyActive ? {} : { revokedAt: null }),
       },
       select: { id: true },
     });
@@ -259,12 +355,10 @@ export const POST = apiHandler(
     const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
 
     await prisma.$transaction([
+      // Otkaži samo prethodnu nepotrošenu pozivnicu za ISTI e-mail (resend),
+      // ne diraj pozivnice za druge račune istog vlasnika.
       prisma.authToken.updateMany({
-        where: {
-          type: "OWNER_INVITE",
-          usedAt: null,
-          meta: { path: ["customerId"], equals: customerId },
-        },
+        where: { type: "OWNER_INVITE", usedAt: null, email },
         data: { usedAt: new Date() },
       }),
       prisma.authToken.create({
@@ -275,7 +369,7 @@ export const POST = apiHandler(
           companyId: session.companyId,
           ownerId: existingOwner?.id ?? null,
           expiresAt,
-          meta: { ownerCustomerLinkId: link.id, customerId },
+          meta: { ownerCustomerLinkId: link.id, customerId, ownerOrgId },
         },
       }),
     ]);

@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiHandler } from "@/lib/apiHandler";
 import { checkLoginRateLimit, clearLoginFailures, clientKeyFromRequest, recordLoginFailure } from "@/lib/rateLimit";
-import { signOwnerSessionToken, OWNER_SESSION_COOKIE, normalizeOwnerEmail } from "@/lib/ownerAuth";
+import { signOwnerSessionToken, OWNER_SESSION_COOKIE, OWNER_ORG_COOKIE, normalizeOwnerEmail } from "@/lib/ownerAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,5 +61,7 @@ export const POST = apiHandler(async (req: Request) => {
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
+  // Pri svakoj prijavi traži ponovni odabir tvrtke (ako ih je više).
+  res.cookies.set(OWNER_ORG_COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 });

@@ -3,9 +3,9 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import EditCustomerFormWithLookup from "@/components/EditCustomerFormWithLookup";
-import CustomerPortalLinkCard from "./CustomerPortalLinkCard";
-import CustomerPortalInviteCard from "./CustomerPortalInviteCard";
+import CustomerPortalAccountsCard from "./CustomerPortalAccountsCard";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
+import { getCustomerPortalAccounts } from "@/lib/customerPortalAccounts";
 
 export default async function CustomerEditPage({
   params,
@@ -37,6 +37,8 @@ export default async function CustomerEditPage({
     customer.ownerLink?.status === "ACTIVE"
       ? false
       : !!(await findExistingPortalOwnerByOib(customer.oib, session.companyId));
+
+  const portalAccounts = await getCustomerPortalAccounts(customer.oib, customer.id, session.companyId);
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -203,15 +205,24 @@ export default async function CustomerEditPage({
         </details>
       </section>
 
-      <CustomerPortalInviteCard
+      <CustomerPortalAccountsCard
         customerId={customer.id}
         customerEmail={customer.email}
-        initialStatus={customer.ownerLink?.status ?? null}
-        initialInvitedEmail={customer.ownerLink?.invitedEmail ?? null}
+        linkStatus={customer.ownerLink?.status ?? null}
+        invitedEmail={customer.ownerLink?.invitedEmail ?? null}
         existingPortalForOib={existingPortalForOib}
+        accounts={portalAccounts.accounts.map((a) => ({
+          ownerId: a.ownerId,
+          email: a.email,
+          name: a.name,
+          lastAccessAt: a.lastAccessAt ? a.lastAccessAt.toISOString() : null,
+          invitedByThisCompany: a.invitedByThisCompany,
+        }))}
+        pendingInvites={portalAccounts.pendingInvites.map((p) => ({
+          email: p.email,
+          invitedByThisCompany: p.invitedByThisCompany,
+        }))}
       />
-
-      <CustomerPortalLinkCard customerId={customer.id} initialSecret={customer.portalSecret} />
     </main>
   );
 }

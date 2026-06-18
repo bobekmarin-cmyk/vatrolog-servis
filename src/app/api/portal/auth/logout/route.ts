@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { OWNER_SESSION_COOKIE } from "@/lib/ownerAuth";
+import { OWNER_SESSION_COOKIE, OWNER_ORG_COOKIE } from "@/lib/ownerAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,5 +13,6 @@ export async function POST() {
     path: "/",
     maxAge: 0,
   });
+  res.cookies.set(OWNER_ORG_COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 }

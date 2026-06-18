@@ -27,13 +27,11 @@ export async function GET(req: Request): Promise<Response> {
     return NextResponse.json({ ok: true, skipped: "not_first_of_month" });
   }
 
-  // Vlasnici koji se mogu prijaviti (postavljena lozinka) i imaju bar jednu ACTIVE vezu.
-  const owners = await prisma.owner.findMany({
-    where: {
-      passwordHash: { not: null },
-      links: { some: { status: "ACTIVE" } },
-    },
-    select: { id: true, email: true },
+  // Aktivni pristupi (membership) za račune koji se mogu prijaviti. Podsjetnik se
+  // šalje po tvrtki (OwnerOrg) — osoba s više tvrtki dobiva mail za svaku.
+  const memberships = await prisma.ownerOrgMembership.findMany({
+    where: { status: "ACTIVE", owner: { passwordHash: { not: null } } },
+    select: { ownerOrgId: true, owner: { select: { id: true, email: true } } },
   });
 
   const baseUrl = getAppBaseUrl();
@@ -42,10 +40,11 @@ export async function GET(req: Request): Promise<Response> {
   let sent = 0;
   let skippedNoDue = 0;
 
-  for (const owner of owners) {
-    if (!owner.email) continue;
+  for (const m of memberships) {
+    const email = m.owner.email;
+    if (!email) continue;
 
-    const links = await getOwnerActiveLinks(owner.id);
+    const links = await getOwnerActiveLinks(m.ownerOrgId);
     if (links.length === 0) {
       skippedNoDue++;
       continue;
@@ -58,7 +57,7 @@ export async function GET(req: Request): Promise<Response> {
     }
 
     const states = await getOwnerInspectionStates(
-      owner.id,
+      m.ownerOrgId,
       exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
     );
     const dueCount = [...states.values()].filter((s) => s.overdue).length;
@@ -69,16 +68,16 @@ export async function GET(req: Request): Promise<Response> {
 
     const mail = await ownerInspectionReminderEmail({ dueCount, portalUrl });
     const res = await sendSystemMail({
-      to: owner.email,
+      to: email,
       subject: mail.subject,
       html: mail.html,
       text: mail.text,
       kind: "OWNER_INSPECTION_REMINDER",
     });
     if (res.ok) sent++;
-    else logWarn("cron_owner_inspection_reminder_send_failed", { ownerId: owner.id, error: res.error });
+    else logWarn("cron_owner_inspection_reminder_send_failed", { ownerId: m.owner.id, error: res.error });
   }
 
-  logInfo("cron_owner_inspection_reminder_done", { sent, skippedNoDue, owners: owners.length });
-  return NextResponse.json({ ok: true, sent, skippedNoDue, owners: owners.length });
+  logInfo("cron_owner_inspection_reminder_done", { sent, skippedNoDue, memberships: memberships.length });
+  return NextResponse.json({ ok: true, sent, skippedNoDue, memberships: memberships.length });
 }

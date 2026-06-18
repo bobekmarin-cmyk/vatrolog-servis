@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { getOwnerActiveLinks, getOwnerWorkOrders } from "@/lib/ownerPortalData";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +23,11 @@ function DocLink({ href, label }: { href: string; label: string }) {
 export default async function OwnerNaloziPage({ searchParams }: PageProps) {
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!ownerOrgId) redirect("/korisnik/odabir");
 
   const { serviser, odjel } = await searchParams;
-  const links = await getOwnerActiveLinks(session.ownerId);
+  const links = await getOwnerActiveLinks(ownerOrgId);
   const all = await getOwnerWorkOrders(links, 300);
 
   const servisers = [...new Set(all.map((o) => o.servicerName))].sort();

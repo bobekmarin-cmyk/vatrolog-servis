@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { getOwnerActiveLinks, getOwnerExtinguishers, getOwnerWorkOrders } from "@/lib/ownerPortalData";
 import { getOwnerInspectionStates } from "@/lib/ownerInspections";
 
@@ -26,8 +27,10 @@ function StatCard({ label, value, tone }: { label: string; value: number; tone: 
 export default async function OwnerDashboardPage() {
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!ownerOrgId) redirect("/korisnik/odabir");
 
-  const links = await getOwnerActiveLinks(session.ownerId);
+  const links = await getOwnerActiveLinks(ownerOrgId);
 
   if (links.length === 0) {
     return (
@@ -51,7 +54,7 @@ export default async function OwnerDashboardPage() {
   const dueSoon = exts.filter((e) => e.nextPeriodicDue && e.nextPeriodicDue >= now && e.nextPeriodicDue <= inOneMonth);
 
   const inspectionStates = await getOwnerInspectionStates(
-    session.ownerId,
+    ownerOrgId,
     exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
   );
   const inspectionDue = [...inspectionStates.values()].filter((s) => s.overdue).length;

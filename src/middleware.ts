@@ -121,7 +121,6 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/public/")) return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
   if (pathname.startsWith("/api/cron/")) return true;
-  if (pathname.startsWith("/portal/")) return true;
   if (pathname.startsWith("/legal/")) return true;
   // SEO / crawler datoteke — Googlebot mora dobiti XML/TXT, nikako redirect na /login.
   if (pathname === "/sitemap.xml" || pathname === "/robots.txt") return true;

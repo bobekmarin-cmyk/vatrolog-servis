@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { ownerCanAccessWorkOrder } from "@/lib/ownerPortalData";
 import { buildRegisterPdf } from "@/lib/pdf/workOrderDocumentBuilders";
 
@@ -11,7 +12,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
   const { id } = await params;
-  if (!(await ownerCanAccessWorkOrder(session.ownerId, id))) {
+  const orgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!(await ownerCanAccessWorkOrder(orgId, id))) {
     return new NextResponse("Not found", { status: 404 });
   }
 

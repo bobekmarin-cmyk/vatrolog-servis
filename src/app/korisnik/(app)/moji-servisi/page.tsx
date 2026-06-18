@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { getOwnerServicers, type OwnerServicerStatus } from "@/lib/ownerServicers";
 import RequestAccessButton from "./RequestAccessButton";
 
@@ -16,8 +17,10 @@ const STATUS_META: Record<OwnerServicerStatus, { label: string; className: strin
 export default async function OwnerServisiPage() {
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!ownerOrgId) redirect("/korisnik/odabir");
 
-  const servicers = await getOwnerServicers(session.ownerId);
+  const servicers = await getOwnerServicers(ownerOrgId);
   const activeCount = servicers.filter((s) => s.status === "ACTIVE").length;
 
   return (

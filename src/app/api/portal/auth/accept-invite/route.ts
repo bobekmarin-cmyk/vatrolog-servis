@@ -6,7 +6,7 @@ import { hashToken } from "@/lib/authTokens";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 import { signOwnerSessionToken, OWNER_SESSION_COOKIE } from "@/lib/ownerAuth";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
-import { ensureOwnerOrgForOib, attachOwnerToOrg } from "@/lib/ownerOrg";
+import { ensureOwnerOrgForOib, ensureMembership } from "@/lib/ownerOrg";
 
 /** Org veze (po OIB-u kupca) na koju se vlasnik veže pri prihvaćanju pozivnice. */
 async function resolveLinkOrgId(linkId?: string): Promise<string | null> {
@@ -78,7 +78,9 @@ export const POST = apiHandler(async (req: Request) => {
         : []),
       prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
-    if (linkOrgId) await attachOwnerToOrg(owner.id, linkOrgId);
+    if (linkOrgId) {
+      await ensureMembership(owner.id, linkOrgId, { invitedEmail: email, invitedByCompanyId: record.companyId });
+    }
     await logAudit({
       companyId: record.companyId,
       actorType: "CUSTOMER_PORTAL",
@@ -124,10 +126,10 @@ export const POST = apiHandler(async (req: Request) => {
     prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date(), ownerId: savedOwner.id } }),
   ]);
 
-  await prisma.owner.update({
-    where: { id: savedOwner.id },
-    data: { lastLoginAt: new Date(), ...(linkOrgId ? { ownerOrgId: linkOrgId } : {}) },
-  });
+  if (linkOrgId) {
+    await ensureMembership(savedOwner.id, linkOrgId, { invitedEmail: email, invitedByCompanyId: record.companyId });
+  }
+  await prisma.owner.update({ where: { id: savedOwner.id }, data: { lastLoginAt: new Date() } });
 
   await logAudit({
     companyId: record.companyId,

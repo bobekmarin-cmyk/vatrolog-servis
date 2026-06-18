@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getOwnerMembershipOrgs, getActiveOwnerOrgId, touchMembershipAccess } from "@/lib/ownerOrg";
 import { getOwnerActiveLinks, getOwnerExtinguishers } from "@/lib/ownerPortalData";
 import { getOwnerInspectionStates } from "@/lib/ownerInspections";
 import OwnerLogoutButton from "./OwnerLogoutButton";
 import OwnerNav from "./OwnerNav";
+import OwnerOrgSwitcher from "./OwnerOrgSwitcher";
 
 export const metadata = {
   title: "Korisnički portal",
@@ -17,15 +19,23 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
 
+  const orgs = await getOwnerMembershipOrgs(session.ownerId);
+  if (orgs.length === 0) redirect("/korisnik/login?nema-pristupa=1");
+
+  const activeOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!activeOrgId) redirect("/korisnik/odabir");
+
+  void touchMembershipAccess(session.ownerId, activeOrgId);
+
+  const activeOrg = orgs.find((o) => o.ownerOrgId === activeOrgId) ?? null;
+
   let inspectionDueCount = 0;
-  let companyName: string | null = null;
   try {
-    const links = await getOwnerActiveLinks(session.ownerId);
-    companyName = links[0]?.customerName ?? null;
+    const links = await getOwnerActiveLinks(activeOrgId);
     if (links.length > 0) {
       const exts = await getOwnerExtinguishers(links);
       const states = await getOwnerInspectionStates(
-        session.ownerId,
+        activeOrgId,
         exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
       );
       inspectionDueCount = [...states.values()].filter((s) => s.overdue).length;
@@ -34,9 +44,9 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
     inspectionDueCount = 0;
   }
 
-  // Tvrtka (kupac) gore, ime korisnika ispod. Bez veza koristimo ime/email.
-  const primaryName = companyName ?? session.name ?? session.email;
-  const secondaryName = companyName && session.name ? session.name : null;
+  // Tvrtka (aktivni subjekt) gore, ime korisnika ispod.
+  const primaryName = activeOrg?.name ?? activeOrg?.oib ?? session.name ?? session.email;
+  const secondaryName = session.name ?? session.email;
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-red-50/60 via-slate-50 to-slate-50">
@@ -54,6 +64,7 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
               <div className="font-semibold text-white">{primaryName}</div>
               {secondaryName ? <div className="text-xs text-red-100/90">{secondaryName}</div> : null}
             </div>
+            <OwnerOrgSwitcher orgs={orgs} activeOrgId={activeOrgId} />
             <OwnerLogoutButton />
           </div>
         </div>

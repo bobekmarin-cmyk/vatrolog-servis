@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { ownerCanAccessExtinguisher } from "@/lib/ownerInspections";
 import RegularInspectionForm from "../RegularInspectionForm";
 
@@ -11,9 +12,11 @@ type PageProps = { searchParams: Promise<{ ext?: string; company?: string }> };
 export default async function NewInspectionPage({ searchParams }: PageProps) {
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!ownerOrgId) redirect("/korisnik/odabir");
 
   const { ext, company } = await searchParams;
-  const access = ext && company ? await ownerCanAccessExtinguisher(session.ownerId, company, ext) : null;
+  const access = ext && company ? await ownerCanAccessExtinguisher(ownerOrgId, company, ext) : null;
 
   if (!access) {
     return (

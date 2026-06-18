@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { getOwnerSession } from "@/lib/ownerAuth";
 import { ownerCanAccessExtinguisher } from "@/lib/ownerInspections";
-import { resolveOwnerOrgId } from "@/lib/ownerOrg";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
@@ -36,7 +36,8 @@ export const POST = apiHandler(async (req: Request) => {
   const companyId = String(body.companyId ?? "");
   if (!extinguisherId || !companyId) throw new AppValidationError("Nedostaje aparat.");
 
-  const access = await ownerCanAccessExtinguisher(session.ownerId, companyId, extinguisherId);
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  const access = await ownerCanAccessExtinguisher(ownerOrgId, companyId, extinguisherId);
   if (!access) return NextResponse.json({ error: "Nemate pristup ovom aparatu." }, { status: 404 });
 
   const toBool = (v: unknown) => v === true;
@@ -68,8 +69,6 @@ export const POST = apiHandler(async (req: Request) => {
 
   const note = body.note?.trim() || null;
   const performedByName = body.performedByName?.trim() || null;
-
-  const ownerOrgId = await resolveOwnerOrgId(session.ownerId);
 
   const created = await prisma.regularInspection.create({
     data: {

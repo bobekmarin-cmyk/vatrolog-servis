@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { getOwnerActiveLinks, getOwnerExtinguishers } from "@/lib/ownerPortalData";
 import { getOwnerInspectionStates, getOwnerInspectionHistory } from "@/lib/ownerInspections";
 
@@ -28,15 +29,17 @@ function StatCard({ label, value, tone }: { label: string; value: number; tone: 
 export default async function OwnerInspectionsPage({ searchParams }: PageProps) {
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!ownerOrgId) redirect("/korisnik/odabir");
 
   const { spremljeno } = await searchParams;
-  const links = await getOwnerActiveLinks(session.ownerId);
+  const links = await getOwnerActiveLinks(ownerOrgId);
   const exts = await getOwnerExtinguishers(links);
   const states = await getOwnerInspectionStates(
-    session.ownerId,
+    ownerOrgId,
     exts.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
   );
-  const history = await getOwnerInspectionHistory(session.ownerId, 100);
+  const history = await getOwnerInspectionHistory(ownerOrgId, 100);
 
   const rows = exts.map((e) => ({ ext: e, state: states.get(e.id) ?? null }));
   const overdue = rows.filter((r) => r.state?.overdue);

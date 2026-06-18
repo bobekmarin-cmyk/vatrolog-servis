@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 
 /**
  * "Moji servisi" — popis svih servisera koji servisiraju aparate ovog vlasnika
@@ -20,8 +19,7 @@ export type OwnerServicer = {
 };
 
 /** OIB-i vlasnika — OIB OwnerOrg-a + OIB-i kupaca s ACTIVE vezom u tom orgu. */
-export async function getOwnerOibs(ownerId: string): Promise<string[]> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+export async function getOwnerOibs(ownerOrgId: string | null): Promise<string[]> {
   if (!ownerOrgId) return [];
   const [org, links] = await Promise.all([
     prisma.ownerOrg.findUnique({ where: { id: ownerOrgId }, select: { oib: true } }),
@@ -52,9 +50,8 @@ const STATUS_RANK: Record<OwnerServicerStatus, number> = {
   OTHER: 1,
 };
 
-export async function getOwnerServicers(ownerId: string): Promise<OwnerServicer[]> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
-  const oibs = await getOwnerOibs(ownerId);
+export async function getOwnerServicers(ownerOrgId: string | null): Promise<OwnerServicer[]> {
+  const oibs = await getOwnerOibs(ownerOrgId);
   if (!ownerOrgId || oibs.length === 0) return [];
 
   const customers = await prisma.customer.findMany({
@@ -121,7 +118,7 @@ export async function getOwnerServicers(ownerId: string): Promise<OwnerServicer[
  * drugim računom.
  */
 export async function ownerCanRequestCustomer(
-  ownerId: string,
+  ownerOrgId: string | null,
   customerId: string,
 ): Promise<{ companyId: string; customerName: string } | { error: string }> {
   const customer = await prisma.customer.findUnique({
@@ -137,8 +134,7 @@ export async function ownerCanRequestCustomer(
   });
   if (!customer || !customer.oib) return { error: "Kupac ne postoji." };
 
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
-  const oibs = await getOwnerOibs(ownerId);
+  const oibs = await getOwnerOibs(ownerOrgId);
   if (!ownerOrgId || !oibs.includes(customer.oib)) {
     return { error: "Nemate pravo zatražiti pristup ovom servisu." };
   }

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { getOwnerActiveLinks } from "@/lib/ownerPortalData";
-import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 
 /**
  * Redovni (tromjesečni) pregled — logika privatna za vlasnika. Rok idućeg
@@ -45,11 +44,10 @@ const EXT_SELECT = {
  * nalogu tog kupca.
  */
 export async function ownerCanAccessExtinguisher(
-  ownerId: string,
+  ownerOrgId: string | null,
   companyId: string,
   extinguisherId: string,
 ): Promise<OwnerExtinguisherAccess | null> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
   if (!ownerOrgId) return null;
   const links = await prisma.ownerCustomerLink.findMany({
     where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null, companyId },
@@ -87,13 +85,13 @@ export async function ownerCanAccessExtinguisher(
  * vlasnik bira.
  */
 export async function resolveOwnerExtinguishersByCode(
-  ownerId: string,
+  ownerOrgId: string | null,
   code: string,
 ): Promise<OwnerExtinguisherAccess[]> {
   const trimmed = code.trim();
   if (!trimmed) return [];
 
-  const links = await getOwnerActiveLinks(ownerId);
+  const links = await getOwnerActiveLinks(ownerOrgId);
   const byExt = new Map<string, OwnerExtinguisherAccess>();
 
   for (const link of links) {
@@ -143,13 +141,12 @@ export type InspectionStateInput = { id: string; lastPeriodicAt: Date | null };
  * sidro = zadnji redovni pregled, a ako ga nema = datum periodičnog servisa.
  */
 export async function getOwnerInspectionStates(
-  ownerId: string,
+  ownerOrgId: string | null,
   exts: InspectionStateInput[],
 ): Promise<Map<string, InspectionState>> {
   const map = new Map<string, InspectionState>();
   if (exts.length === 0) return map;
 
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
   const extinguisherIds = exts.map((e) => e.id);
   const rows = ownerOrgId
     ? await prisma.regularInspection.findMany({
@@ -208,10 +205,9 @@ export type OwnerInspectionHistoryRow = {
 };
 
 export async function getOwnerInspectionHistory(
-  ownerId: string,
+  ownerOrgId: string | null,
   take = 200,
 ): Promise<OwnerInspectionHistoryRow[]> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
   if (!ownerOrgId) return [];
   const rows = await prisma.regularInspection.findMany({
     where: { ownerOrgId },

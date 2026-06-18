@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOwnerSession } from "@/lib/ownerAuth";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { getOwnerActiveLinks, getOwnerExtinguishers } from "@/lib/ownerPortalData";
 import { getOwnerInspectionStates } from "@/lib/ownerInspections";
 
@@ -17,12 +18,14 @@ function statusLabel(s: string): { label: string; cls: string } {
 export default async function OwnerAparatiPage({ searchParams }: PageProps) {
   const session = await getOwnerSession();
   if (!session) redirect("/korisnik/login");
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  if (!ownerOrgId) redirect("/korisnik/odabir");
 
   const { serviser, odjel } = await searchParams;
-  const links = await getOwnerActiveLinks(session.ownerId);
+  const links = await getOwnerActiveLinks(ownerOrgId);
   const all = await getOwnerExtinguishers(links);
   const states = await getOwnerInspectionStates(
-    session.ownerId,
+    ownerOrgId,
     all.map((e) => ({ id: e.id, lastPeriodicAt: e.lastPeriodicAt })),
   );
 

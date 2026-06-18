@@ -23,20 +23,23 @@ export async function listOwnerOrgs(): Promise<OwnerOrgRow[]> {
       id: true,
       oib: true,
       name: true,
-      owners: { select: { id: true, emailVerifiedAt: true, passwordHash: true } },
+      memberships: {
+        where: { status: "ACTIVE" },
+        select: { owner: { select: { emailVerifiedAt: true, passwordHash: true } } },
+      },
       links: { select: { status: true, companyId: true } },
     },
   });
 
   return orgs.map((o) => {
-    const verified = o.owners.filter((ow) => ow.emailVerifiedAt && ow.passwordHash).length;
+    const verified = o.memberships.filter((m) => m.owner.emailVerifiedAt && m.owner.passwordHash).length;
     const activeCompanies = new Set(o.links.filter((l) => l.status === "ACTIVE").map((l) => l.companyId));
     const allCompanies = new Set(o.links.map((l) => l.companyId));
     return {
       id: o.id,
       oib: o.oib,
       name: o.name,
-      accountCount: o.owners.length,
+      accountCount: o.memberships.length,
       verifiedAccountCount: verified,
       activeServicerCount: activeCompanies.size,
       totalServicerCount: allCompanies.size,
@@ -52,6 +55,7 @@ export type OwnerOrgAccount = {
   verified: boolean;
   hasPassword: boolean;
   lastLoginAt: Date | null;
+  lastAccessAt: Date | null;
 };
 
 export type OwnerOrgServicer = {
@@ -91,9 +95,15 @@ export async function getOwnerOrgDetail(orgId: string): Promise<OwnerOrgDetail |
       id: true,
       oib: true,
       name: true,
-      owners: {
+      memberships: {
+        where: { status: "ACTIVE" },
         orderBy: { createdAt: "asc" },
-        select: { id: true, email: true, name: true, emailVerifiedAt: true, passwordHash: true, lastLoginAt: true },
+        select: {
+          lastAccessAt: true,
+          owner: {
+            select: { id: true, email: true, name: true, emailVerifiedAt: true, passwordHash: true, lastLoginAt: true },
+          },
+        },
       },
     },
   });
@@ -136,13 +146,14 @@ export async function getOwnerOrgDetail(orgId: string): Promise<OwnerOrgDetail |
     id: org.id,
     oib: org.oib,
     name: org.name,
-    accounts: org.owners.map((ow) => ({
-      id: ow.id,
-      email: ow.email,
-      name: ow.name,
-      verified: !!ow.emailVerifiedAt,
-      hasPassword: !!ow.passwordHash,
-      lastLoginAt: ow.lastLoginAt,
+    accounts: org.memberships.map((m) => ({
+      id: m.owner.id,
+      email: m.owner.email,
+      name: m.owner.name,
+      verified: !!m.owner.emailVerifiedAt,
+      hasPassword: !!m.owner.passwordHash,
+      lastLoginAt: m.owner.lastLoginAt,
+      lastAccessAt: m.lastAccessAt,
     })),
     servicers,
   };

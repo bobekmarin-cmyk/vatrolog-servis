@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { getOwnerSession } from "@/lib/ownerAuth";
 import { ownerCanRequestCustomer } from "@/lib/ownerServicers";
-import { resolveOwnerOrgId } from "@/lib/ownerOrg";
+import { getActiveOwnerOrgId } from "@/lib/ownerOrg";
 import { ownerAccessRequestEmail, sendSystemMail } from "@/lib/systemMail";
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
@@ -36,7 +36,8 @@ export const POST = apiHandler(async (req: Request) => {
   const customerId = String(body.customerId ?? "");
   if (!customerId) throw new AppValidationError("Nedostaje servis.");
 
-  const check = await ownerCanRequestCustomer(session.ownerId, customerId);
+  const ownerOrgId = await getActiveOwnerOrgId(session.ownerId);
+  const check = await ownerCanRequestCustomer(ownerOrgId, customerId);
   if ("error" in check) throw new AppValidationError(check.error);
 
   const owner = await prisma.owner.findUnique({
@@ -44,8 +45,6 @@ export const POST = apiHandler(async (req: Request) => {
     select: { email: true, name: true },
   });
   if (!owner) return NextResponse.json({ error: "Račun ne postoji." }, { status: 404 });
-
-  const ownerOrgId = await resolveOwnerOrgId(session.ownerId);
 
   await prisma.ownerCustomerLink.upsert({
     where: { customerId },

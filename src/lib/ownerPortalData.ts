@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 
 /**
  * Read-only agregacija podataka za Korisnički portal. Vlasnik vidi sve kupce
- * (po tvrtkama) s kojima njegov OwnerOrg ima ACTIVE i nesakrivenu vezu —
- * aparate, naloge i otpremnice.
+ * (po tvrtkama) s kojima aktivni OwnerOrg ima ACTIVE i nesakrivenu vezu —
+ * aparate, naloge i otpremnice. Funkcije primaju `ownerOrgId` (aktivni subjekt).
  */
 
 export type OwnerLinkInfo = {
@@ -15,9 +14,8 @@ export type OwnerLinkInfo = {
   customerName: string;
 };
 
-/** ACTIVE i nesakrivene veze (po vendor toggleu) za org ovog vlasnika. */
-export async function getOwnerActiveLinks(ownerId: string): Promise<OwnerLinkInfo[]> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+/** ACTIVE i nesakrivene veze (po vendor toggleu) za zadani org. */
+export async function getOwnerActiveLinks(ownerOrgId: string | null): Promise<OwnerLinkInfo[]> {
   if (!ownerOrgId) return [];
   const links = await prisma.ownerCustomerLink.findMany({
     where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null },
@@ -237,9 +235,8 @@ export async function getOwnerDeliveryNotes(links: OwnerLinkInfo[], take = 100):
   }));
 }
 
-/** Provjeri da vlasnikov org ima ACTIVE (nesakrivenu) vezu s kupcem ovog naloga. */
-export async function ownerCanAccessWorkOrder(ownerId: string, workOrderId: string): Promise<boolean> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+/** Provjeri da org ima ACTIVE (nesakrivenu) vezu s kupcem ovog naloga. */
+export async function ownerCanAccessWorkOrder(ownerOrgId: string | null, workOrderId: string): Promise<boolean> {
   if (!ownerOrgId) return false;
   const order = await prisma.workOrder.findUnique({
     where: { id: workOrderId },
@@ -259,9 +256,8 @@ export async function ownerCanAccessWorkOrder(ownerId: string, workOrderId: stri
   return !!link;
 }
 
-/** Provjeri da vlasnikov org ima ACTIVE (nesakrivenu) vezu s kupcem ove otpremnice. */
-export async function ownerCanAccessDeliveryNote(ownerId: string, deliveryNoteId: string): Promise<{ companyId: string; pdfStoragePath: string } | null> {
-  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+/** Provjeri da org ima ACTIVE (nesakrivenu) vezu s kupcem ove otpremnice. */
+export async function ownerCanAccessDeliveryNote(ownerOrgId: string | null, deliveryNoteId: string): Promise<{ companyId: string; pdfStoragePath: string } | null> {
   if (!ownerOrgId) return null;
   const note = await prisma.deliveryNote.findUnique({
     where: { id: deliveryNoteId },

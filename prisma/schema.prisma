@@ -448,10 +448,6 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  /// Token za javni customer portal (kupac vidi svoju opremu bez logina).
-  /// Random 32-byte string. Null znači da portal nije omogućen.
-  portalSecret String? @unique
-
   /// Soft delete.
   deletedAt DateTime?
 
@@ -1411,8 +1407,48 @@ model OwnerOrg {
   updatedAt DateTime @updatedAt
 
   owners             Owner[]
+  memberships        OwnerOrgMembership[]
   links              OwnerCustomerLink[]
   regularInspections RegularInspection[]
+}
+
+enum OwnerMembershipStatus {
+  /// Račun pozvan, vlasnik još nije aktivirao (rijetko — invite obično živi kao token).
+  PENDING
+  /// Aktivan pristup: ovaj login smije ući u portal ovog vlasnika.
+  ACTIVE
+  /// Pristup povučen (serviser/vendor).
+  REVOKED
+}
+
+/// Veza login-račun (`Owner`) ↔ vlasnik (`OwnerOrg`). Više-na-više: jedan e-mail
+/// može pristupati više tvrtki, a jedna tvrtka može imati više računa.
+model OwnerOrgMembership {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  ownerOrgId String
+  ownerOrg   OwnerOrg @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
+
+  status OwnerMembershipStatus @default(ACTIVE)
+
+  invitedEmail           String
+  invitedByAccountUserId String?
+  invitedByCompanyId     String?
+
+  invitedAt    DateTime  @default(now())
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+  lastAccessAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, ownerOrgId])
+  @@index([ownerOrgId])
+  @@index([invitedEmail])
 }
 
 model Owner {
@@ -1424,9 +1460,11 @@ model Owner {
   name         String?
   phone        String?
 
-  /// Entitet vlasnika (po OIB-u) kojem ovaj login pripada. Vidljivost se računa po orgu.
+  /// DEPRECATED: zadržano radi migracije. Pristup se sada vodi preko OwnerOrgMembership.
   ownerOrgId String?
   ownerOrg   OwnerOrg? @relation(fields: [ownerOrgId], references: [id], onDelete: SetNull)
+
+  memberships OwnerOrgMembership[]
 
   emailVerifiedAt    DateTime?
   lastLoginAt        DateTime?

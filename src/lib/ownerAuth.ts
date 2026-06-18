@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma";
  */
 
 export const OWNER_SESSION_COOKIE = "vb_owner_session";
+/** Aktivni subjekt (OwnerOrg) odabran nakon prijave. Prebacuje se bez re-logina. */
+export const OWNER_ORG_COOKIE = "vb_owner_org";
 
 export type OwnerSessionPayload = {
   ownerId: string;
