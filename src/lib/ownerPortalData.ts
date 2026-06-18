@@ -124,6 +124,7 @@ export type OwnerWorkOrder = {
   companyId: string;
   orderNumber: string;
   servicerName: string;
+  departmentName: string | null;
   receivedAt: Date;
   finishedAt: Date | null;
   locked: boolean;
@@ -157,6 +158,7 @@ export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Pro
       receivedAt: true,
       finishedAt: true,
       status: true,
+      department: { select: { name: true } },
       items: { select: { id: true, servicedAt: true } },
       deliveryNotes: {
         where: { supersededAt: null, pdfStoragePath: { not: null } },
@@ -173,6 +175,7 @@ export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Pro
     companyId: o.companyId,
     orderNumber: o.orderNumber,
     servicerName: nameByCompany.get(o.companyId) ?? "—",
+    departmentName: o.department?.name ?? null,
     receivedAt: o.receivedAt,
     finishedAt: o.finishedAt,
     locked: o.status === "LOCKED",
