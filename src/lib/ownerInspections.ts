@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getOwnerActiveLinks } from "@/lib/ownerPortalData";
+import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 
 /**
  * Redovni (tromjesečni) pregled — logika privatna za vlasnika. Rok idućeg
@@ -48,8 +49,10 @@ export async function ownerCanAccessExtinguisher(
   companyId: string,
   extinguisherId: string,
 ): Promise<OwnerExtinguisherAccess | null> {
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+  if (!ownerOrgId) return null;
   const links = await prisma.ownerCustomerLink.findMany({
-    where: { ownerId, status: "ACTIVE", companyId },
+    where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null, companyId },
     select: { customerId: true, company: { select: { name: true } } },
   });
   if (links.length === 0) return null;
@@ -146,12 +149,15 @@ export async function getOwnerInspectionStates(
   const map = new Map<string, InspectionState>();
   if (exts.length === 0) return map;
 
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
   const extinguisherIds = exts.map((e) => e.id);
-  const rows = await prisma.regularInspection.findMany({
-    where: { ownerId, extinguisherId: { in: extinguisherIds } },
-    select: { extinguisherId: true, inspectedAt: true },
-    orderBy: { inspectedAt: "desc" },
-  });
+  const rows = ownerOrgId
+    ? await prisma.regularInspection.findMany({
+        where: { ownerOrgId, extinguisherId: { in: extinguisherIds } },
+        select: { extinguisherId: true, inspectedAt: true },
+        orderBy: { inspectedAt: "desc" },
+      })
+    : [];
 
   const lastByExt = new Map<string, Date>();
   for (const r of rows) {
@@ -205,8 +211,10 @@ export async function getOwnerInspectionHistory(
   ownerId: string,
   take = 200,
 ): Promise<OwnerInspectionHistoryRow[]> {
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+  if (!ownerOrgId) return [];
   const rows = await prisma.regularInspection.findMany({
-    where: { ownerId },
+    where: { ownerOrgId },
     orderBy: { inspectedAt: "desc" },
     take,
     select: {

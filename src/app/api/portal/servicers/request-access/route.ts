@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { getOwnerSession } from "@/lib/ownerAuth";
 import { ownerCanRequestCustomer } from "@/lib/ownerServicers";
+import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 import { ownerAccessRequestEmail, sendSystemMail } from "@/lib/systemMail";
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
@@ -44,6 +45,8 @@ export const POST = apiHandler(async (req: Request) => {
   });
   if (!owner) return NextResponse.json({ error: "Račun ne postoji." }, { status: 404 });
 
+  const ownerOrgId = await resolveOwnerOrgId(session.ownerId);
+
   await prisma.ownerCustomerLink.upsert({
     where: { customerId },
     create: {
@@ -51,10 +54,12 @@ export const POST = apiHandler(async (req: Request) => {
       customerId,
       invitedEmail: owner.email,
       ownerId: session.ownerId,
+      ownerOrgId,
       status: "REQUESTED",
     },
     update: {
       ownerId: session.ownerId,
+      ownerOrgId,
       invitedEmail: owner.email,
       status: "REQUESTED",
       revokedAt: null,

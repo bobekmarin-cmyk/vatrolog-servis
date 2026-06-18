@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { getOwnerSession } from "@/lib/ownerAuth";
 import { ownerCanAccessExtinguisher } from "@/lib/ownerInspections";
+import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
@@ -68,9 +69,12 @@ export const POST = apiHandler(async (req: Request) => {
   const note = body.note?.trim() || null;
   const performedByName = body.performedByName?.trim() || null;
 
+  const ownerOrgId = await resolveOwnerOrgId(session.ownerId);
+
   const created = await prisma.regularInspection.create({
     data: {
       ownerId: session.ownerId,
+      ownerOrgId,
       companyId,
       extinguisherId,
       inspectedAt,

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 
 /**
  * "Moji servisi" — popis svih servisera koji servisiraju aparate ovog vlasnika
@@ -18,13 +19,20 @@ export type OwnerServicer = {
   requestCustomerId: string | null;
 };
 
-/** Distinct e-mailovi/OIB-i vlasnika — OIB-i kupaca s kojima ima ACTIVE vezu. */
+/** OIB-i vlasnika — OIB OwnerOrg-a + OIB-i kupaca s ACTIVE vezom u tom orgu. */
 export async function getOwnerOibs(ownerId: string): Promise<string[]> {
-  const links = await prisma.ownerCustomerLink.findMany({
-    where: { ownerId, status: "ACTIVE" },
-    select: { customer: { select: { oib: true } } },
-  });
-  return [...new Set(links.map((l) => l.customer.oib).filter((o): o is string => !!o))];
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+  if (!ownerOrgId) return [];
+  const [org, links] = await Promise.all([
+    prisma.ownerOrg.findUnique({ where: { id: ownerOrgId }, select: { oib: true } }),
+    prisma.ownerCustomerLink.findMany({
+      where: { ownerOrgId, status: "ACTIVE" },
+      select: { customer: { select: { oib: true } } },
+    }),
+  ]);
+  const oibs = links.map((l) => l.customer.oib).filter((o): o is string => !!o);
+  if (org?.oib) oibs.push(org.oib);
+  return [...new Set(oibs)];
 }
 
 async function distinctExtinguisherCount(customerId: string): Promise<number> {
@@ -45,8 +53,9 @@ const STATUS_RANK: Record<OwnerServicerStatus, number> = {
 };
 
 export async function getOwnerServicers(ownerId: string): Promise<OwnerServicer[]> {
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
   const oibs = await getOwnerOibs(ownerId);
-  if (oibs.length === 0) return [];
+  if (!ownerOrgId || oibs.length === 0) return [];
 
   const customers = await prisma.customer.findMany({
     where: { oib: { in: oibs }, deletedAt: null },
@@ -54,7 +63,7 @@ export async function getOwnerServicers(ownerId: string): Promise<OwnerServicer[
       id: true,
       companyId: true,
       company: { select: { name: true } },
-      ownerLink: { select: { ownerId: true, status: true } },
+      ownerLink: { select: { ownerOrgId: true, status: true } },
     },
   });
 
@@ -71,7 +80,7 @@ export async function getOwnerServicers(ownerId: string): Promise<OwnerServicer[
     let st: OwnerServicerStatus = "NONE";
     const link = c.ownerLink;
     if (link) {
-      if (link.ownerId === ownerId) {
+      if (link.ownerOrgId === ownerOrgId) {
         st =
           link.status === "ACTIVE"
             ? "ACTIVE"
@@ -80,7 +89,7 @@ export async function getOwnerServicers(ownerId: string): Promise<OwnerServicer[
               : link.status === "PENDING_INVITE"
                 ? "INVITED"
                 : "NONE";
-      } else if (link.ownerId && link.status === "ACTIVE") {
+      } else if (link.ownerOrgId && link.status === "ACTIVE") {
         st = "OTHER";
       }
     }
@@ -123,18 +132,19 @@ export async function ownerCanRequestCustomer(
       shortName: true,
       oib: true,
       companyId: true,
-      ownerLink: { select: { ownerId: true, status: true } },
+      ownerLink: { select: { ownerOrgId: true, status: true } },
     },
   });
   if (!customer || !customer.oib) return { error: "Kupac ne postoji." };
 
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
   const oibs = await getOwnerOibs(ownerId);
-  if (!oibs.includes(customer.oib)) {
+  if (!ownerOrgId || !oibs.includes(customer.oib)) {
     return { error: "Nemate pravo zatražiti pristup ovom servisu." };
   }
 
   const link = customer.ownerLink;
-  if (link && link.ownerId && link.ownerId !== ownerId && link.status === "ACTIVE") {
+  if (link && link.ownerOrgId && link.ownerOrgId !== ownerOrgId && link.status === "ACTIVE") {
     return { error: "Aparati ovog servisa već su povezani s drugim računom." };
   }
 

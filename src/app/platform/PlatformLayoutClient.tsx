@@ -18,6 +18,7 @@ const nav: PlatformNavSection[] = [
     label: "Sadržaj",
     items: [
       { href: "/platform/customers", label: "Kupci", icon: "👥" },
+      { href: "/platform/owners", label: "Vlasnici (portal)", icon: "🔑" },
       { href: "/platform/manufacturers", label: "Proizvođači", icon: "🏭" },
       { href: "/platform/katalog", label: "Katalog", icon: "📚" },
     ],

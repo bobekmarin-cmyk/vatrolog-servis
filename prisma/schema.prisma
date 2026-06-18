@@ -972,7 +972,7 @@ model WorkOrder {
 model DeliveryNoteYearCounter {
   companyId String
   year      Int
-  lastSeq   Int @default(0)
+  lastSeq   Int    @default(0)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -981,7 +981,7 @@ model DeliveryNoteYearCounter {
 
 /// Izdana otpremnica: službeni broj i zamrznuti PDF u storageu.
 model DeliveryNote {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -1399,17 +1399,37 @@ model AuthToken {
  * Pristup pojedinom kupcu (po tvrtki) ide kroz OwnerCustomerLink uz privolu servisera.
  */
 
+/// Entitet vlasnika aparata (sidro po OIB-u). Više login računa (`Owner`) može
+/// pripadati istom OwnerOrg-u i vidi isti skup povezanih servisa/aparata.
+model OwnerOrg {
+  id   String  @id @default(cuid())
+  /// OIB vlasnika — jedinstveni identitet kroz sve servisere.
+  oib  String  @unique
+  name String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owners             Owner[]
+  links              OwnerCustomerLink[]
+  regularInspections RegularInspection[]
+}
+
 model Owner {
   id           String  @id @default(cuid())
-  /// Jedinstveni e-mail vlasnika (lowercase). Identitet za agregaciju kroz servisere.
+  /// Jedinstveni e-mail vlasnika (lowercase). Login identitet.
   email        String  @unique
   /// Null dok vlasnik ne postavi lozinku preko pozivnice.
   passwordHash String?
   name         String?
   phone        String?
 
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
+  /// Entitet vlasnika (po OIB-u) kojem ovaj login pripada. Vidljivost se računa po orgu.
+  ownerOrgId String?
+  ownerOrg   OwnerOrg? @relation(fields: [ownerOrgId], references: [id], onDelete: SetNull)
+
+  emailVerifiedAt    DateTime?
+  lastLoginAt        DateTime?
   /// Force-logout marker (sve sesije izdane prije ovog vremena su nevažeće).
   sessionsValidAfter DateTime?
 
@@ -1421,6 +1441,7 @@ model Owner {
   regularInspections RegularInspection[]
 
   @@index([email])
+  @@index([ownerOrgId])
 }
 
 enum OwnerLinkStatus {
@@ -1444,6 +1465,10 @@ model OwnerCustomerLink {
   ownerId String?
   owner   Owner?  @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
+  /// Entitet vlasnika (po OIB-u). Vidljivost u portalu se računa po ovome.
+  ownerOrgId String?
+  ownerOrg   OwnerOrg? @relation(fields: [ownerOrgId], references: [id], onDelete: SetNull)
+
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -1451,6 +1476,11 @@ model OwnerCustomerLink {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   status OwnerLinkStatus @default(PENDING_INVITE)
+
+  /// Vendor sakrio ovaj servis iz portala (ACTIVE ali skriven). Null = vidljiv.
+  hiddenByVendorAt DateTime?
+  /// Vendor je prisilno aktivirao ovaj servis (bez privole servisera).
+  forcedByVendorAt DateTime?
 
   /// E-mail na koji je pozivnica poslana (prije nego Owner postoji).
   invitedEmail String
@@ -1467,6 +1497,7 @@ model OwnerCustomerLink {
 
   @@unique([customerId])
   @@index([ownerId])
+  @@index([ownerOrgId])
   @@index([companyId, status])
   @@index([invitedEmail])
 }
@@ -1486,6 +1517,10 @@ model RegularInspection {
 
   ownerId String
   owner   Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// Entitet vlasnika (po OIB-u) — pregled je vidljiv svim računima tog vlasnika.
+  ownerOrgId String?
+  ownerOrg   OwnerOrg? @relation(fields: [ownerOrgId], references: [id], onDelete: SetNull)
 
   /// Tvrtka (tenant) kojoj aparat pripada — za scoping i brisanje.
   companyId String
@@ -1513,6 +1548,7 @@ model RegularInspection {
   createdAt DateTime @default(now())
 
   @@index([ownerId, extinguisherId, inspectedAt])
+  @@index([ownerOrgId, extinguisherId, inspectedAt])
   @@index([companyId])
   @@index([extinguisherId])
 }

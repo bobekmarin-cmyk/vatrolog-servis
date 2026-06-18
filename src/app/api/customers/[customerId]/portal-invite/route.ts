@@ -7,6 +7,7 @@ import { generateToken } from "@/lib/authTokens";
 import { ownerPortalInviteEmail, ownerNewServicerEmail, sendSystemMail } from "@/lib/systemMail";
 import { normalizeOwnerEmail } from "@/lib/ownerAuth";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
+import { ensureOwnerOrgForOib, attachOwnerToOrg } from "@/lib/ownerOrg";
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 
@@ -60,6 +61,9 @@ export const POST = apiHandler(
         throw new AppValidationError("Za ovaj OIB ne postoji aktivan Korisnički portal.");
       }
 
+      const ownerOrgId = await ensureOwnerOrgForOib(customer.oib, customer.shortName ?? customer.name);
+      await attachOwnerToOrg(existing.ownerId, ownerOrgId);
+
       await prisma.ownerCustomerLink.upsert({
         where: { customerId },
         create: {
@@ -68,6 +72,7 @@ export const POST = apiHandler(
           invitedEmail: existing.ownerEmail,
           invitedByAccountUserId: session.accountUserId,
           ownerId: existing.ownerId,
+          ownerOrgId,
           status: "ACTIVE",
           acceptedAt: new Date(),
         },
@@ -75,6 +80,7 @@ export const POST = apiHandler(
           invitedEmail: existing.ownerEmail,
           invitedByAccountUserId: session.accountUserId,
           ownerId: existing.ownerId,
+          ownerOrgId,
           status: "ACTIVE",
           acceptedAt: new Date(),
           revokedAt: null,
@@ -223,6 +229,10 @@ export const POST = apiHandler(
       select: { id: true },
     });
 
+    // Org po OIB-u — veza ga uvijek nosi (i prije nego vlasnik registrira račun).
+    const ownerOrgId = await ensureOwnerOrgForOib(customer.oib, customer.shortName ?? customer.name);
+    if (existingOwner) await attachOwnerToOrg(existingOwner.id, ownerOrgId);
+
     const link = await prisma.ownerCustomerLink.upsert({
       where: { customerId },
       create: {
@@ -231,12 +241,14 @@ export const POST = apiHandler(
         invitedEmail: email,
         invitedByAccountUserId: session.accountUserId,
         ownerId: existingOwner?.id ?? null,
+        ownerOrgId,
         status: "PENDING_INVITE",
       },
       update: {
         invitedEmail: email,
         invitedByAccountUserId: session.accountUserId,
         ownerId: existingOwner?.id ?? null,
+        ownerOrgId,
         status: "PENDING_INVITE",
         revokedAt: null,
       },

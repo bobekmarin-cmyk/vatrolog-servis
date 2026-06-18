@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { resolveOwnerOrgId } from "@/lib/ownerOrg";
 
 /**
  * Read-only agregacija podataka za Korisnički portal. Vlasnik vidi sve kupce
- * (po tvrtkama) s kojima ima ACTIVE vezu — aparate, naloge i otpremnice.
+ * (po tvrtkama) s kojima njegov OwnerOrg ima ACTIVE i nesakrivenu vezu —
+ * aparate, naloge i otpremnice.
  */
 
 export type OwnerLinkInfo = {
@@ -13,9 +15,12 @@ export type OwnerLinkInfo = {
   customerName: string;
 };
 
+/** ACTIVE i nesakrivene veze (po vendor toggleu) za org ovog vlasnika. */
 export async function getOwnerActiveLinks(ownerId: string): Promise<OwnerLinkInfo[]> {
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+  if (!ownerOrgId) return [];
   const links = await prisma.ownerCustomerLink.findMany({
-    where: { ownerId, status: "ACTIVE" },
+    where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null },
     select: {
       id: true,
       companyId: true,
@@ -232,22 +237,32 @@ export async function getOwnerDeliveryNotes(links: OwnerLinkInfo[], take = 100):
   }));
 }
 
-/** Provjeri da vlasnik ima ACTIVE vezu s kupcem ovog radnog naloga. */
+/** Provjeri da vlasnikov org ima ACTIVE (nesakrivenu) vezu s kupcem ovog naloga. */
 export async function ownerCanAccessWorkOrder(ownerId: string, workOrderId: string): Promise<boolean> {
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+  if (!ownerOrgId) return false;
   const order = await prisma.workOrder.findUnique({
     where: { id: workOrderId },
     select: { companyId: true, customerId: true },
   });
   if (!order) return false;
   const link = await prisma.ownerCustomerLink.findFirst({
-    where: { ownerId, status: "ACTIVE", companyId: order.companyId, customerId: order.customerId },
+    where: {
+      ownerOrgId,
+      status: "ACTIVE",
+      hiddenByVendorAt: null,
+      companyId: order.companyId,
+      customerId: order.customerId,
+    },
     select: { id: true },
   });
   return !!link;
 }
 
-/** Provjeri da prijavljeni vlasnik ima ACTIVE vezu s kupcem ove otpremnice. */
+/** Provjeri da vlasnikov org ima ACTIVE (nesakrivenu) vezu s kupcem ove otpremnice. */
 export async function ownerCanAccessDeliveryNote(ownerId: string, deliveryNoteId: string): Promise<{ companyId: string; pdfStoragePath: string } | null> {
+  const ownerOrgId = await resolveOwnerOrgId(ownerId);
+  if (!ownerOrgId) return null;
   const note = await prisma.deliveryNote.findUnique({
     where: { id: deliveryNoteId },
     select: { companyId: true, pdfStoragePath: true, workOrder: { select: { customerId: true } } },
@@ -255,7 +270,13 @@ export async function ownerCanAccessDeliveryNote(ownerId: string, deliveryNoteId
   if (!note?.pdfStoragePath) return null;
 
   const link = await prisma.ownerCustomerLink.findFirst({
-    where: { ownerId, status: "ACTIVE", companyId: note.companyId, customerId: note.workOrder.customerId },
+    where: {
+      ownerOrgId,
+      status: "ACTIVE",
+      hiddenByVendorAt: null,
+      companyId: note.companyId,
+      customerId: note.workOrder.customerId,
+    },
     select: { id: true },
   });
   if (!link) return null;

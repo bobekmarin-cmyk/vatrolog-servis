@@ -6,6 +6,22 @@ import { hashToken } from "@/lib/authTokens";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 import { signOwnerSessionToken, OWNER_SESSION_COOKIE } from "@/lib/ownerAuth";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
+import { ensureOwnerOrgForOib, attachOwnerToOrg } from "@/lib/ownerOrg";
+
+/** Org veze (po OIB-u kupca) na koju se vlasnik veže pri prihvaćanju pozivnice. */
+async function resolveLinkOrgId(linkId?: string): Promise<string | null> {
+  if (!linkId) return null;
+  const link = await prisma.ownerCustomerLink.findUnique({
+    where: { id: linkId },
+    select: { ownerOrgId: true, customer: { select: { oib: true, name: true, shortName: true } } },
+  });
+  if (!link) return null;
+  if (link.ownerOrgId) return link.ownerOrgId;
+  if (link.customer.oib) {
+    return ensureOwnerOrgForOib(link.customer.oib, link.customer.shortName ?? link.customer.name);
+  }
+  return null;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +48,7 @@ export const POST = apiHandler(async (req: Request) => {
   }
 
   const email = record.email.toLowerCase();
-  const meta = (record.meta ?? {}) as { ownerCustomerLinkId?: string; customerId?: string };
+  const meta = (record.meta ?? {}) as { ownerCustomerLinkId?: string; customerId?: string; ownerOrgId?: string };
   const linkId = meta.ownerCustomerLinkId;
 
   const owner = await prisma.owner.findUnique({
@@ -41,6 +57,8 @@ export const POST = apiHandler(async (req: Request) => {
   });
   const audit = extractAuditMeta(req);
 
+  const linkOrgId = (await resolveLinkOrgId(linkId)) ?? meta.ownerOrgId ?? null;
+
   // Postojeći račun s lozinkom → samo aktiviraj vezu, korisnik se prijavljuje normalno.
   if (owner?.passwordHash) {
     await prisma.$transaction([
@@ -48,12 +66,19 @@ export const POST = apiHandler(async (req: Request) => {
         ? [
             prisma.ownerCustomerLink.update({
               where: { id: linkId },
-              data: { ownerId: owner.id, status: "ACTIVE", acceptedAt: new Date(), revokedAt: null },
+              data: {
+                ownerId: owner.id,
+                ...(linkOrgId ? { ownerOrgId: linkOrgId } : {}),
+                status: "ACTIVE",
+                acceptedAt: new Date(),
+                revokedAt: null,
+              },
             }),
           ]
         : []),
       prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
+    if (linkOrgId) await attachOwnerToOrg(owner.id, linkOrgId);
     await logAudit({
       companyId: record.companyId,
       actorType: "CUSTOMER_PORTAL",
@@ -86,14 +111,23 @@ export const POST = apiHandler(async (req: Request) => {
       ? [
           prisma.ownerCustomerLink.update({
             where: { id: linkId },
-            data: { ownerId: savedOwner.id, status: "ACTIVE", acceptedAt: new Date(), revokedAt: null },
+            data: {
+              ownerId: savedOwner.id,
+              ...(linkOrgId ? { ownerOrgId: linkOrgId } : {}),
+              status: "ACTIVE",
+              acceptedAt: new Date(),
+              revokedAt: null,
+            },
           }),
         ]
       : []),
     prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date(), ownerId: savedOwner.id } }),
   ]);
 
-  await prisma.owner.update({ where: { id: savedOwner.id }, data: { lastLoginAt: new Date() } });
+  await prisma.owner.update({
+    where: { id: savedOwner.id },
+    data: { lastLoginAt: new Date(), ...(linkOrgId ? { ownerOrgId: linkOrgId } : {}) },
+  });
 
   await logAudit({
     companyId: record.companyId,
