@@ -4,10 +4,10 @@ import { requireActiveSession } from "@/lib/auth";
 import { apiHandler, AppValidationError } from "@/lib/apiHandler";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
 import { generateToken } from "@/lib/authTokens";
-import { ownerPortalInviteEmail, ownerNewServicerEmail, passwordResetEmail, sendSystemMail } from "@/lib/systemMail";
+import { ownerPortalInviteEmail, ownerNewServicerEmail, sendSystemMail } from "@/lib/systemMail";
 import { normalizeOwnerEmail } from "@/lib/ownerAuth";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
-import { ensureOwnerOrgForOib, ensureMembership } from "@/lib/ownerOrg";
+import { ensureOwnerOrgForOib, ensureMembership, ownerOrgHasActiveAdmin } from "@/lib/ownerOrg";
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 
@@ -40,74 +40,12 @@ export const POST = apiHandler(
     });
     if (!customer) throw new AppValidationError("Kupac ne postoji.");
 
-    const body = (await req.json().catch(() => ({}))) as { action?: string; email?: string; ownerId?: string };
-    const KNOWN_ACTIONS = ["revoke", "share", "approve", "decline", "cancelInvite", "resetPassword"] as const;
+    const body = (await req.json().catch(() => ({}))) as { action?: string; email?: string };
+    const KNOWN_ACTIONS = ["revoke", "share", "approve", "decline"] as const;
     const action = (KNOWN_ACTIONS as readonly string[]).includes(body.action ?? "")
       ? (body.action as (typeof KNOWN_ACTIONS)[number])
       : "invite";
     const audit = extractAuditMeta(req);
-
-    // Pošalji vlasniku mail za reset lozinke (serviser ne vidi ni ne postavlja lozinku).
-    if (action === "resetPassword") {
-      const targetOwnerId = String(body.ownerId ?? "");
-      if (!targetOwnerId) throw new AppValidationError("Nedostaje račun.");
-      const owner = await prisma.owner.findUnique({ where: { id: targetOwnerId }, select: { email: true } });
-      if (!owner?.email) throw new AppValidationError("Račun ne postoji.");
-      const { plaintext, hash } = generateToken();
-      await prisma.authToken.create({
-        data: {
-          type: "OWNER_PASSWORD_RESET",
-          tokenHash: hash,
-          ownerId: targetOwnerId,
-          email: owner.email,
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-        },
-      });
-      const resetUrl = `${getAppBaseUrl()}/korisnik/reset-password?token=${encodeURIComponent(plaintext)}`;
-      const mail = await passwordResetEmail(resetUrl);
-      const sent = await sendSystemMail({
-        to: owner.email,
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-        kind: "PASSWORD_RESET",
-        companyId: session.companyId,
-      });
-      if (!sent.ok) return NextResponse.json({ error: `Slanje e-maila nije uspjelo: ${sent.error}` }, { status: 500 });
-      await logAudit({
-        companyId: session.companyId,
-        actorId: session.accountUserId,
-        actorType: "ACCOUNT_USER",
-        action: "customer.portal.account.resetPassword",
-        entity: "Owner",
-        entityId: targetOwnerId,
-        ip: audit.ip,
-        userAgent: audit.userAgent,
-      });
-      return NextResponse.json({ ok: true });
-    }
-
-    // Otkaži pending pozivnicu za određeni e-mail.
-    if (action === "cancelInvite") {
-      const target = normalizeOwnerEmail(body.email ?? "");
-      if (!target) throw new AppValidationError("Nedostaje e-mail.");
-      await prisma.authToken.updateMany({
-        where: { type: "OWNER_INVITE", usedAt: null, email: target },
-        data: { usedAt: new Date() },
-      });
-      await logAudit({
-        companyId: session.companyId,
-        actorId: session.accountUserId,
-        actorType: "ACCOUNT_USER",
-        action: "customer.portal.invite.cancel",
-        entity: "Customer",
-        entityId: customerId,
-        meta: { email: target },
-        ip: audit.ip,
-        userAgent: audit.userAgent,
-      });
-      return NextResponse.json({ ok: true });
-    }
 
     // Cross-serviser: poveži ovog kupca s postojećim Owner računom (po OIB-u).
     // Serviser ovime daje privolu da se njegovi aparati prikažu vlasniku.
@@ -291,8 +229,14 @@ export const POST = apiHandler(
     // Org po OIB-u — veza ga uvijek nosi (i prije nego vlasnik registrira račun).
     const ownerOrgId = await ensureOwnerOrgForOib(customer.oib, customer.shortName ?? customer.name);
 
-    // Ne degradiraj već aktivnu vezu (drugi račun je možda već aktivan) —
-    // pozivanje dodatnog računa ne smije sakriti aparate ostalim računima.
+    // Serviser poziva samo JEDNOG administratora tvrtke. Daljnje račune dodaje
+    // sam admin u korisničkom portalu — serviser ne upravlja tuđim računima.
+    if (await ownerOrgHasActiveAdmin(ownerOrgId)) {
+      throw new AppValidationError(
+        "Ovaj vlasnik već ima aktiviran korisnički portal. Daljnje račune dodaje administrator tvrtke iz portala.",
+      );
+    }
+
     const alreadyActive = customer.ownerLink?.status === "ACTIVE";
     const linkStatus = alreadyActive ? "ACTIVE" : "PENDING_INVITE";
 
@@ -320,10 +264,9 @@ export const POST = apiHandler(
     const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
 
     await prisma.$transaction([
-      // Otkaži samo prethodnu nepotrošenu pozivnicu za ISTI e-mail (resend),
-      // ne diraj pozivnice za druge račune istog vlasnika.
+      // Otkaži prethodne nepotrošene pozivnice za ovog kupca (samo jedan admin).
       prisma.authToken.updateMany({
-        where: { type: "OWNER_INVITE", usedAt: null, email },
+        where: { type: "OWNER_INVITE", usedAt: null, meta: { path: ["customerId"], equals: customerId } },
         data: { usedAt: new Date() },
       }),
       prisma.authToken.create({
@@ -334,7 +277,7 @@ export const POST = apiHandler(
           companyId: session.companyId,
           ownerId: existingOwner?.id ?? null,
           expiresAt,
-          meta: { ownerCustomerLinkId: link.id, customerId, ownerOrgId },
+          meta: { ownerCustomerLinkId: link.id, customerId, ownerOrgId, role: "ADMIN" },
         },
       }),
     ]);

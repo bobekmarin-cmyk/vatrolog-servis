@@ -128,6 +128,64 @@ export function ServicerTable({ orgId, servicers }: { orgId: string; servicers: 
   );
 }
 
+export function AccountActions({
+  orgId,
+  ownerId,
+  role,
+}: {
+  orgId: string;
+  ownerId: string;
+  role: "ADMIN" | "MEMBER";
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function call(action: "revoke" | "setRole", payload: Record<string, unknown>, key: string) {
+    setBusy(key);
+    setError(null);
+    try {
+      const res = await fetch(`/api/platform/owners/${orgId}/accounts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ownerId, ...payload }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !d.ok) {
+        setError(d.error ?? "Greška.");
+        return;
+      }
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <button
+        type="button"
+        disabled={busy !== null}
+        onClick={() => call("setRole", { role: role === "ADMIN" ? "MEMBER" : "ADMIN" }, "role")}
+        className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+      >
+        {busy === "role" ? "…" : role === "ADMIN" ? "→ Član" : "→ Admin"}
+      </button>
+      <button
+        type="button"
+        disabled={busy !== null}
+        onClick={() => {
+          if (confirm("Povući pristup ovom računu?")) void call("revoke", {}, "revoke");
+        }}
+        className="rounded-md border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+      >
+        {busy === "revoke" ? "…" : "Povuci"}
+      </button>
+      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+    </div>
+  );
+}
+
 export function InviteAccountForm({ orgId }: { orgId: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");

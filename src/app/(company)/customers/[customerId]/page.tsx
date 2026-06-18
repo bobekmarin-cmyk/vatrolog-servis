@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth";
 import EditCustomerFormWithLookup from "@/components/EditCustomerFormWithLookup";
 import CustomerPortalAccountsCard from "./CustomerPortalAccountsCard";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
-import { getCustomerPortalAccounts } from "@/lib/customerPortalAccounts";
+import { getCustomerPortalStatus } from "@/lib/customerPortalAccounts";
 
 export default async function CustomerEditPage({
   params,
@@ -38,7 +38,7 @@ export default async function CustomerEditPage({
       ? false
       : !!(await findExistingPortalOwnerByOib(customer.oib, session.companyId));
 
-  const portalAccounts = await getCustomerPortalAccounts(customer.oib, customer.id, session.companyId);
+  const portalStatus = await getCustomerPortalStatus(customer.oib, customer.id);
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -211,17 +211,8 @@ export default async function CustomerEditPage({
         linkStatus={customer.ownerLink?.status ?? null}
         invitedEmail={customer.ownerLink?.invitedEmail ?? null}
         existingPortalForOib={existingPortalForOib}
-        accounts={portalAccounts.accounts.map((a) => ({
-          ownerId: a.ownerId,
-          email: a.email,
-          name: a.name,
-          lastAccessAt: a.lastAccessAt ? a.lastAccessAt.toISOString() : null,
-          invitedByThisCompany: a.invitedByThisCompany,
-        }))}
-        pendingInvites={portalAccounts.pendingInvites.map((p) => ({
-          email: p.email,
-          invitedByThisCompany: p.invitedByThisCompany,
-        }))}
+        portalActive={portalStatus.portalActive}
+        hasPendingInvite={portalStatus.hasPendingInvite}
       />
     </main>
   );

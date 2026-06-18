@@ -28,6 +28,7 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
   void touchMembershipAccess(session.ownerId, activeOrgId);
 
   const activeOrg = orgs.find((o) => o.ownerOrgId === activeOrgId) ?? null;
+  const isAdmin = activeOrg?.role === "ADMIN";
 
   let inspectionDueCount = 0;
   try {
@@ -68,7 +69,7 @@ export default async function OwnerAppLayout({ children }: { children: React.Rea
             <OwnerLogoutButton />
           </div>
         </div>
-        <OwnerNav inspectionDueCount={inspectionDueCount} />
+        <OwnerNav inspectionDueCount={inspectionDueCount} isAdmin={isAdmin} />
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 p-4 py-6">{children}</main>

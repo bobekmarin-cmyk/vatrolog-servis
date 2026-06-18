@@ -33,6 +33,7 @@ export const VENDOR_TEMPLATE_TYPES = [
   "REGISTRATION_REQUEST_VENDOR_ALERT",
   "SUBSCRIPTION_EXPIRING",
   "OWNER_PORTAL_INVITE",
+  "OWNER_MEMBER_INVITE",
   "OWNER_PORTAL_NEW_SERVICER",
   "OWNER_PORTAL_ACCESS_REQUEST",
   "OWNER_INSPECTION_REMINDER",
@@ -277,6 +278,28 @@ export const VENDOR_TEMPLATE_DEFAULTS: Record<VendorTemplateType, VendorTemplate
       { name: "appName", description: "Naziv platforme.", example: "VatroLog" },
       { name: "servicerName", description: "Naziv servisa koji šalje pozivnicu.", example: "Vatrospas d.o.o." },
       { name: "customerName", description: "Naziv kupca/vlasnika kojem se šalje.", example: "Konzum d.d." },
+      { name: "acceptUrl", description: "Link za postavljanje lozinke i aktivaciju portala.", example: "https://vatrolog.com/korisnik/invite/abc123" },
+    ],
+  },
+
+  OWNER_MEMBER_INVITE: {
+    type: "OWNER_MEMBER_INVITE",
+    label: "Pozivnica korisniku (admin tvrtke)",
+    description:
+      "Šalje se kad administrator tvrtke u Korisničkom portalu pozove svog kolegu na pristup. Poruka ide s vendor adrese, a sadrži naziv tvrtke i CTA za postavljanje lozinke (link vrijedi 14 dana).",
+    fields: {
+      subject: "{{appName}} — pozivnica na Korisnički portal ({{customerName}})",
+      greeting: "Pozdrav,",
+      bodyText:
+        "Pozvani ste na <strong>{{appName}}</strong> Korisnički portal za tvrtku <strong>{{customerName}}</strong>. U portalu na jednom mjestu vidite vatrogasne aparate, servisne naloge i dokumente te vodite evidenciju redovnih pregleda.",
+      calloutText:
+        "Klikom na gumb ispod postavljate lozinku i aktivirate svoj pristup. Link vrijedi 14 dana.",
+      closingText: "Ako niste očekivali ovu pozivnicu, slobodno ignorirajte ovu poruku.",
+      footerNote: null,
+    },
+    variables: [
+      { name: "appName", description: "Naziv platforme.", example: "VatroLog" },
+      { name: "customerName", description: "Naziv tvrtke (vlasnika) kojoj se pristupa.", example: "Konzum d.d." },
       { name: "acceptUrl", description: "Link za postavljanje lozinke i aktivaciju portala.", example: "https://vatrolog.com/korisnik/invite/abc123" },
     ],
   },
@@ -539,6 +562,7 @@ function buildExtraHtml(
       );
 
     case "OWNER_PORTAL_INVITE":
+    case "OWNER_MEMBER_INVITE":
       return (
         emailButton({ href: vars.acceptUrl ?? "#", label: "Aktiviraj pristup", brandColor: branding.brandColor }) +
         urlFallback(vars.acceptUrl ?? "")

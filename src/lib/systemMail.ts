@@ -362,6 +362,25 @@ export async function ownerPortalInviteEmail(input: {
 }
 
 /**
+ * Pozivnica koju admin tvrtke šalje svom kolegi (preko vendor maila).
+ */
+export async function ownerMemberInviteEmail(input: {
+  customerName: string;
+  acceptUrl: string;
+}): Promise<{ subject: string; html: string; text: string }> {
+  const branding = await resolveBrandingSafe();
+  return renderVendorTemplate({
+    type: "OWNER_MEMBER_INVITE",
+    branding,
+    vars: {
+      appName: branding.fromName,
+      customerName: input.customerName,
+      acceptUrl: input.acceptUrl,
+    },
+  });
+}
+
+/**
  * Obavijest vlasniku da je novi servis podijelio svoje aparate u portal.
  */
 export async function ownerNewServicerEmail(input: {

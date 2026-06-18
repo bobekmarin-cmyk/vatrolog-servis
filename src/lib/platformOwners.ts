@@ -52,6 +52,7 @@ export type OwnerOrgAccount = {
   id: string;
   email: string;
   name: string | null;
+  role: "ADMIN" | "MEMBER";
   verified: boolean;
   hasPassword: boolean;
   lastLoginAt: Date | null;
@@ -97,8 +98,9 @@ export async function getOwnerOrgDetail(orgId: string): Promise<OwnerOrgDetail |
       name: true,
       memberships: {
         where: { status: "ACTIVE" },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ role: "asc" }, { createdAt: "asc" }],
         select: {
+          role: true,
           lastAccessAt: true,
           owner: {
             select: { id: true, email: true, name: true, emailVerifiedAt: true, passwordHash: true, lastLoginAt: true },
@@ -150,6 +152,7 @@ export async function getOwnerOrgDetail(orgId: string): Promise<OwnerOrgDetail |
       id: m.owner.id,
       email: m.owner.email,
       name: m.owner.name,
+      role: m.role,
       verified: !!m.owner.emailVerifiedAt,
       hasPassword: !!m.owner.passwordHash,
       lastLoginAt: m.owner.lastLoginAt,

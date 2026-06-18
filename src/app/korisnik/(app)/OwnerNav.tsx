@@ -9,14 +9,21 @@ const ITEMS = [
   { href: "/korisnik/pregledi", label: "Redovni pregledi", badgeKey: "inspectionDue" as const },
   { href: "/korisnik/nalozi", label: "Servisni nalozi i dokumenti" },
   { href: "/korisnik/moji-servisi", label: "Moji servisi" },
+  { href: "/korisnik/korisnici", label: "Korisnici", adminOnly: true as const },
 ];
 
-export default function OwnerNav({ inspectionDueCount = 0 }: { inspectionDueCount?: number }) {
+export default function OwnerNav({
+  inspectionDueCount = 0,
+  isAdmin = false,
+}: {
+  inspectionDueCount?: number;
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname();
   return (
     <nav className="mx-auto max-w-6xl overflow-x-auto px-4">
       <ul className="flex gap-1 border-t border-white/15 py-1">
-        {ITEMS.map((it) => {
+        {ITEMS.filter((it) => !("adminOnly" in it && it.adminOnly) || isAdmin).map((it) => {
           const active = it.href === "/korisnik" ? pathname === "/korisnik" : pathname.startsWith(it.href);
           const showBadge = it.badgeKey === "inspectionDue" && inspectionDueCount > 0;
           return (

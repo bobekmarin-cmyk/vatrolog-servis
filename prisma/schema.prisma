@@ -1421,6 +1421,13 @@ enum OwnerMembershipStatus {
   REVOKED
 }
 
+enum OwnerMembershipRole {
+  /// Admin tvrtke: upravlja korisničkim računima (poziva, povlači, role).
+  ADMIN
+  /// Član: koristi portal, ali ne upravlja računima.
+  MEMBER
+}
+
 /// Veza login-račun (`Owner`) ↔ vlasnik (`OwnerOrg`). Više-na-više: jedan e-mail
 /// može pristupati više tvrtki, a jedna tvrtka može imati više računa.
 model OwnerOrgMembership {
@@ -1433,10 +1440,12 @@ model OwnerOrgMembership {
   ownerOrg   OwnerOrg @relation(fields: [ownerOrgId], references: [id], onDelete: Cascade)
 
   status OwnerMembershipStatus @default(ACTIVE)
+  role   OwnerMembershipRole   @default(MEMBER)
 
   invitedEmail           String
   invitedByAccountUserId String?
   invitedByCompanyId     String?
+  invitedByOwnerId       String?
 
   invitedAt    DateTime  @default(now())
   acceptedAt   DateTime?

@@ -48,8 +48,16 @@ export const POST = apiHandler(async (req: Request) => {
   }
 
   const email = record.email.toLowerCase();
-  const meta = (record.meta ?? {}) as { ownerCustomerLinkId?: string; customerId?: string; ownerOrgId?: string };
+  const meta = (record.meta ?? {}) as {
+    ownerCustomerLinkId?: string;
+    customerId?: string;
+    ownerOrgId?: string;
+    role?: "ADMIN" | "MEMBER";
+    invitedByOwnerId?: string;
+  };
   const linkId = meta.ownerCustomerLinkId;
+  const inviteRole = meta.role;
+  const invitedByOwnerId = meta.invitedByOwnerId ?? null;
 
   const owner = await prisma.owner.findUnique({
     where: { email },
@@ -79,7 +87,12 @@ export const POST = apiHandler(async (req: Request) => {
       prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
     if (linkOrgId) {
-      await ensureMembership(owner.id, linkOrgId, { invitedEmail: email, invitedByCompanyId: record.companyId });
+      await ensureMembership(owner.id, linkOrgId, {
+        invitedEmail: email,
+        invitedByCompanyId: record.companyId,
+        invitedByOwnerId,
+        role: inviteRole,
+      });
     }
     await logAudit({
       companyId: record.companyId,
@@ -127,7 +140,12 @@ export const POST = apiHandler(async (req: Request) => {
   ]);
 
   if (linkOrgId) {
-    await ensureMembership(savedOwner.id, linkOrgId, { invitedEmail: email, invitedByCompanyId: record.companyId });
+    await ensureMembership(savedOwner.id, linkOrgId, {
+      invitedEmail: email,
+      invitedByCompanyId: record.companyId,
+      invitedByOwnerId,
+      role: inviteRole,
+    });
   }
   await prisma.owner.update({ where: { id: savedOwner.id }, data: { lastLoginAt: new Date() } });
 
