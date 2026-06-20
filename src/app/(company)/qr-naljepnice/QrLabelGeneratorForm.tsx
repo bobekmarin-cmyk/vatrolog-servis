@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import {
   LABEL_SHEET_PRESETS,
-  LABEL_WEIGHTS,
   formatLabelCode,
   getLabelSheetPreset,
   pageCount,
   validateLabelRange,
 } from "@/lib/labelSheets";
+
+const COMMON_WEIGHTS = [1, 2, 3, 6, 9];
 
 export default function QrLabelGeneratorForm({
   serviceCode,
@@ -18,6 +19,7 @@ export default function QrLabelGeneratorForm({
   servicerName: string;
 }) {
   const [weight, setWeight] = useState<number>(6);
+  const [customWeight, setCustomWeight] = useState<string>("");
   const [from, setFrom] = useState<number>(1);
   const [to, setTo] = useState<number>(15);
   const [presetId, setPresetId] = useState<string>(LABEL_SHEET_PRESETS[0].id);
@@ -30,8 +32,27 @@ export default function QrLabelGeneratorForm({
   const count = validation.ok ? validation.count : 0;
   const pages = validation.ok ? pageCount(count, preset) : 0;
 
+  const perPage = preset.columns * preset.rows;
+  const remainder = count > 0 ? count % perPage : 0;
+  const missing = remainder === 0 ? 0 : perPage - remainder;
+  const lastSheetUsed = remainder === 0 ? perPage : remainder;
+  const canTopUp = missing > 0 && to + missing <= 99999;
+
   const firstCode = useMemo(() => formatLabelCode(serviceCode, weight, from), [serviceCode, weight, from]);
   const lastCode = useMemo(() => formatLabelCode(serviceCode, weight, to), [serviceCode, weight, to]);
+
+  const customActive = !COMMON_WEIGHTS.includes(weight);
+
+  function selectChip(v: number) {
+    setWeight(v);
+    setCustomWeight("");
+  }
+
+  function changeCustom(value: string) {
+    setCustomWeight(value);
+    const n = Math.trunc(Number(value));
+    if (Number.isFinite(n) && n > 0) setWeight(n);
+  }
 
   function buildUrl(mode: "labels" | "calibration"): string {
     const p = new URLSearchParams();
@@ -53,75 +74,127 @@ export default function QrLabelGeneratorForm({
 
   return (
     <div className="space-y-6">
-      <section className="surface p-5 space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label className="label" htmlFor="weight">Težina / zapremina punjenja</label>
-            <select
-              id="weight"
-              className="input"
-              value={weight}
-              onChange={(e) => setWeight(Number(e.target.value))}
-            >
-              {LABEL_WEIGHTS.map((w) => (
-                <option key={w} value={w}>{w} kg / L</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label" htmlFor="from">Redni broj od</label>
+      <section className="surface p-5 space-y-6">
+        {/* 1. Težina */}
+        <div>
+          <div className="label">1. Težina / zapremina punjenja</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {COMMON_WEIGHTS.map((v) => {
+              const active = customWeight === "" && weight === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => selectChip(v)}
+                  className={`min-w-[64px] rounded-xl border px-4 py-2.5 text-center text-base font-bold transition ${
+                    active
+                      ? "border-red-600 bg-red-50 text-red-700 shadow-sm"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
+                  }`}
+                >
+                  {v}
+                  <span className="ml-1 text-xs font-normal text-slate-400">kg/L</span>
+                </button>
+              );
+            })}
+            <span className="px-1 text-sm text-slate-400">ili</span>
             <input
-              id="from"
               type="number"
               min={1}
-              max={99999}
-              className="input"
-              value={from}
-              onChange={(e) => setFrom(Math.trunc(Number(e.target.value)))}
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="to">Redni broj do</label>
-            <input
-              id="to"
-              type="number"
-              min={1}
-              max={99999}
-              className="input"
-              value={to}
-              onChange={(e) => setTo(Math.trunc(Number(e.target.value)))}
+              max={999}
+              inputMode="numeric"
+              placeholder="Ostalo"
+              aria-label="Druga težina punjenja"
+              className={`input w-28 ${customActive ? "border-red-500 ring-1 ring-red-200" : ""}`}
+              value={customWeight}
+              onChange={(e) => changeCustom(e.target.value)}
             />
           </div>
         </div>
 
+        {/* 2. Raspon rednih brojeva */}
         <div>
-          <label className="label" htmlFor="preset">Raster naljepnica</label>
-          <select id="preset" className="input" value={presetId} onChange={(e) => setPresetId(e.target.value)}>
+          <div className="label">2. Raspon rednih brojeva</div>
+          <div className="mt-2 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-xs text-slate-500" htmlFor="from">Od</label>
+              <input
+                id="from"
+                type="number"
+                min={1}
+                max={99999}
+                className="input"
+                value={from}
+                onChange={(e) => setFrom(Math.trunc(Number(e.target.value)))}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500" htmlFor="to">Do</label>
+              <input
+                id="to"
+                type="number"
+                min={1}
+                max={99999}
+                className="input"
+                value={to}
+                onChange={(e) => setTo(Math.trunc(Number(e.target.value)))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Raster */}
+        <div>
+          <label className="label" htmlFor="preset">3. Raster naljepnica</label>
+          <select id="preset" className="input mt-2" value={presetId} onChange={(e) => setPresetId(e.target.value)}>
             {LABEL_SHEET_PRESETS.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
           </select>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-            <span>Naljepnica: <strong>{preset.labelWidth} × {preset.labelHeight} mm</strong></span>
-            <span>Po arku: <strong>{preset.columns * preset.rows}</strong> ({preset.columns}×{preset.rows})</span>
-            <span>Servis: <strong>{servicerName}</strong></span>
+        {/* Pregled */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Stat label="Naljepnica" value={`${preset.labelWidth} × ${preset.labelHeight} mm`} />
+            <Stat label="Po arku" value={`${perPage} (${preset.columns}×${preset.rows})`} />
+            <Stat label="Servis" value={servicerName} />
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 text-slate-700">
-            <span>Prvi kod: <strong className="font-mono">{firstCode}</strong></span>
-            <span>Zadnji kod: <strong className="font-mono">{lastCode}</strong></span>
+          <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-3">
+            <Stat label="Prvi kod" value={firstCode} mono />
+            <Stat label="Zadnji kod" value={lastCode} mono />
+            <Stat
+              label="Ukupno"
+              value={validation.ok ? `${count} kom · ${pages} ${pages === 1 ? "arak" : "araka"}` : "—"}
+            />
           </div>
-          {validation.ok ? (
-            <div className="mt-2 text-slate-600">
-              Ukupno: <strong>{count}</strong> naljepnica · <strong>{pages}</strong> {pages === 1 ? "stranica" : "stranica"} (A4)
+          {!validation.ok ? (
+            <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              {validation.error}
+            </div>
+          ) : missing > 0 ? (
+            <div className="mt-3 flex flex-col gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+              <span>
+                Zadnji arak: <strong>{lastSheetUsed}/{perPage}</strong> — {missing} {missing === 1 ? "prazno mjesto" : "praznih mjesta"}.
+              </span>
+              {canTopUp ? (
+                <button
+                  type="button"
+                  className="btn btn-outline shrink-0 px-3 py-1.5 text-sm"
+                  onClick={() => setTo((t) => t + missing)}
+                >
+                  Dopuni do punog arka (+{missing})
+                </button>
+              ) : null}
             </div>
           ) : (
-            <div className="mt-2 font-medium text-red-700">{validation.error}</div>
+            <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+              Puni arci — nema ostatka. ✓
+            </div>
           )}
         </div>
 
+        {/* Fini pomak */}
         <div>
           <button
             type="button"
@@ -162,10 +235,11 @@ export default function QrLabelGeneratorForm({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Akcije */}
+        <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
           <button
             type="button"
-            className="btn btn-primary px-4"
+            className="btn btn-primary px-5"
             disabled={!validation.ok}
             onClick={() => open("labels")}
           >
@@ -185,6 +259,15 @@ export default function QrLabelGeneratorForm({
           <li>Ako raster nije poravnat s arkom, korigirajte <strong>fini pomak X/Y</strong> i ponovite.</li>
         </ul>
       </section>
+    </div>
+  );
+}
+
+function Stat({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
+      <div className={`mt-0.5 font-semibold text-slate-800 ${mono ? "font-mono" : ""}`}>{value}</div>
     </div>
   );
 }
