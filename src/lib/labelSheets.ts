@@ -20,6 +20,8 @@ export function mm(value: number): number {
   return value * MM_TO_PT;
 }
 
+export type LabelLayout = "vertical" | "horizontal";
+
 export type LabelSheetPreset = {
   id: string;
   label: string;
@@ -35,6 +37,12 @@ export type LabelSheetPreset = {
   /** Razmaci između naljepnica (mm). */
   columnGap: number;
   rowGap: number;
+  /**
+   * Raspored sadržaja na naljepnici:
+   *  - "vertical"   – logo / QR / kod / servis naslagani okomito (veće naljepnice)
+   *  - "horizontal" – QR lijevo, tekst desno (niske/uske naljepnice)
+   */
+  layout: LabelLayout;
 };
 
 /**
@@ -56,6 +64,37 @@ export const LABEL_SHEET_PRESETS: LabelSheetPreset[] = [
     // (297 − 5 × 50,8) / 2 = 21,5 → vertikalno centrirano.
     marginTop: 21.5,
     rowGap: 0,
+    layout: "vertical",
+  },
+  {
+    // Avery Zweckform L4778 (i istovjetni: L7636, J8636, L6009…).
+    id: "45_7x21_2-48",
+    label: "45,7 × 21,2 mm — 48/A4 (4 × 12) · Avery L4778",
+    page: { width: 210, height: 297 },
+    columns: 4,
+    rows: 12,
+    labelWidth: 45.7,
+    labelHeight: 21.2,
+    marginLeft: 9.85,
+    marginTop: 21.3,
+    columnGap: 2.5,
+    rowGap: 0,
+    layout: "horizontal",
+  },
+  {
+    // Avery Zweckform L4773 (i istovjetni: L7159, J8159, L6035…).
+    id: "63_5x33_9-24",
+    label: "63,5 × 33,9 mm — 24/A4 (3 × 8) · Avery L4773",
+    page: { width: 210, height: 297 },
+    columns: 3,
+    rows: 8,
+    labelWidth: 63.5,
+    labelHeight: 33.9,
+    marginLeft: 7.25,
+    marginTop: 12.9,
+    columnGap: 2.5,
+    rowGap: 0,
+    layout: "horizontal",
   },
 ];
 

@@ -57,7 +57,38 @@ function LabelCell({
   servicerName: string;
 }) {
   const pos = cellPosition(preset, index, offsetX, offsetY);
-  // Dimenzije sadržaja skaliramo prema visini naljepnice da stane unutar reza.
+
+  if (preset.layout === "horizontal") {
+    // QR lijevo, tekst desno — za niske/uske naljepnice.
+    const padding = mm(preset.labelHeight * 0.06);
+    const qr = mm(preset.labelHeight) * 0.82;
+    const logoSize = mm(preset.labelHeight) * 0.11;
+    const codeSize = mm(preset.labelHeight) * 0.1;
+    const servicerSize = mm(preset.labelHeight) * 0.075;
+
+    return (
+      <View style={[styles.cell, { ...pos, padding, flexDirection: "row" }]}>
+        <Image src={label.qrDataUrl} style={{ width: qr, height: qr }} />
+        <View style={{ flex: 1, flexDirection: "column", justifyContent: "center", paddingLeft: mm(1.5) }}>
+          <View style={styles.logoRow}>
+            <Text style={[styles.logoVatro, { fontSize: logoSize }]}>Vatro</Text>
+            <Text style={[styles.logoLog, { fontSize: logoSize }]}>Log</Text>
+          </View>
+          <Text style={[styles.code, { fontSize: codeSize, marginTop: mm(0.6), textAlign: "left" }]}>
+            {label.code}
+          </Text>
+          <Text
+            style={[styles.servicer, { fontSize: servicerSize, marginTop: mm(0.4), textAlign: "left" }]}
+            wrap={false}
+          >
+            {servicerName}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Okomiti raspored — logo / QR / kod / servis naslagani (veće naljepnice).
   const qr = mm(Math.min(preset.labelWidth, preset.labelHeight) * 0.5);
   const logoSize = mm(preset.labelHeight) * 0.09;
   const codeSize = mm(preset.labelHeight) * 0.085;
@@ -105,9 +136,10 @@ function CalibrationPage({
       {/* Okviri naljepnica (provjera poklapanja s rezanim arkom) */}
       {cells.map((i) => {
         const pos = cellPosition(preset, i, offsetX, offsetY);
+        const fontSize = Math.min(7, mm(preset.labelHeight) * 0.11);
         return (
           <View key={i} style={[styles.calCell, pos]}>
-            <Text style={styles.calCellText}>
+            <Text style={[styles.calCellText, { fontSize }]}>
               {preset.labelWidth} × {preset.labelHeight} mm
             </Text>
           </View>
