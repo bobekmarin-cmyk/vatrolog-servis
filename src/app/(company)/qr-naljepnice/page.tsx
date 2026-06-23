@@ -16,12 +16,11 @@ export default async function QrLabelsPage() {
   if (!company) redirect("/api/auth/logout");
 
   return (
-    <main className="max-w-3xl space-y-6">
+    <main className="max-w-5xl space-y-4">
       <div>
         <h1 className="text-2xl font-bold">QR naljepnice</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Generirajte arak QR naljepnica za odabranu težinu punjenja i raspon rednih brojeva. Naljepnice unaprijed
-          isprintajte i nalijepite na aparate — kod se aparatu dodjeljuje pri prvom servisu.
+          Isprintajte arak QR naljepnica unaprijed i nalijepite na aparate — kod se dodjeljuje pri prvom servisu.
         </p>
       </div>
 

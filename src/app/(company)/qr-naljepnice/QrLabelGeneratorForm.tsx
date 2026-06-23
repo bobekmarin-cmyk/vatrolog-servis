@@ -73,8 +73,9 @@ export default function QrLabelGeneratorForm({
   }
 
   return (
-    <div className="space-y-6">
-      <section className="surface p-5 space-y-6">
+    <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      {/* LIJEVO — kontrole */}
+      <section className="surface space-y-4 p-4">
         {/* 1. Težina */}
         <div>
           <div className="label">1. Težina / zapremina punjenja</div>
@@ -86,7 +87,7 @@ export default function QrLabelGeneratorForm({
                   key={v}
                   type="button"
                   onClick={() => selectChip(v)}
-                  className={`min-w-[64px] rounded-xl border px-4 py-2.5 text-center text-base font-bold transition ${
+                  className={`min-w-[56px] rounded-lg border px-3 py-2 text-center text-base font-bold transition ${
                     active
                       ? "border-red-600 bg-red-50 text-red-700 shadow-sm"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
@@ -105,7 +106,7 @@ export default function QrLabelGeneratorForm({
               inputMode="numeric"
               placeholder="Ostalo"
               aria-label="Druga težina punjenja"
-              className={`input w-28 ${customActive ? "border-red-500 ring-1 ring-red-200" : ""}`}
+              className={`input w-24 ${customActive ? "border-red-500 ring-1 ring-red-200" : ""}`}
               value={customWeight}
               onChange={(e) => changeCustom(e.target.value)}
             />
@@ -115,7 +116,7 @@ export default function QrLabelGeneratorForm({
         {/* 2. Raspon rednih brojeva */}
         <div>
           <div className="label">2. Raspon rednih brojeva</div>
-          <div className="mt-2 grid gap-4 sm:grid-cols-2">
+          <div className="mt-2 grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500" htmlFor="from">Od</label>
               <input
@@ -153,60 +154,19 @@ export default function QrLabelGeneratorForm({
           </select>
         </div>
 
-        {/* Pregled */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Stat label="Naljepnica" value={`${preset.labelWidth} × ${preset.labelHeight} mm`} />
-            <Stat label="Po arku" value={`${perPage} (${preset.columns}×${preset.rows})`} />
-            <Stat label="Servis" value={servicerName} />
-          </div>
-          <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-3">
-            <Stat label="Prvi kod" value={firstCode} mono />
-            <Stat label="Zadnji kod" value={lastCode} mono />
-            <Stat
-              label="Ukupno"
-              value={validation.ok ? `${count} kom · ${pages} ${pages === 1 ? "arak" : "araka"}` : "—"}
-            />
-          </div>
-          {!validation.ok ? (
-            <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-              {validation.error}
-            </div>
-          ) : missing > 0 ? (
-            <div className="mt-3 flex flex-col gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
-              <span>
-                Zadnji arak: <strong>{lastSheetUsed}/{perPage}</strong> — {missing} {missing === 1 ? "prazno mjesto" : "praznih mjesta"}.
-              </span>
-              {canTopUp ? (
-                <button
-                  type="button"
-                  className="btn btn-outline shrink-0 px-3 py-1.5 text-sm"
-                  onClick={() => setTo((t) => t + missing)}
-                >
-                  Dopuni do punog arka (+{missing})
-                </button>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-              Puni arci — nema ostatka. ✓
-            </div>
-          )}
-        </div>
-
         {/* Fini pomak */}
-        <div>
+        <div className="border-t border-slate-200 pt-3">
           <button
             type="button"
             className="text-sm font-medium text-slate-600 underline-offset-2 hover:underline"
             onClick={() => setShowAdvanced((v) => !v)}
           >
-            {showAdvanced ? "Sakrij fini pomak" : "Fini pomak (kalibracija pisača)"}
+            {showAdvanced ? "− Fini pomak (kalibracija pisača)" : "+ Fini pomak (kalibracija pisača)"}
           </button>
           {showAdvanced ? (
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="label" htmlFor="offsetX">Pomak X (mm)</label>
+                <label className="text-xs text-slate-500" htmlFor="offsetX">Pomak X (mm)</label>
                 <input
                   id="offsetX"
                   type="number"
@@ -219,7 +179,7 @@ export default function QrLabelGeneratorForm({
                 />
               </div>
               <div>
-                <label className="label" htmlFor="offsetY">Pomak Y (mm)</label>
+                <label className="text-xs text-slate-500" htmlFor="offsetY">Pomak Y (mm)</label>
                 <input
                   id="offsetY"
                   type="number"
@@ -234,31 +194,69 @@ export default function QrLabelGeneratorForm({
             </div>
           ) : null}
         </div>
-
-        {/* Akcije */}
-        <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-          <button
-            type="button"
-            className="btn btn-primary px-5"
-            disabled={!validation.ok}
-            onClick={() => open("labels")}
-          >
-            Generiraj PDF
-          </button>
-          <button type="button" className="btn btn-outline px-4" onClick={() => open("calibration")}>
-            Kalibracijski list
-          </button>
-        </div>
       </section>
 
-      <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <div className="font-semibold">Važno za točan ispis</div>
-        <ul className="mt-1 list-disc space-y-1 pl-5">
-          <li>U dijalogu za ispis postavite <strong>Mjerilo: 100%</strong> / „Stvarna veličina” (ne „Prilagodi stranici”).</li>
-          <li>Prvo ispišite <strong>kalibracijski list</strong> i ravnalom provjerite da referentne linije mjere točno 100 mm.</li>
-          <li>Ako raster nije poravnat s arkom, korigirajte <strong>fini pomak X/Y</strong> i ponovite.</li>
-        </ul>
-      </section>
+      {/* DESNO — pregled + akcije + napomena */}
+      <div className="space-y-4 lg:sticky lg:top-4">
+        <section className="surface space-y-3 p-4">
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Naljepnica" value={`${preset.labelWidth} × ${preset.labelHeight} mm`} />
+            <Stat label="Po arku" value={`${perPage} (${preset.columns}×${preset.rows})`} />
+            <Stat label="Servis" value={servicerName} />
+          </div>
+          <div className="grid grid-cols-3 gap-3 border-t border-slate-200 pt-3">
+            <Stat label="Prvi kod" value={firstCode} mono />
+            <Stat label="Zadnji kod" value={lastCode} mono />
+            <Stat
+              label="Ukupno"
+              value={validation.ok ? `${count} kom · ${pages} ${pages === 1 ? "arak" : "araka"}` : "—"}
+            />
+          </div>
+
+          {!validation.ok ? (
+            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              {validation.error}
+            </div>
+          ) : missing > 0 ? (
+            <div className="flex flex-col gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <span>
+                Zadnji arak: <strong>{lastSheetUsed}/{perPage}</strong> — {missing} {missing === 1 ? "prazno mjesto" : "praznih mjesta"}.
+              </span>
+              {canTopUp ? (
+                <button
+                  type="button"
+                  className="btn btn-outline self-start px-3 py-1.5 text-sm"
+                  onClick={() => setTo((t) => t + missing)}
+                >
+                  Dopuni do punog arka (+{missing})
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+              Puni arci — nema ostatka. ✓
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+            <button
+              type="button"
+              className="btn btn-primary px-5"
+              disabled={!validation.ok}
+              onClick={() => open("labels")}
+            >
+              Generiraj PDF
+            </button>
+            <button type="button" className="btn btn-outline px-4" onClick={() => open("calibration")}>
+              Kalibracijski list
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <span className="font-semibold">Za točan ispis:</span> ispis na <strong>100% / „Stvarna veličina”</strong> (ne „Prilagodi stranici”). Prvo ispišite <strong>kalibracijski list</strong> i provjerite da linije mjere 100 mm; po potrebi korigirajte <strong>fini pomak X/Y</strong>.
+        </section>
+      </div>
     </div>
   );
 }
