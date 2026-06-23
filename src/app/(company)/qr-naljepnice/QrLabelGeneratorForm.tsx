@@ -10,6 +10,8 @@ import {
 } from "@/lib/labelSheets";
 
 const COMMON_WEIGHTS = [1, 2, 3, 6, 9];
+const DEFAULT_PRESET = LABEL_SHEET_PRESETS[0];
+const DEFAULT_TO = DEFAULT_PRESET.columns * DEFAULT_PRESET.rows;
 
 export default function QrLabelGeneratorForm({
   serviceCode,
@@ -21,8 +23,8 @@ export default function QrLabelGeneratorForm({
   const [weight, setWeight] = useState<number>(6);
   const [customWeight, setCustomWeight] = useState<string>("");
   const [from, setFrom] = useState<number>(1);
-  const [to, setTo] = useState<number>(15);
-  const [presetId, setPresetId] = useState<string>(LABEL_SHEET_PRESETS[0].id);
+  const [to, setTo] = useState<number>(DEFAULT_TO);
+  const [presetId, setPresetId] = useState<string>(DEFAULT_PRESET.id);
   const [offsetX, setOffsetX] = useState<number>(0);
   const [offsetY, setOffsetY] = useState<number>(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -146,12 +148,35 @@ export default function QrLabelGeneratorForm({
 
         {/* 3. Raster */}
         <div>
-          <label className="label" htmlFor="preset">3. Raster naljepnica</label>
-          <select id="preset" className="input mt-2" value={presetId} onChange={(e) => setPresetId(e.target.value)}>
-            {LABEL_SHEET_PRESETS.map((p) => (
-              <option key={p.id} value={p.id}>{p.label}</option>
-            ))}
-          </select>
+          <div className="label">3. Raster naljepnica (Avery)</div>
+          <div className="mt-2 grid gap-2">
+            {LABEL_SHEET_PRESETS.map((p) => {
+              const active = p.id === presetId;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPresetId(p.id)}
+                  className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition ${
+                    active
+                      ? "border-red-600 bg-red-50 ring-1 ring-red-200"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  <LabelPreview preset={p} servicerName={servicerName} code={firstCode} />
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-slate-800">
+                      {p.labelWidth} × {p.labelHeight} mm
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {p.columns * p.rows}/A4 ({p.columns}×{p.rows})
+                    </div>
+                    <div className="mt-0.5 text-xs font-medium text-slate-400">{averyName(p.label)}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Fini pomak */}
@@ -267,5 +292,76 @@ function Stat({ label, value, mono }: { label: string; value: string; mono?: boo
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`mt-0.5 font-semibold text-slate-800 ${mono ? "font-mono" : ""}`}>{value}</div>
     </div>
+  );
+}
+
+function averyName(label: string): string {
+  const parts = label.split("·");
+  return parts.length > 1 ? parts[parts.length - 1].trim() : label;
+}
+
+/** Mali vizualni primjer naljepnice (točan omjer stranica + raspored). */
+function LabelPreview({
+  preset,
+  servicerName,
+  code,
+}: {
+  preset: { labelWidth: number; labelHeight: number };
+  servicerName: string;
+  code: string;
+}) {
+  return (
+    <div
+      className="shrink-0 rounded border border-slate-300 bg-white p-1 shadow-sm"
+      style={{ width: 116, aspectRatio: `${preset.labelWidth} / ${preset.labelHeight}` }}
+    >
+      <div className="flex h-full items-center gap-1">
+        <MiniQr />
+        <div className="flex min-w-0 flex-col justify-center leading-none">
+          <div className="text-[7px] font-extrabold text-slate-900">
+            Vatro<span className="text-red-600">Log</span>
+          </div>
+          <div className="mt-[1px] truncate text-[6px] text-slate-500">{servicerName}</div>
+          <div className="mt-[1px] text-[7px] font-bold text-slate-900">{code}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniQr() {
+  return (
+    <svg viewBox="0 0 100 100" className="h-full w-auto shrink-0" style={{ aspectRatio: "1" }} aria-hidden="true">
+      <rect width="100" height="100" fill="#fff" />
+      {/* finder patterns (3 kuta) */}
+      {[
+        [4, 4],
+        [66, 4],
+        [4, 66],
+      ].map(([x, y], i) => (
+        <g key={i}>
+          <rect x={x} y={y} width="30" height="30" fill="#0f172a" />
+          <rect x={x + 5} y={y + 5} width="20" height="20" fill="#fff" />
+          <rect x={x + 10} y={y + 10} width="10" height="10" fill="#0f172a" />
+        </g>
+      ))}
+      {/* nekoliko modula da izgleda kao QR */}
+      {[
+        [44, 8],
+        [52, 16],
+        [44, 24],
+        [60, 44],
+        [44, 52],
+        [52, 60],
+        [70, 52],
+        [44, 70],
+        [60, 78],
+        [78, 70],
+        [52, 86],
+        [86, 86],
+      ].map(([x, y], i) => (
+        <rect key={`m${i}`} x={x} y={y} width="8" height="8" fill="#0f172a" />
+      ))}
+    </svg>
   );
 }

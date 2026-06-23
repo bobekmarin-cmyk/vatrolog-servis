@@ -51,22 +51,6 @@ export type LabelSheetPreset = {
  */
 export const LABEL_SHEET_PRESETS: LabelSheetPreset[] = [
   {
-    id: "70x50_8-15",
-    label: "70 × 50,8 mm — 15/A4 (3 × 5)",
-    page: { width: 210, height: 297 },
-    columns: 3,
-    rows: 5,
-    labelWidth: 70,
-    labelHeight: 50.8,
-    // 3 × 70 = 210 → puna širina, od ruba do ruba (bez bočnih margina).
-    marginLeft: 0,
-    columnGap: 0,
-    // (297 − 5 × 50,8) / 2 = 21,5 → vertikalno centrirano.
-    marginTop: 21.5,
-    rowGap: 0,
-    layout: "vertical",
-  },
-  {
     // Avery Zweckform L4778 (i istovjetni: L7636, J8636, L6009…).
     id: "45_7x21_2-48",
     label: "45,7 × 21,2 mm — 48/A4 (4 × 12) · Avery L4778",
