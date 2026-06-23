@@ -59,41 +59,41 @@ function LabelCell({
   const pos = cellPosition(preset, index, offsetX, offsetY);
 
   if (preset.layout === "horizontal") {
-    // QR lijevo, tekst desno — za niske/uske naljepnice.
-    const padding = mm(preset.labelHeight * 0.06);
-    const qr = mm(preset.labelHeight) * 0.82;
-    const logoSize = mm(preset.labelHeight) * 0.11;
-    const codeSize = mm(preset.labelHeight) * 0.1;
-    const servicerSize = mm(preset.labelHeight) * 0.075;
+    // QR lijevo, tekst desno (logo / naziv tvrtke / interni broj) — niske/uske naljepnice.
+    const padding = mm(preset.labelHeight * 0.07);
+    const qr = mm(preset.labelHeight) * 0.8;
+    const logoSize = mm(preset.labelHeight) * 0.125;
+    const companySize = mm(preset.labelHeight) * 0.1;
+    const codeSize = mm(preset.labelHeight) * 0.115;
 
     return (
-      <View style={[styles.cell, { ...pos, padding, flexDirection: "row" }]}>
+      <View style={[styles.cell, { ...pos, padding, flexDirection: "row", alignItems: "center" }]}>
         <Image src={label.qrDataUrl} style={{ width: qr, height: qr }} />
-        <View style={{ flex: 1, flexDirection: "column", justifyContent: "center", paddingLeft: mm(1.5) }}>
+        <View style={{ flex: 1, flexDirection: "column", justifyContent: "center", paddingLeft: mm(2) }}>
           <View style={styles.logoRow}>
             <Text style={[styles.logoVatro, { fontSize: logoSize }]}>Vatro</Text>
             <Text style={[styles.logoLog, { fontSize: logoSize }]}>Log</Text>
           </View>
-          <Text style={[styles.code, { fontSize: codeSize, marginTop: mm(0.6), textAlign: "left" }]}>
-            {label.code}
-          </Text>
           <Text
-            style={[styles.servicer, { fontSize: servicerSize, marginTop: mm(0.4), textAlign: "left" }]}
+            style={[styles.servicer, { fontSize: companySize, marginTop: mm(0.6), textAlign: "left" }]}
             wrap={false}
           >
             {servicerName}
+          </Text>
+          <Text style={[styles.code, { fontSize: codeSize, marginTop: mm(0.5), textAlign: "left" }]}>
+            {label.code}
           </Text>
         </View>
       </View>
     );
   }
 
-  // Okomiti raspored — logo / QR / kod / servis naslagani (veće naljepnice).
+  // Okomiti raspored — logo / QR / naziv tvrtke / interni broj (veće naljepnice).
   const qr = mm(Math.min(preset.labelWidth, preset.labelHeight) * 0.5);
-  const logoSize = mm(preset.labelHeight) * 0.09;
-  const codeSize = mm(preset.labelHeight) * 0.085;
-  const servicerSize = mm(preset.labelHeight) * 0.058;
-  const padding = mm(2);
+  const logoSize = mm(preset.labelHeight) * 0.1;
+  const companySize = mm(preset.labelHeight) * 0.065;
+  const codeSize = mm(preset.labelHeight) * 0.095;
+  const padding = mm(2.5);
 
   return (
     <View style={[styles.cell, { ...pos, padding }]}>
@@ -102,10 +102,10 @@ function LabelCell({
         <Text style={[styles.logoLog, { fontSize: logoSize }]}>Log</Text>
       </View>
       <Image src={label.qrDataUrl} style={{ width: qr, height: qr }} />
-      <Text style={[styles.code, { fontSize: codeSize, marginTop: mm(1) }]}>{label.code}</Text>
-      <Text style={[styles.servicer, { fontSize: servicerSize, marginTop: mm(0.5) }]} wrap={false}>
+      <Text style={[styles.servicer, { fontSize: companySize, marginTop: mm(1) }]} wrap={false}>
         {servicerName}
       </Text>
+      <Text style={[styles.code, { fontSize: codeSize, marginTop: mm(0.5) }]}>{label.code}</Text>
     </View>
   );
 }
