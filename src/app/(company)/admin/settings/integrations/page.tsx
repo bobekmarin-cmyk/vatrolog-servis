@@ -31,10 +31,6 @@ export default async function IntegrationsSettingsPage() {
             hasToken: !!settings?.apiTokenEnc,
             paymentMethod: settings?.paymentMethod ?? "bankTransfer",
             paymentDueDays: settings?.paymentDueDays ?? 15,
-            labelKompletCode: settings?.labelKompletCode ?? "",
-            labelKompletName: settings?.labelKompletName ?? "Komplet naljepnica",
-            labelKompletPrice:
-              settings?.labelKompletPrice != null ? String(settings.labelKompletPrice) : "",
             lastTestOkAt: settings?.lastTestOkAt?.toISOString() ?? null,
           }}
         />

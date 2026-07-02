@@ -8,21 +8,25 @@ import { buildVariantSnapshot } from "@/lib/serviceVariant";
 import { syncCompanyServiceCatalog } from "@/lib/companyServiceCatalog";
 import { formatPartUnit } from "@/lib/partsCatalog";
 import { getActiveDeliveryNote } from "@/lib/deliveryNoteIssue";
-import type { ERacuniSettingsResolved, InvoiceLine } from "@/lib/eracuni";
-import { PartUnit } from "@prisma/client";
+import { collectLabelRowsForDeliveryNote } from "@/lib/serviceLabels";
+import { serviceLabelKindLabel } from "@/lib/serviceLabelKind";
+import type { InvoiceLine } from "@/lib/eracuni";
+import { PartUnit, type ServiceLabelKind } from "@prisma/client";
 
 /**
  * Slaganje stavki računa za e-računi iz zaključanog radnog naloga.
  *
  * Redoslijed stavki prati postojeći račun korisnika:
  *   1. periodični pregledi (po varijanti aparata)
- *   2. komplet naljepnica (1 po pregledanom aparatu)
+ *   2. naljepnice (svaka vrsta svoja stavka — iste kao na otpremnici)
  *   3. unutarnji pregledi
  *   4. dodatne (custom) usluge
  *   5. rezervni dijelovi
  *
- * Cijene: VatroLog šifrarnik je izvor istine. Rabat: postoci po kategorijama
- * s kupca (usluge / naljepnice / dijelovi), šalju se kao discountPercentage.
+ * Cijene: VatroLog šifrarnik je izvor istine. Šifre naljepnica dolaze iz
+ * taba Ovlaštenja (zajedničke ili po proizvođaču), a cijene naljepnica po
+ * vrsti s Company. Rabat: postoci po kategorijama s kupca (usluge /
+ * naljepnice / dijelovi), šalju se kao discountPercentage.
  */
 
 export type EracuniInvoiceBuild =
@@ -53,7 +57,6 @@ function pct(v: unknown): number {
 export async function buildEracuniInvoice(
   companyId: string,
   workOrderId: string,
-  settings: ERacuniSettingsResolved,
 ): Promise<EracuniInvoiceBuild> {
   const order = await prisma.workOrder.findFirst({
     where: { id: workOrderId, companyId },
@@ -225,13 +228,45 @@ export async function buildEracuniInvoice(
     if (c.price === null) problems.push(`Dodatna usluga „${c.name}” nema cijenu (Postavke → Usluge).`);
   }
 
-  // --- Naljepnice: komplet po pregledanom aparatu ---
-  const kompletQty = realItems.length;
-  if (!settings.labelKompletCode) {
-    problems.push("Nedostaje šifra za „Komplet naljepnica” (Postavke → Integracije → e-računi).");
+  // --- Naljepnice: svaka vrsta je svoja stavka (iste kao na otpremnici) ---
+  const [labelRows, companyLabelPrices] = await Promise.all([
+    collectLabelRowsForDeliveryNote(prisma, {
+      companyId,
+      workOrderId: order.id,
+      locked: true,
+    }),
+    prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        labelPeriodicPrice: true,
+        labelApparatusMassPrice: true,
+        labelCylinderMassPrice: true,
+      },
+    }),
+  ]);
+
+  function labelPriceFor(kind: ServiceLabelKind): number | null {
+    if (!companyLabelPrices) return null;
+    const raw =
+      kind === "PERIODIC"
+        ? companyLabelPrices.labelPeriodicPrice
+        : kind === "APPARATUS_MASS"
+          ? companyLabelPrices.labelApparatusMassPrice
+          : companyLabelPrices.labelCylinderMassPrice;
+    return raw !== null ? Number(raw) : null;
   }
-  if (settings.labelKompletPrice === null) {
-    problems.push("Nedostaje cijena za „Komplet naljepnica” (Postavke → Integracije → e-računi).");
+
+  const kindsMissingPrice = new Set<ServiceLabelKind>();
+  for (const row of labelRows) {
+    if (!row.code) {
+      problems.push(`Naljepnica „${row.kindLabel}” nema šifru (Postavke → Ovlaštenja).`);
+    }
+    if (labelPriceFor(row.kind) === null && !kindsMissingPrice.has(row.kind)) {
+      kindsMissingPrice.add(row.kind);
+      problems.push(
+        `Nedostaje cijena za vrstu naljepnice „${serviceLabelKindLabel(row.kind)}” (Postavke → Ovlaštenja → Cijene naljepnica).`,
+      );
+    }
   }
 
   // --- Rezervni dijelovi (snapshot s naloga) ---
@@ -272,7 +307,7 @@ export async function buildEracuniInvoice(
     return { ok: false, problems };
   }
 
-  // --- Sastavljanje redoslijedom: periodični → komplet → unutarnji → custom → dijelovi ---
+  // --- Sastavljanje redoslijedom: periodični → naljepnice → unutarnji → custom → dijelovi ---
   const discServices = pct(order.customer.discountServicesPct);
   const discLabels = pct(order.customer.discountLabelsPct);
   const discParts = pct(order.customer.discountPartsPct);
@@ -294,14 +329,16 @@ export async function buildEracuniInvoice(
     });
   }
 
-  lines.push({
-    code: settings.labelKompletCode,
-    description: settings.labelKompletName,
-    quantity: kompletQty,
-    unit: "kom",
-    netPrice: settings.labelKompletPrice!,
-    discountPercentage: discLabels,
-  });
+  for (const row of labelRows) {
+    lines.push({
+      code: row.code,
+      description: row.kindLabel,
+      quantity: row.quantity,
+      unit: "kom",
+      netPrice: labelPriceFor(row.kind)!,
+      discountPercentage: discLabels,
+    });
+  }
 
   for (const s of sortedServices.filter((s) => s.kind === "INTERNAL")) {
     lines.push({

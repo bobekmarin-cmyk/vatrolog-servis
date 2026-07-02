@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDialog } from "@/components/ui/useDialog";
 import SharedCodesPanel from "./SharedCodesPanel";
+import LabelPricesPanel, { type LabelPrices } from "./LabelPricesPanel";
 import AuthorizationsTable from "./AuthorizationsTable";
 
 export type LabelCodeStrategy = "SHARED" | "PER_MANUFACTURER";
@@ -27,6 +28,7 @@ export type SharedCodes = {
 export default function AuthorizationsClient(props: {
   initialStrategy: LabelCodeStrategy;
   initialSharedCodes: SharedCodes;
+  initialLabelPrices: LabelPrices;
   rows: AuthorizationRow[];
 }) {
   const router = useRouter();
@@ -133,17 +135,7 @@ export default function AuthorizationsClient(props: {
         <SharedCodesPanel initial={props.initialSharedCodes} totalManufacturers={props.rows.length} />
       ) : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <div className="text-sm font-semibold text-slate-900">Cijene naljepnica</div>
-        <div className="text-xs text-slate-500">
-          Jedinstvene cijene po vrsti naljepnice — primjenjuju se neovisno o proizvođaču.
-        </div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <PriceField label="Cijena PP naljepnice" />
-          <PriceField label="Cijena naljepnice mase aparata" />
-          <PriceField label="Cijena naljepnice mase bočice" />
-        </div>
-      </div>
+      <LabelPricesPanel initial={props.initialLabelPrices} />
 
       <AuthorizationsTable
         strategy={strategy}
@@ -193,17 +185,3 @@ function StrategyOption(props: {
   );
 }
 
-function PriceField({ label }: { label: string }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-slate-600">{label}</span>
-      <input
-        type="text"
-        className="input h-9 cursor-not-allowed bg-slate-50 text-sm text-slate-400"
-        placeholder="Uskoro"
-        disabled
-        title="Polje cijene bit će aktivirano u budućnosti."
-      />
-    </label>
-  );
-}

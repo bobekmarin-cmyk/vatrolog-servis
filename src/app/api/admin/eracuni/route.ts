@@ -15,9 +15,6 @@ type Body = {
   apiToken?: unknown;
   paymentMethod?: unknown;
   paymentDueDays?: unknown;
-  labelKompletCode?: unknown;
-  labelKompletName?: unknown;
-  labelKompletPrice?: unknown;
 };
 
 function str(v: unknown): string {
@@ -44,13 +41,6 @@ export async function POST(req: NextRequest) {
   const paymentMethod = str(body.paymentMethod) || "bankTransfer";
   const dueDaysRaw = Number(body.paymentDueDays);
   const paymentDueDays = Number.isInteger(dueDaysRaw) && dueDaysRaw >= 0 && dueDaysRaw <= 365 ? dueDaysRaw : 15;
-  const labelKompletCode = str(body.labelKompletCode) || null;
-  const labelKompletName = str(body.labelKompletName) || "Komplet naljepnica";
-  const priceRaw = body.labelKompletPrice;
-  const priceNum = priceRaw === "" || priceRaw === null || priceRaw === undefined ? null : Number(priceRaw);
-  if (priceNum !== null && (!Number.isFinite(priceNum) || priceNum < 0)) {
-    return NextResponse.json({ error: "Neispravna cijena kompleta naljepnica." }, { status: 400 });
-  }
 
   const existing = await prisma.companyERacuniSettings.findUnique({
     where: { companyId: session.companyId },
@@ -104,9 +94,6 @@ export async function POST(req: NextRequest) {
     apiTokenEnc: effectiveToken ? encryptSecret(effectiveToken) : null,
     paymentMethod,
     paymentDueDays,
-    labelKompletCode,
-    labelKompletName,
-    labelKompletPrice: priceNum,
     ...(enabled ? { lastTestOkAt: new Date() } : {}),
   };
 

@@ -40,7 +40,7 @@ export async function createEracuniInvoiceForWorkOrder(options: {
     return { ok: false, kind: "already_exists" };
   }
 
-  const build = await buildEracuniInvoice(companyId, workOrderId, settings);
+  const build = await buildEracuniInvoice(companyId, workOrderId);
   if (!build.ok) {
     await prisma.workOrderInvoice.upsert({
       where: { workOrderId },

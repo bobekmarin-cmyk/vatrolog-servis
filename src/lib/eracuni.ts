@@ -26,9 +26,6 @@ export type ERacuniSettingsResolved = {
   credentials: ERacuniCredentials | null;
   paymentMethod: string;
   paymentDueDays: number;
-  labelKompletCode: string | null;
-  labelKompletName: string;
-  labelKompletPrice: number | null;
   lastTestOkAt: Date | null;
 };
 
@@ -66,9 +63,6 @@ export async function getERacuniSettings(companyId: string): Promise<ERacuniSett
     credentials,
     paymentMethod: row.paymentMethod,
     paymentDueDays: row.paymentDueDays,
-    labelKompletCode: row.labelKompletCode,
-    labelKompletName: row.labelKompletName,
-    labelKompletPrice: row.labelKompletPrice ? Number(row.labelKompletPrice) : null,
     lastTestOkAt: row.lastTestOkAt,
   };
 }

@@ -275,6 +275,12 @@ model Company {
   sharedApparatusMassLabelCode String?
   sharedCylinderMassLabelCode  String?
 
+  /// Neto cijene naljepnica (bez PDV-a) po vrsti — vrijede neovisno o
+  /// proizvođaču i strategiji šifriranja. Koriste se za stavke na e-računu.
+  labelPeriodicPrice      Decimal? @db.Decimal(10, 2)
+  labelApparatusMassPrice Decimal? @db.Decimal(10, 2)
+  labelCylinderMassPrice  Decimal? @db.Decimal(10, 2)
+
   /// Soft delete — ne hard cascade; scrub job nakon 30 dana.
   deletedAt DateTime?
 
@@ -1875,12 +1881,6 @@ model CompanyERacuniSettings {
   paymentMethod  String @default("bankTransfer")
   /// Rok plaćanja u danima (datum dospijeća = datum računa + N dana).
   paymentDueDays Int    @default(15)
-
-  /// Naljepnice na računu: jedna stavka "Komplet naljepnica" po periodično
-  /// pregledanom aparatu (npr. šifra 3860). Bez šifre/cijene stavka se ne šalje.
-  labelKompletCode  String?
-  labelKompletName  String   @default("Komplet naljepnica")
-  labelKompletPrice Decimal? @db.Decimal(10, 2)
 
   /// Zadnja uspješna provjera veze.
   lastTestOkAt DateTime?

@@ -10,9 +10,6 @@ type Initial = {
   hasToken: boolean;
   paymentMethod: string;
   paymentDueDays: number;
-  labelKompletCode: string;
-  labelKompletName: string;
-  labelKompletPrice: string;
   lastTestOkAt: string | null;
 };
 
@@ -31,9 +28,6 @@ export default function ERacuniSettingsSection({ initial }: { initial: Initial }
   const [apiToken, setApiToken] = useState("");
   const [paymentMethod, setPaymentMethod] = useState(initial.paymentMethod);
   const [paymentDueDays, setPaymentDueDays] = useState(String(initial.paymentDueDays));
-  const [labelKompletCode, setLabelKompletCode] = useState(initial.labelKompletCode);
-  const [labelKompletName, setLabelKompletName] = useState(initial.labelKompletName);
-  const [labelKompletPrice, setLabelKompletPrice] = useState(initial.labelKompletPrice);
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -52,9 +46,6 @@ export default function ERacuniSettingsSection({ initial }: { initial: Initial }
           apiToken,
           paymentMethod,
           paymentDueDays: Number(paymentDueDays),
-          labelKompletCode,
-          labelKompletName,
-          labelKompletPrice,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -206,40 +197,9 @@ export default function ERacuniSettingsSection({ initial }: { initial: Initial }
       <div className="border-t border-slate-200 pt-4">
         <div className="text-sm font-semibold text-slate-900">Naljepnice na računu</div>
         <p className="mt-0.5 text-xs text-slate-500">
-          Na račun ide jedna stavka po svakom pregledanom aparatu (npr. „Komplet naljepnica”, šifra
-          3860). Šifra mora postojati i u e-računima.
+          Svaka vrsta naljepnice ide kao zasebna stavka na račun. Šifre i cijene naljepnica
+          zadaju se u Postavke → Ovlaštenja; šifre moraju postojati i u e-računima.
         </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Šifra artikla</span>
-            <input
-              className="input w-full"
-              value={labelKompletCode}
-              onChange={(e) => setLabelKompletCode(e.target.value)}
-              placeholder="npr. 3860"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Naziv stavke</span>
-            <input
-              className="input w-full"
-              value={labelKompletName}
-              onChange={(e) => setLabelKompletName(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Cijena bez PDV-a (€)</span>
-            <input
-              className="input w-full"
-              type="number"
-              min={0}
-              step="0.01"
-              value={labelKompletPrice}
-              onChange={(e) => setLabelKompletPrice(e.target.value)}
-              placeholder="npr. 4.00"
-            />
-          </label>
-        </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-slate-200 pt-4">
