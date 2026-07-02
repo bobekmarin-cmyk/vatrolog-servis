@@ -28,6 +28,7 @@ const GROUPS: TabGroup[] = [
   {
     label: "Sustav",
     tabs: [
+      { href: "/admin/settings/integrations", label: "Integracije" },
       { href: "/admin/settings/billing", label: "Pretplata" },
       { href: "/admin/settings/audit", label: "Audit log" },
     ],

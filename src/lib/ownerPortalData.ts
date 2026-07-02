@@ -134,6 +134,8 @@ export type OwnerWorkOrder = {
   itemsTotal: number;
   itemsServiced: number;
   deliveryNote: { id: string; number: string } | null;
+  /// Samo IZDAN račun sa spremljenim PDF-om (koncepti se ne prikazuju kupcu).
+  invoice: { id: string; number: string | null } | null;
 };
 
 export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Promise<OwnerWorkOrder[]> {
@@ -169,6 +171,7 @@ export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Pro
         orderBy: { issuedAt: "desc" },
         take: 1,
       },
+      eracuniInvoice: { select: { id: true, number: true, status: true, pdfStoragePath: true } },
     },
     take,
   });
@@ -185,6 +188,10 @@ export async function getOwnerWorkOrders(links: OwnerLinkInfo[], take = 50): Pro
     itemsTotal: o.items.length,
     itemsServiced: o.items.filter((i) => i.servicedAt).length,
     deliveryNote: o.deliveryNotes[0] ?? null,
+    invoice:
+      o.eracuniInvoice?.status === "ISSUED" && o.eracuniInvoice.pdfStoragePath
+        ? { id: o.eracuniInvoice.id, number: o.eracuniInvoice.number }
+        : null,
   }));
 }
 

@@ -45,7 +45,7 @@ export default async function OwnerNaloziPage({ searchParams }: PageProps) {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Servisni nalozi i dokumenti</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {orders.length} od {all.length} naloga — za svaki preuzmite primku, upisnik i otpremnicu.
+            {orders.length} od {all.length} naloga — za svaki preuzmite primku, upisnik, otpremnicu i račun.
           </p>
         </div>
 
@@ -109,6 +109,12 @@ export default async function OwnerNaloziPage({ searchParams }: PageProps) {
                     Otpremnica nije izdana
                   </span>
                 )}
+                {o.invoice ? (
+                  <DocLink
+                    href={`/api/portal/invoices/${o.invoice.id}/pdf`}
+                    label={`Račun${o.invoice.number ? ` ${o.invoice.number}` : ""}`}
+                  />
+                ) : null}
               </div>
             </div>
           );

@@ -29,6 +29,9 @@ type Props = {
     email: string | null;
     note: string | null;
     autoNotify: boolean;
+    discountServicesPct: string;
+    discountLabelsPct: string;
+    discountPartsPct: string;
   };
 };
 
@@ -46,6 +49,9 @@ export default function EditCustomerFormWithLookup({ customerId, initial }: Prop
   const [email, setEmail] = useState(initial.email ?? "");
   const [note, setNote] = useState(initial.note ?? "");
   const [autoNotify, setAutoNotify] = useState(initial.autoNotify);
+  const [discountServicesPct, setDiscountServicesPct] = useState(initial.discountServicesPct);
+  const [discountLabelsPct, setDiscountLabelsPct] = useState(initial.discountLabelsPct);
+  const [discountPartsPct, setDiscountPartsPct] = useState(initial.discountPartsPct);
   const [loading, setLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [likelyCraft, setLikelyCraft] = useState(false);
@@ -68,8 +74,11 @@ export default function EditCustomerFormWithLookup({ customerId, initial }: Prop
       phone !== (initial.phone ?? "") ||
       email !== (initial.email ?? "") ||
       note !== (initial.note ?? "") ||
-      autoNotify !== initial.autoNotify,
-    [name, shortName, street, postalCode, city, contactPerson, phone, email, note, autoNotify, initial]
+      autoNotify !== initial.autoNotify ||
+      discountServicesPct !== initial.discountServicesPct ||
+      discountLabelsPct !== initial.discountLabelsPct ||
+      discountPartsPct !== initial.discountPartsPct,
+    [name, shortName, street, postalCode, city, contactPerson, phone, email, note, autoNotify, discountServicesPct, discountLabelsPct, discountPartsPct, initial]
   );
 
   useEffect(() => {
@@ -308,6 +317,58 @@ export default function EditCustomerFormWithLookup({ customerId, initial }: Prop
       <div>
         <label className="label">Napomena</label>
         <textarea name="note" className="textarea" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+        <div className="text-sm font-medium">Rabati za fakturiranje</div>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Postotak popusta po kategorijama — primjenjuje se na stavke pri kreiranju računa u e-računima.
+          Prazno = bez rabata.
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <label className="label">Usluge servisa (%)</label>
+            <input
+              name="discountServicesPct"
+              className="input"
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              value={discountServicesPct}
+              onChange={(e) => setDiscountServicesPct(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="label">Servisne naljepnice (%)</label>
+            <input
+              name="discountLabelsPct"
+              className="input"
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              value={discountLabelsPct}
+              onChange={(e) => setDiscountLabelsPct(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="label">Rezervni dijelovi (%)</label>
+            <input
+              name="discountPartsPct"
+              className="input"
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              value={discountPartsPct}
+              onChange={(e) => setDiscountPartsPct(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">

@@ -111,7 +111,7 @@ export default async function ServiceViewPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ dn?: string }>;
+  searchParams?: Promise<{ dn?: string; inv?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -119,7 +119,9 @@ export default async function ServiceViewPage({
   const { id } = await params;
   if (!id) notFound();
 
-  const dnFlash = searchParams ? (await searchParams).dn : undefined;
+  const sp = searchParams ? await searchParams : undefined;
+  const dnFlash = sp?.dn;
+  const invFlash = sp?.inv;
 
   const order = await prisma.workOrder.findFirst({
     where: { id, companyId: session.companyId },
@@ -145,10 +147,26 @@ export default async function ServiceViewPage({
           pdfStoragePath: true,
         },
       },
+      eracuniInvoice: {
+        select: {
+          id: true,
+          status: true,
+          number: true,
+          errorMessage: true,
+          pdfStoragePath: true,
+        },
+      },
     },
   });
 
   if (!order) notFound();
+
+  const eracuniSettings = await prisma.companyERacuniSettings.findUnique({
+    where: { companyId: session.companyId },
+    select: { enabled: true },
+  });
+  const eracuniEnabled = !!eracuniSettings?.enabled;
+  const invoice = order.eracuniInvoice;
 
   const mailStatus = await getTenantMailStatus(session.companyId);
   const mailConnected = !!mailStatus.activeProvider;
@@ -177,8 +195,43 @@ export default async function ServiceViewPage({
   };
   const flash = dnFlash && dnFlashMessage[dnFlash] ? dnFlashMessage[dnFlash] : null;
 
+  const invFlashMessage: Record<string, { tone: "ok" | "err"; text: string }> = {
+    created_ok: { tone: "ok", text: "Koncept računa je kreiran u e-računima. Izdajte ga u programu e-računi, zatim ovdje kliknite „Provjeri račun”." },
+    issued_ok: { tone: "ok", text: "Račun je izdan — PDF je preuzet i vidljiv je kupcu u portalu." },
+    still_draft: { tone: "ok", text: "Račun je još uvijek koncept u e-računima. Izdajte ga tamo pa ponovno provjerite." },
+    not_configured: { tone: "err", text: "e-računi integracija nije uključena. Podesite je u Postavke → Integracije." },
+    already_exists: { tone: "err", text: "Račun za ovaj nalog već postoji u e-računima." },
+    no_invoice: { tone: "err", text: "Za ovaj nalog još nije kreiran račun." },
+    problems: { tone: "err", text: "Račun nije kreiran — nedostaju šifre ili cijene (detalji ispod)." },
+    api_error: { tone: "err", text: "Komunikacija s e-računima nije uspjela. Detalji su zabilježeni ispod, pokušajte ponovno." },
+  };
+  const invFlashBox = invFlash && invFlashMessage[invFlash] ? invFlashMessage[invFlash] : null;
+
   return (
     <main className="space-y-6">
+      {invFlashBox ? (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            invFlashBox.tone === "ok"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-red-200 bg-red-50 text-red-900"
+          }`}
+        >
+          {invFlashBox.text}
+        </div>
+      ) : null}
+
+      {invoice?.status === "ERROR" && invoice.errorMessage ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          <div className="font-semibold">Račun nije kreiran:</div>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {invoice.errorMessage.split("\n").map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {flash ? (
         <div
           className={`rounded-lg border px-3 py-2 text-sm ${
@@ -277,6 +330,49 @@ export default async function ServiceViewPage({
                 : "Prvo izdajte otpremnicu (gumb lijevo), zatim otvorite PDF ili pošaljite mail."
             }
           />
+          {eracuniEnabled && isLocked && (!invoice || invoice.status === "ERROR") ? (
+            <PendingSubmitForm
+              action={`/api/work-orders/${order.id}/eracuni-invoice/create`}
+              method="post"
+              className="inline"
+              pendingTitle="Kreiram račun..."
+              pendingMessage="Molimo pričekajte, stavke naloga se šalju u e-račune."
+            >
+              <button type="submit" className="btn btn-primary px-3 text-sm">
+                {invoice?.status === "ERROR" ? "Ponovi račun" : "Kreiraj račun"}
+              </button>
+            </PendingSubmitForm>
+          ) : null}
+          {eracuniEnabled && invoice?.status === "DRAFT" ? (
+            <PendingSubmitForm
+              action={`/api/work-orders/${order.id}/eracuni-invoice/refresh`}
+              method="post"
+              className="inline"
+              pendingTitle="Provjeravam račun..."
+              pendingMessage="Molimo pričekajte, dohvaća se status računa iz e-računa."
+            >
+              <button
+                type="submit"
+                className="btn btn-outline px-3 text-sm"
+                title={`Koncept računa${invoice.number ? ` ${invoice.number}` : ""} čeka izdavanje u e-računima. Klikni za provjeru statusa.`}
+              >
+                <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-amber-500" />
+                Provjeri račun
+              </button>
+            </PendingSubmitForm>
+          ) : null}
+          {invoice?.status === "ISSUED" && invoice.pdfStoragePath ? (
+            <a
+              className="btn btn-outline px-3 text-sm"
+              href={`/work-orders/${order.id}/invoice/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Račun ${invoice.number ?? ""} (izdan)`}
+            >
+              <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              Račun{invoice.number ? ` ${invoice.number}` : ""}
+            </a>
+          ) : null}
           {session.role === "ADMIN" && (
             <PendingNavigationLink
               className="btn btn-outline px-4"

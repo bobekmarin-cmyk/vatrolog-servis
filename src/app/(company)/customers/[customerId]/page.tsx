@@ -87,6 +87,12 @@ export default async function CustomerEditPage({
               email: customer.email,
               note: customer.note,
               autoNotify: customer.autoNotify,
+              discountServicesPct:
+                customer.discountServicesPct != null ? String(customer.discountServicesPct) : "",
+              discountLabelsPct:
+                customer.discountLabelsPct != null ? String(customer.discountLabelsPct) : "",
+              discountPartsPct:
+                customer.discountPartsPct != null ? String(customer.discountPartsPct) : "",
             }}
           />
         </div>

@@ -303,6 +303,10 @@ model Company {
   invoices    Invoice[]
   apiKeys     ApiKey[]
 
+  /// e-računi integracija (kredencijali + zadane opcije).
+  eracuniSettings   CompanyERacuniSettings?
+  workOrderInvoices WorkOrderInvoice[]
+
   /// Veza na zahtjev za pristup od kojeg je tvrtka kreirana (može biti null
   /// za tvrtke koje vendor ručno kreira mimo public formulara).
   registrationRequest RegistrationRequest?
@@ -444,6 +448,11 @@ model Customer {
   note          String?
 
   autoNotify Boolean @default(false)
+
+  /// Rabat (%) po kategorijama za fakturiranje (e-računi integracija).
+  discountServicesPct Decimal? @db.Decimal(5, 2)
+  discountLabelsPct   Decimal? @db.Decimal(5, 2)
+  discountPartsPct    Decimal? @db.Decimal(5, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -954,6 +963,9 @@ model WorkOrder {
   labelConsumptions WorkOrderLabelConsumption[]
 
   deliveryNotes DeliveryNote[]
+
+  /// Veza na račun u e-računima (najviše jedan po nalogu).
+  eracuniInvoice WorkOrderInvoice?
 
   @@unique([companyId, orderNumber])
   @@index([companyId, createdAt])
@@ -1835,6 +1847,83 @@ model ApiKey {
   createdAt DateTime @default(now())
 
   @@index([companyId])
+}
+
+/**
+ * =======================
+ * E-RAČUNI INTEGRACIJA
+ * =======================
+ * Povezivanje s e-racuni.com (eurofaktura) API-jem za kreiranje izlaznih
+ * računa iz radnih naloga. Kredencijali su AES-256-GCM šifrirani istim
+ * ključem kao Gmail/SMTP tajne (ENCRYPTION_KEY).
+ */
+
+model CompanyERacuniSettings {
+  id        String  @id @default(cuid())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  enabled Boolean @default(false)
+
+  apiUsername    String?
+  /// AES-256-GCM šifrirano (encryptToken).
+  apiPasswordEnc String?
+  /// AES-256-GCM šifrirano (encryptToken).
+  apiTokenEnc    String?
+
+  /// Zadani način plaćanja na računu (e-računi vrijednost, npr. "bankTransfer").
+  paymentMethod  String @default("bankTransfer")
+  /// Rok plaćanja u danima (datum dospijeća = datum računa + N dana).
+  paymentDueDays Int    @default(15)
+
+  /// Naljepnice na računu: jedna stavka "Komplet naljepnica" po periodično
+  /// pregledanom aparatu (npr. šifra 3860). Bez šifre/cijene stavka se ne šalje.
+  labelKompletCode  String?
+  labelKompletName  String   @default("Komplet naljepnica")
+  labelKompletPrice Decimal? @db.Decimal(10, 2)
+
+  /// Zadnja uspješna provjera veze.
+  lastTestOkAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum WorkOrderInvoiceStatus {
+  /// Koncept kreiran u e-računima, čeka izdavanje tamo.
+  DRAFT
+  /// Izdan (fiskaliziran) u e-računima.
+  ISSUED
+  /// Zadnji pokušaj kreiranja nije uspio.
+  ERROR
+}
+
+model WorkOrderInvoice {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  workOrderId String    @unique
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  status WorkOrderInvoiceStatus
+
+  /// Interni ID dokumenta u e-računima (npr. "60:3913326").
+  eracuniDocumentId String?
+  /// Broj računa u e-računima (npr. "330/1/1" ili "2026-00123").
+  number            String?
+  errorMessage      String?
+
+  /// Zamrznuti PDF izdanog računa (isti storage kao otpremnica).
+  pdfStoragePath String?
+
+  createdByAccountUserId String?
+  issuedAt               DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
 }
 
 /**

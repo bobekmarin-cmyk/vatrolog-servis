@@ -35,6 +35,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ custome
   const note = String(form.get("note") ?? "").trim();
   const autoNotify = form.get("autoNotify") === "on" || form.get("autoNotify") === "true";
 
+  function parsePct(field: string): number | null | undefined {
+    const raw = String(form.get(field) ?? "").trim().replace(",", ".");
+    if (raw === "") return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0 || n > 100) return undefined;
+    return n;
+  }
+  const discountServicesPct = parsePct("discountServicesPct");
+  const discountLabelsPct = parsePct("discountLabelsPct");
+  const discountPartsPct = parsePct("discountPartsPct");
+  if (discountServicesPct === undefined || discountLabelsPct === undefined || discountPartsPct === undefined) {
+    return redirectWithError(req, customerId, "Rabat mora biti broj između 0 i 100.");
+  }
+
   if (!name || !street || !city) {
     return redirectWithError(req, customerId, "Nedostaju obavezna polja (naziv, ulica i broj, grad).");
   }
@@ -61,6 +75,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ custome
         email: email || null,
         note: note || null,
         autoNotify,
+        discountServicesPct,
+        discountLabelsPct,
+        discountPartsPct,
       },
     });
 
