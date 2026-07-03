@@ -10,6 +10,7 @@ import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
 import { ensureOwnerOrgForOib, ensureMembership, ownerOrgHasActiveAdmin } from "@/lib/ownerOrg";
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
+import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,10 @@ export const POST = apiHandler(
   async (req: Request, { params }: { params: Promise<{ customerId: string }> }) => {
     const session = await requireActiveSession();
     const { customerId } = await params;
+
+    if (!(await companyPlanAllows(session.companyId, "CUSTOMER_PORTAL"))) {
+      throw new AppValidationError(planUpgradeMessage("CUSTOMER_PORTAL"));
+    }
 
     const customer = await prisma.customer.findFirst({
       where: { id: customerId, companyId: session.companyId, deletedAt: null },

@@ -129,10 +129,14 @@ export async function ownerCanRequestCustomer(
       shortName: true,
       oib: true,
       companyId: true,
+      company: { select: { plan: true } },
       ownerLink: { select: { ownerOrgId: true, status: true } },
     },
   });
   if (!customer || !customer.oib) return { error: "Kupac ne postoji." };
+  if (customer.company.plan === "START") {
+    return { error: "Ovaj servis ne koristi korisnički portal." };
+  }
 
   const oibs = await getOwnerOibs(ownerOrgId);
   if (!ownerOrgId || !oibs.includes(customer.oib)) {

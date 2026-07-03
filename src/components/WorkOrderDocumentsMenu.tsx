@@ -13,6 +13,8 @@ type Props = {
   customerName: string;
   customerEmail: string | null;
   mailConnected: boolean;
+  /** Custom tooltip kad je slanje mailom onemogućeno (npr. plan ne pokriva mail). */
+  mailDisabledTitle?: string;
   isLocked: boolean;
   isAdmin: boolean;
   /** Postoji aktivna (izdana) otpremnica sa spremljenim PDF-om. */
@@ -49,6 +51,7 @@ export default function WorkOrderDocumentsMenu({
   customerName,
   customerEmail,
   mailConnected,
+  mailDisabledTitle,
   isLocked,
   isAdmin,
   deliveryNoteIssued,
@@ -151,7 +154,7 @@ export default function WorkOrderDocumentsMenu({
               disabled
                 ? disabledTitle
                 : !mailConnected
-                  ? "Mail nije konfiguriran (Postavke → Postavke maila)"
+                  ? (mailDisabledTitle ?? "Mail nije konfiguriran (Postavke → Postavke maila)")
                   : `Pošalji ${DOC_LABELS[kind].toLowerCase()} na mail`
             }
             aria-label={`Pošalji ${DOC_LABELS[kind]} na mail`}

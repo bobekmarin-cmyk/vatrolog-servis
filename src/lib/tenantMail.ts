@@ -28,6 +28,7 @@ import {
   sendGmailWithAttachment,
 } from "@/lib/gmail";
 import { logError, logInfo, logWarn } from "@/lib/logger";
+import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 
 export type MailProvider = "GMAIL" | "SMTP";
 
@@ -388,6 +389,13 @@ export class TenantMailNotConfiguredError extends Error {
   }
 }
 
+export class TenantMailPlanNotAllowedError extends Error {
+  constructor() {
+    super(planUpgradeMessage("MAIL_SENDING"));
+    this.name = "TenantMailPlanNotAllowedError";
+  }
+}
+
 export class TenantMailSendError extends Error {
   provider: MailProvider;
   cause?: unknown;
@@ -400,6 +408,11 @@ export class TenantMailSendError extends Error {
 }
 
 export async function sendTenantMail(input: TenantSendInput): Promise<TenantSendResult> {
+  // Središnja plan-gate točka: pokriva ručno slanje, batch i cron obavijesti.
+  if (!(await companyPlanAllows(input.companyId, "MAIL_SENDING"))) {
+    throw new TenantMailPlanNotAllowedError();
+  }
+
   const status = await getTenantMailStatus(input.companyId);
   const provider = input.forceProvider ?? status.activeProvider;
 

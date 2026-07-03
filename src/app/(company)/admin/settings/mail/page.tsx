@@ -4,6 +4,7 @@ import MailIntegrationsSection from "@/components/MailIntegrationsSection";
 import EmailTemplatesSettings from "@/components/EmailTemplatesSettings";
 import { ensureDefaultTemplates } from "@/lib/emailTemplates";
 import { getTenantMailStatus } from "@/lib/tenantMail";
+import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 
 export default async function MailSettingsPage({
   searchParams,
@@ -13,6 +14,30 @@ export default async function MailSettingsPage({
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/");
+
+  const mailAllowed = await companyPlanAllows(session.companyId, "MAIL_SENDING");
+  if (!mailAllowed) {
+    return (
+      <div className="w-full space-y-6">
+        <section className="space-y-3">
+          <div>
+            <h2 className="h1">Slanje obavijesti kupcima</h2>
+            <p className="subtle mt-1">
+              Slanje primki, upisnika, otpremnica i automatskih obavijesti kupcima mailom.
+            </p>
+          </div>
+          <div className="surface max-w-3xl p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-slate-600">{planUpgradeMessage("MAIL_SENDING")}</p>
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 whitespace-nowrap">
+                Standard plan
+              </span>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   const sp = await searchParams;
   const gmailStatus = sp.gmail ?? null;

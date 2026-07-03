@@ -92,6 +92,16 @@ enum LabelCodeStrategy {
   PER_MANUFACTURER
 }
 
+/// Plan pretplate tvrtke.
+///   - START:    nalozi + dokumenti (PDF/print), bez maila, portala i integracija.
+///   - STANDARD: sve osim integracija za fakturiranje (e-računi i sl.).
+///   - PREMIUM:  sve mogućnosti.
+enum SubscriptionPlan {
+  START
+  STANDARD
+  PREMIUM
+}
+
 /**
  * =======================
  * PLATFORM (ULTRA ADMIN)
@@ -223,6 +233,10 @@ model Company {
   activeUntil DateTime?
   /// Ručna blokada od strane platform ownera
   blocked     Boolean   @default(false)
+
+  /// Plan pretplate (Start/Standard/Premium). Novi signup dobiva PREMIUM
+  /// tijekom triala (puni doživljaj); platforma ručno postavlja plan.
+  plan SubscriptionPlan @default(PREMIUM)
 
   /// Trial koji je samopostavljen pri signupu (30 dana). Null nakon pretvorbe u plaćenu pretplatu.
   trialEndsAt DateTime?

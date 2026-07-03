@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
+import type { SubscriptionPlan } from "@prisma/client";
 
 export async function POST(
   req: Request,
@@ -13,21 +14,28 @@ export async function POST(
   const body = (await req.json()) as {
     activeUntil?: string | null;
     blocked?: boolean;
+    plan?: string;
   };
 
   const company = await prisma.company.findUnique({
     where: { id: companyId },
-    select: { id: true, blocked: true, activeUntil: true },
+    select: { id: true, blocked: true, activeUntil: true, plan: true },
   });
   if (!company) return NextResponse.json({ error: "Tvrtka nije pronađena." }, { status: 404 });
 
-  const data: { activeUntil?: Date | null; blocked?: boolean } = {};
+  const data: { activeUntil?: Date | null; blocked?: boolean; plan?: SubscriptionPlan } = {};
 
   if (body.activeUntil !== undefined) {
     data.activeUntil = body.activeUntil ? new Date(body.activeUntil) : null;
   }
   if (typeof body.blocked === "boolean") {
     data.blocked = body.blocked;
+  }
+  if (typeof body.plan === "string") {
+    if (!["START", "STANDARD", "PREMIUM"].includes(body.plan)) {
+      return NextResponse.json({ error: "Nepoznat plan." }, { status: 400 });
+    }
+    data.plan = body.plan as SubscriptionPlan;
   }
 
   // Detektiraj prijelaze koji bi morali force-logout sve tenant sesije:
@@ -45,8 +53,22 @@ export async function POST(
     data.activeUntil.getTime() < now.getTime() &&
     (!company.activeUntil || company.activeUntil.getTime() >= now.getTime());
 
+  const planChanged = data.plan !== undefined && data.plan !== company.plan;
+
   await prisma.$transaction(async (tx) => {
     await tx.company.update({ where: { id: companyId }, data });
+    if (planChanged) {
+      await tx.auditLog.create({
+        data: {
+          companyId,
+          actorType: "PLATFORM",
+          action: "platform.subscription.plan_change",
+          entity: "Company",
+          entityId: companyId,
+          meta: { from: company.plan, to: data.plan },
+        },
+      });
+    }
     if (becomingBlocked || becomingExpired) {
       const cutoff = new Date();
       await tx.accountUser.updateMany({

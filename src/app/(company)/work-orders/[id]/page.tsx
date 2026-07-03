@@ -18,6 +18,7 @@ import WorkOrderDocumentsMenu from "@/components/WorkOrderDocumentsMenu";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
 import PendingSubmitForm from "@/components/PendingSubmitForm";
 import { getTenantMailStatus } from "@/lib/tenantMail";
+import { getCompanyPlan, planAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -159,15 +160,17 @@ export default async function ServiceViewPage({
 
   if (!order) notFound();
 
+  const plan = await getCompanyPlan(session.companyId);
   const eracuniSettings = await prisma.companyERacuniSettings.findUnique({
     where: { companyId: session.companyId },
     select: { enabled: true },
   });
-  const eracuniEnabled = !!eracuniSettings?.enabled;
+  const eracuniEnabled = !!eracuniSettings?.enabled && planAllows(plan, "INVOICING_INTEGRATIONS");
   const invoice = order.eracuniInvoice;
 
   const mailStatus = await getTenantMailStatus(session.companyId);
-  const mailConnected = !!mailStatus.activeProvider;
+  const mailPlanAllowed = planAllows(plan, "MAIL_SENDING");
+  const mailConnected = mailPlanAllowed && !!mailStatus.activeProvider;
 
   const total = order.items.length;
   const servicedCount = order.items.filter((i) => i.servicedAt).length;
@@ -196,6 +199,7 @@ export default async function ServiceViewPage({
     issued_ok: { tone: "ok", text: "Račun je izdan — PDF je preuzet i vidljiv je kupcu u portalu." },
     still_draft: { tone: "ok", text: "Račun je još uvijek koncept u e-računima. Izdajte ga tamo pa ponovno provjerite." },
     not_configured: { tone: "err", text: "e-računi integracija nije uključena. Podesite je u Postavke → Integracije." },
+    plan_required: { tone: "err", text: planUpgradeMessage("INVOICING_INTEGRATIONS") },
     already_exists: { tone: "err", text: "Račun za ovaj nalog već postoji u e-računima." },
     no_invoice: { tone: "err", text: "Za ovaj nalog još nije kreiran račun." },
     problems: { tone: "err", text: "Račun nije kreiran — nedostaju šifre ili cijene (detalji ispod)." },
@@ -268,6 +272,7 @@ export default async function ServiceViewPage({
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
             mailConnected={mailConnected}
+            mailDisabledTitle={!mailPlanAllowed ? planUpgradeMessage("MAIL_SENDING") : undefined}
             isLocked={isLocked}
             isAdmin={session.role === "ADMIN"}
             deliveryNoteIssued={hasShippedDeliveryNote}

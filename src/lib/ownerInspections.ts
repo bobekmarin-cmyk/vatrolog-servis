@@ -50,7 +50,7 @@ export async function ownerCanAccessExtinguisher(
 ): Promise<OwnerExtinguisherAccess | null> {
   if (!ownerOrgId) return null;
   const links = await prisma.ownerCustomerLink.findMany({
-    where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null, companyId },
+    where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null, companyId, company: { plan: { not: "START" } } },
     select: { customerId: true, company: { select: { name: true } } },
   });
   if (links.length === 0) return null;

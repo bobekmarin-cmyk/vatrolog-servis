@@ -12,6 +12,7 @@ export default async function SettingsTab({ companyId }: { companyId: string }) 
         id: true,
         activeUntil: true,
         blocked: true,
+        plan: true,
         stripeCustomerId: true,
         trialEndsAt: true,
       },
@@ -36,6 +37,7 @@ export default async function SettingsTab({ companyId }: { companyId: string }) 
           companyId={company.id}
           activeUntil={company.activeUntil?.toISOString() ?? null}
           blocked={company.blocked}
+          plan={company.plan}
         />
       </Section>
 

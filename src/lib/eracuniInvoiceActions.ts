@@ -10,6 +10,7 @@ import {
 import { buildEracuniInvoice } from "@/lib/eracuniInvoice";
 import { savePdf } from "@/lib/pdfStorage";
 import { logAudit } from "@/lib/auditLog";
+import { companyPlanAllows } from "@/lib/subscriptionPlan";
 
 /**
  * Orkestracija kreiranja i osvježavanja e-računi računa za radni nalog.
@@ -21,7 +22,10 @@ export type InvoiceActionResult =
   | { ok: true; kind: "created"; number: string | null }
   | { ok: true; kind: "issued"; number: string | null }
   | { ok: true; kind: "still_draft" }
-  | { ok: false; kind: "not_configured" | "already_exists" | "no_invoice" | "problems" | "api_error" };
+  | {
+      ok: false;
+      kind: "not_configured" | "plan_required" | "already_exists" | "no_invoice" | "problems" | "api_error";
+    };
 
 export async function createEracuniInvoiceForWorkOrder(options: {
   companyId: string;
@@ -29,6 +33,10 @@ export async function createEracuniInvoiceForWorkOrder(options: {
   accountUserId: string | null;
 }): Promise<InvoiceActionResult> {
   const { companyId, workOrderId, accountUserId } = options;
+
+  if (!(await companyPlanAllows(companyId, "INVOICING_INTEGRATIONS"))) {
+    return { ok: false, kind: "plan_required" };
+  }
 
   const settings = await getERacuniSettings(companyId);
   if (!settings?.enabled || !settings.credentials) {
@@ -136,6 +144,10 @@ export async function refreshEracuniInvoiceForWorkOrder(options: {
   accountUserId: string | null;
 }): Promise<InvoiceActionResult> {
   const { companyId, workOrderId, accountUserId } = options;
+
+  if (!(await companyPlanAllows(companyId, "INVOICING_INTEGRATIONS"))) {
+    return { ok: false, kind: "plan_required" };
+  }
 
   const settings = await getERacuniSettings(companyId);
   if (!settings?.enabled || !settings.credentials) {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { decryptToken } from "@/lib/gmail";
 import { encryptSecret, testERacuniConnection, ERacuniError } from "@/lib/eracuni";
 import { logAudit } from "@/lib/auditLog";
+import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,10 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!(await companyPlanAllows(session.companyId, "INVOICING_INTEGRATIONS"))) {
+    return NextResponse.json({ error: planUpgradeMessage("INVOICING_INTEGRATIONS") }, { status: 403 });
   }
 
   let body: Body;

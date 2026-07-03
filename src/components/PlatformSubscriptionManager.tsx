@@ -3,11 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+type Plan = "START" | "STANDARD" | "PREMIUM";
+
 type Props = {
   companyId: string;
   activeUntil: string | null;
   blocked: boolean;
+  plan: Plan;
 };
+
+const PLAN_OPTIONS: { value: Plan; label: string; hint: string }[] = [
+  { value: "START", label: "Start", hint: "Bez maila, portala i integracija" },
+  { value: "STANDARD", label: "Standard", hint: "Sve osim integracija za fakturiranje" },
+  { value: "PREMIUM", label: "Premium", hint: "Sve mogućnosti (e-računi, ...)" },
+];
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -19,15 +28,16 @@ function toInputDate(iso: string | null) {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
-export default function PlatformSubscriptionManager({ companyId, activeUntil, blocked }: Props) {
+export default function PlatformSubscriptionManager({ companyId, activeUntil, blocked, plan }: Props) {
   const router = useRouter();
   const [date, setDate] = useState(toInputDate(activeUntil));
   const [isBlocked, setIsBlocked] = useState(blocked);
+  const [currentPlan, setCurrentPlan] = useState<Plan>(plan);
   const [saving, setSaving] = useState(false);
 
   const isExpired = activeUntil ? new Date(activeUntil) < new Date() : false;
 
-  async function save(data: { activeUntil?: string | null; blocked?: boolean }) {
+  async function save(data: { activeUntil?: string | null; blocked?: boolean; plan?: Plan }) {
     setSaving(true);
     await fetch(`/api/platform/companies/${companyId}/subscription`, {
       method: "POST",
@@ -40,6 +50,38 @@ export default function PlatformSubscriptionManager({ companyId, activeUntil, bl
 
   return (
     <div className="space-y-4">
+      <div>
+        <label className="label">Plan pretplate</label>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {PLAN_OPTIONS.map((p) => {
+            const active = currentPlan === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                disabled={saving}
+                title={p.hint}
+                onClick={() => {
+                  setCurrentPlan(p.value);
+                  save({ plan: p.value });
+                }}
+                className={[
+                  "rounded-lg border px-3 py-1.5 text-sm font-medium transition",
+                  active
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-slate-400",
+                ].join(" ")}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          {PLAN_OPTIONS.find((p) => p.value === currentPlan)?.hint}
+        </p>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="label">Pretplata aktivna do</label>

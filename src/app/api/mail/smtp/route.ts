@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { decryptToken } from "@/lib/gmail";
+import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 import {
   deleteSmtpSettings,
   saveSmtpSettings,
@@ -22,6 +23,10 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!(await companyPlanAllows(session.companyId, "MAIL_SENDING"))) {
+    return NextResponse.json({ error: planUpgradeMessage("MAIL_SENDING") }, { status: 403 });
   }
 
   let body: SmtpBody;

@@ -19,7 +19,11 @@ export async function GET(req: Request): Promise<Response> {
   if (denied) return denied;
 
   const drafts = await prisma.workOrderInvoice.findMany({
-    where: { status: "DRAFT", eracuniDocumentId: { not: null } },
+    where: {
+      status: "DRAFT",
+      eracuniDocumentId: { not: null },
+      company: { plan: "PREMIUM" },
+    },
     select: { workOrderId: true, companyId: true },
     orderBy: { createdAt: "asc" },
     take: 200,

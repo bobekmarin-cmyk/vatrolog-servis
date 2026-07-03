@@ -6,6 +6,7 @@ import EditCustomerFormWithLookup from "@/components/EditCustomerFormWithLookup"
 import CustomerPortalAccountsCard from "./CustomerPortalAccountsCard";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
 import { getCustomerPortalStatus } from "@/lib/customerPortalAccounts";
+import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
 
 export default async function CustomerEditPage({
   params,
@@ -39,6 +40,7 @@ export default async function CustomerEditPage({
       : !!(await findExistingPortalOwnerByOib(customer.oib, session.companyId));
 
   const portalStatus = await getCustomerPortalStatus(customer.oib, customer.id);
+  const portalAllowed = await companyPlanAllows(session.companyId, "CUSTOMER_PORTAL");
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -211,15 +213,29 @@ export default async function CustomerEditPage({
         </details>
       </section>
 
-      <CustomerPortalAccountsCard
-        customerId={customer.id}
-        customerEmail={customer.email}
-        linkStatus={customer.ownerLink?.status ?? null}
-        invitedEmail={customer.ownerLink?.invitedEmail ?? null}
-        existingPortalForOib={existingPortalForOib}
-        portalActive={portalStatus.portalActive}
-        hasPendingInvite={portalStatus.hasPendingInvite}
-      />
+      {portalAllowed ? (
+        <CustomerPortalAccountsCard
+          customerId={customer.id}
+          customerEmail={customer.email}
+          linkStatus={customer.ownerLink?.status ?? null}
+          invitedEmail={customer.ownerLink?.invitedEmail ?? null}
+          existingPortalForOib={existingPortalForOib}
+          portalActive={portalStatus.portalActive}
+          hasPendingInvite={portalStatus.hasPendingInvite}
+        />
+      ) : (
+        <section className="surface">
+          <div className="surface-body flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Korisnički portal</h2>
+              <p className="mt-1 text-sm text-slate-500">{planUpgradeMessage("CUSTOMER_PORTAL")}</p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              Standard plan
+            </span>
+          </div>
+        </section>
+      )}
     </main>
   );
 }

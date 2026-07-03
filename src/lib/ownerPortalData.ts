@@ -18,7 +18,8 @@ export type OwnerLinkInfo = {
 export async function getOwnerActiveLinks(ownerOrgId: string | null): Promise<OwnerLinkInfo[]> {
   if (!ownerOrgId) return [];
   const links = await prisma.ownerCustomerLink.findMany({
-    where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null },
+    // Servisi na Start planu nemaju korisnički portal — njihovi podaci se ne prikazuju.
+    where: { ownerOrgId, status: "ACTIVE", hiddenByVendorAt: null, company: { plan: { not: "START" } } },
     select: {
       id: true,
       companyId: true,
@@ -257,6 +258,7 @@ export async function ownerCanAccessWorkOrder(ownerOrgId: string | null, workOrd
       hiddenByVendorAt: null,
       companyId: order.companyId,
       customerId: order.customerId,
+      company: { plan: { not: "START" } },
     },
     select: { id: true },
   });
@@ -279,6 +281,7 @@ export async function ownerCanAccessDeliveryNote(ownerOrgId: string | null, deli
       hiddenByVendorAt: null,
       companyId: note.companyId,
       customerId: note.workOrder.customerId,
+      company: { plan: { not: "START" } },
     },
     select: { id: true },
   });
