@@ -14,24 +14,34 @@ type Props = {
 
 const MODULE_META: Record<string, { label: string; description: string; icon: string }> = {
   DASHBOARD: { label: "Dashboard", description: "Početna stranica sa statistikama i grafikonima", icon: "📊" },
-  WORK_ORDERS: { label: "Radni nalozi", description: "Kreiranje, uređivanje i zaključavanje radnih naloga", icon: "🧾" },
+  WORK_ORDERS: { label: "Radni nalozi", description: "Kreiranje, uređivanje i zaključavanje radnih naloga + otpremnice", icon: "🧾" },
+  WAREHOUSE: { label: "Skladište", description: "Skladište rezervnih dijelova i servisnih naljepnica", icon: "📦" },
+  QR_LABELS: { label: "QR naljepnice", description: "Generator QR naljepnica za aparate (PDF za ispis)", icon: "🔳" },
   EXTINGUISHERS: { label: "Aparati", description: "Evidencija svih vatrogasnih aparata", icon: "🧯" },
   CUSTOMERS: { label: "Kupci", description: "Upravljanje kupcima, odjelima i kontaktima", icon: "🏢" },
-  REPORTS_MONTHLY: { label: "Izvještaji", description: "Mjesečni popis, obavijesti i poslana pošta", icon: "📅" },
+  CUSTOMER_PORTAL: { label: "Korisnički portal", description: "Pozivnice i upravljanje portal pristupom za kupce", icon: "🔑" },
+  REPORTS_MONTHLY: { label: "Izvještaji", description: "Plan servisa, poslana pošta i servisna analitika", icon: "📅" },
   ADMIN_SERVICERS: { label: "Serviseri", description: "Upravljanje serviserima, PIN aktivacija", icon: "👷" },
-  ADMIN_SETTINGS: { label: "Postavke", description: "Postavke tvrtke, email predlošci, Gmail integracija", icon: "⚙️" },
+  ADMIN_SETTINGS: { label: "Postavke", description: "Postavke tvrtke, šifrarnici, mail i integracije (e-računi)", icon: "⚙️" },
   CUSTOMER_ANALYTICS: { label: "Analitika kupaca", description: "Detaljni uvid u statistiku po kupcu", icon: "📈" },
   EMAIL_NOTIFICATIONS: { label: "Email obavijesti", description: "Automatsko slanje email obavijesti kupcima", icon: "✉️" },
+  SALES_ORDERS: { label: "Prodajni nalozi", description: "Prodaja aparata i opreme (modul u pripremi)", icon: "🛒" },
+  SALES_WAREHOUSE: { label: "Skladište – prodaja", description: "Skladište prodajne robe (modul u pripremi)", icon: "🏬" },
 };
 
 const KEY_ORDER = [
   "DASHBOARD",
   "WORK_ORDERS",
+  "WAREHOUSE",
+  "QR_LABELS",
   "EXTINGUISHERS",
   "CUSTOMERS",
+  "CUSTOMER_PORTAL",
   "REPORTS_MONTHLY",
   "CUSTOMER_ANALYTICS",
   "EMAIL_NOTIFICATIONS",
+  "SALES_ORDERS",
+  "SALES_WAREHOUSE",
   "ADMIN_SERVICERS",
   "ADMIN_SETTINGS",
 ];

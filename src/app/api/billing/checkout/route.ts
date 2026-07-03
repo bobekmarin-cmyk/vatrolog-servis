@@ -34,7 +34,7 @@ export const POST = apiHandler(async (req: Request) => {
   }
 
   const body = await req.json().catch(() => ({}));
-  const plan = String(body.plan ?? "starter") as BillingPlanId;
+  const plan = String(body.plan ?? "start") as BillingPlanId;
   const priceId = getStripePriceId(plan);
   if (!priceId) {
     return NextResponse.json({ error: `Plan ${plan} nema konfiguriranu Stripe cijenu.` }, { status: 400 });

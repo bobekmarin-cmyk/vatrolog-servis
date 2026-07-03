@@ -167,6 +167,7 @@ export default async function ServiceViewPage({
   });
   const eracuniEnabled = !!eracuniSettings?.enabled && planAllows(plan, "INVOICING_INTEGRATIONS");
   const invoice = order.eracuniInvoice;
+  const unlockBlocked = !!invoice && invoice.status !== "ERROR";
 
   const mailStatus = await getTenantMailStatus(session.companyId);
   const mailPlanAllowed = planAllows(plan, "MAIL_SENDING");
@@ -200,6 +201,10 @@ export default async function ServiceViewPage({
     still_draft: { tone: "ok", text: "Račun je još uvijek koncept u e-računima. Izdajte ga tamo pa ponovno provjerite." },
     not_configured: { tone: "err", text: "e-računi integracija nije uključena. Podesite je u Postavke → Integracije." },
     plan_required: { tone: "err", text: planUpgradeMessage("INVOICING_INTEGRATIONS") },
+    unlock_blocked: {
+      tone: "err",
+      text: "Nalog se ne može otključati jer za njega postoji račun u e-računima. U iznimnim slučajevima kontaktirajte podršku (VatroLog) za otključavanje.",
+    },
     already_exists: { tone: "err", text: "Račun za ovaj nalog već postoji u e-računima." },
     no_invoice: { tone: "err", text: "Za ovaj nalog još nije kreiran račun." },
     problems: { tone: "err", text: "Račun nije kreiran — nedostaju šifre ili cijene (detalji ispod)." },
@@ -332,6 +337,13 @@ export default async function ServiceViewPage({
                 Zaključi nalog
               </button>
             </PendingSubmitForm>
+          ) : unlockBlocked ? (
+            <span
+              className="btn btn-outline cursor-not-allowed px-4 text-slate-400"
+              title="Za nalog postoji račun u e-računima pa se više ne može otključati. U iznimnim slučajevima otključavanje može napraviti VatroLog podrška."
+            >
+              🔒 Zaključano (račun)
+            </span>
           ) : (
             <PendingSubmitForm
               action={`/api/work-orders/${order.id}/unlock`}

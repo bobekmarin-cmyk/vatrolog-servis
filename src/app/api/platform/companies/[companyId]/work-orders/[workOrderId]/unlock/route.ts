@@ -4,6 +4,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { redirectRelative } from "@/lib/httpRedirect";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 import { extractAuditMeta } from "@/lib/auditLog";
+import { unlockWorkOrderCore } from "@/lib/workOrderUnlock";
 
 export async function POST(
   req: NextRequest,
@@ -33,6 +34,7 @@ export async function POST(
       status: true,
       lockedAt: true,
       lockedById: true,
+      eracuniInvoice: { select: { status: true, number: true } },
     },
   });
   if (!wo) {
@@ -45,10 +47,7 @@ export async function POST(
     );
   }
 
-  await prisma.workOrder.update({
-    where: { id: wo.id },
-    data: { status: "IN_PROGRESS", lockedAt: null, lockedById: null },
-  });
+  const { labelResult, stockResult } = await unlockWorkOrderCore(companyId, wo.id);
 
   const meta = extractAuditMeta(req);
   await prisma.auditLog.create({
@@ -62,6 +61,10 @@ export async function POST(
         orderNumber: wo.orderNumber,
         previousLockedAt: wo.lockedAt?.toISOString() ?? null,
         previousLockedById: wo.lockedById,
+        invoiceStatus: wo.eracuniInvoice?.status ?? null,
+        invoiceNumber: wo.eracuniInvoice?.number ?? null,
+        labelsReverted: labelResult.reverted,
+        stockRestored: stockResult.restored,
       },
       ip: meta.ip,
       userAgent: meta.userAgent,

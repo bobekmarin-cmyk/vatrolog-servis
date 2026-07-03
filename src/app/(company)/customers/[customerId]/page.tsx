@@ -7,6 +7,7 @@ import CustomerPortalAccountsCard from "./CustomerPortalAccountsCard";
 import { findExistingPortalOwnerByOib } from "@/lib/ownerSharing";
 import { getCustomerPortalStatus } from "@/lib/customerPortalAccounts";
 import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
+import { getCompanyFeatures, isFeatureEnabledForRole, FEATURE_KEYS } from "@/lib/companyFeatures";
 
 export default async function CustomerEditPage({
   params,
@@ -41,6 +42,13 @@ export default async function CustomerEditPage({
 
   const portalStatus = await getCustomerPortalStatus(customer.oib, customer.id);
   const portalAllowed = await companyPlanAllows(session.companyId, "CUSTOMER_PORTAL");
+  // Vendor (platforma) po tvrtki određuje vidi li ova rola modul Korisnički portal.
+  const features = await getCompanyFeatures(session.companyId);
+  const portalFeatureEnabled = isFeatureEnabledForRole(
+    session.role,
+    features,
+    FEATURE_KEYS.CUSTOMER_PORTAL,
+  );
 
   return (
     <main className="max-w-5xl space-y-6">
@@ -213,7 +221,7 @@ export default async function CustomerEditPage({
         </details>
       </section>
 
-      {portalAllowed ? (
+      {!portalFeatureEnabled ? null : portalAllowed ? (
         <CustomerPortalAccountsCard
           customerId={customer.id}
           customerEmail={customer.email}

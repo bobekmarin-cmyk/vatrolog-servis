@@ -8,10 +8,12 @@
  * Stripe env varijable (sve opcionalne u stripe modu):
  *  - STRIPE_SECRET_KEY
  *  - STRIPE_WEBHOOK_SECRET
- *  - STRIPE_PRICE_STARTER  (npr. price_1AbCdE... za mjesečni Starter plan)
- *  - STRIPE_PRICE_PRO
+ *  - STRIPE_PRICE_START  (npr. price_1AbCdE... za mjesečni Start plan)
+ *  - STRIPE_PRICE_STANDARD
+ *  - STRIPE_PRICE_PREMIUM
  *
- * Plan cijene (ručni model): STARTER=29€/mj, PRO=59€/mj, ENTERPRISE=dogovorno.
+ * Planovi prate SubscriptionPlan enum (START / STANDARD / PREMIUM) i
+ * capability gating u src/lib/subscriptionPlan.ts.
  * Prihod se evidentira kroz Invoice model (modul za fakturiranje).
  */
 
@@ -24,11 +26,13 @@ export { getAppBaseUrl };
 let stripeClient: Stripe | null = null;
 let checked = false;
 
-export type BillingPlanId = "starter" | "pro" | "enterprise";
+export type BillingPlanId = "start" | "standard" | "premium";
 
 export type PlanDefinition = {
   id: BillingPlanId;
   label: string;
+  /** Vrijednost SubscriptionPlan enuma kojoj ovaj plan odgovara. */
+  planEnum: "START" | "STANDARD" | "PREMIUM";
   priceEurMonthly: number;
   features: string[];
   stripePriceEnv?: string;
@@ -45,42 +49,48 @@ export function getBillingMode(): BillingMode {
 
 export const PLANS: ReadonlyArray<PlanDefinition> = [
   {
-    id: "starter",
-    label: "Starter",
+    id: "start",
+    label: "Start",
+    planEnum: "START",
     priceEurMonthly: 29,
     features: [
-      "Do 500 aparata",
-      "Do 200 kupaca",
-      "Mjesečni izvještaji",
-      "Email podsjetnici",
+      "Radni nalozi, primke, upisnici i otpremnice (PDF)",
+      "Evidencija aparata i kupaca",
+      "Skladište dijelova i naljepnica",
+      "Šifrarnici i cjenici",
+      "QR naljepnice za aparate",
       "Email podrška",
     ],
-    stripePriceEnv: "STRIPE_PRICE_STARTER",
+    stripePriceEnv: "STRIPE_PRICE_START",
   },
   {
-    id: "pro",
-    label: "Pro",
+    id: "standard",
+    label: "Standard",
+    planEnum: "STANDARD",
     priceEurMonthly: 59,
     features: [
-      "Neograničeno aparata i kupaca",
-      "Više korisničkih računa",
-      "White-label (logo, boje)",
-      "Customer portal",
+      "Sve iz Start plana",
+      "Slanje dokumenata mailom (Gmail / SMTP)",
+      "Automatske email obavijesti kupcima",
+      "Korisnički portal za kupce",
+      "Plan servisa i podsjetnici",
       "Prioritetna podrška",
     ],
-    stripePriceEnv: "STRIPE_PRICE_PRO",
+    stripePriceEnv: "STRIPE_PRICE_STANDARD",
   },
   {
-    id: "enterprise",
-    label: "Enterprise",
-    priceEurMonthly: 0,
+    id: "premium",
+    label: "Premium",
+    planEnum: "PREMIUM",
+    priceEurMonthly: 89,
     features: [
-      "Sve iz Pro plana",
-      "SLA ugovor",
-      "Custom integracije",
-      "Dedicirani account manager",
-      "On-premise opcija",
+      "Sve iz Standard plana",
+      "Integracija s e-računima (automatski računi)",
+      "Rabati po kupcu i kategorijama",
+      "Računi vidljivi u korisničkom portalu",
+      "Buduće integracije za fakturiranje",
     ],
+    stripePriceEnv: "STRIPE_PRICE_PREMIUM",
   },
 ];
 

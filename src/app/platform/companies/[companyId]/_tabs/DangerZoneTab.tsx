@@ -1,8 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { Section, fmtDateTime } from "./shared";
 import DangerConfirmButton from "../DangerConfirmButton";
+import ForceUnlockOrderForm from "../ForceUnlockOrderForm";
 
-export default async function DangerZoneTab({ companyId }: { companyId: string }) {
+const FORCE_UNLOCK_FLASH: Record<string, { tone: "ok" | "err"; text: string }> = {
+  ok: { tone: "ok", text: "Nalog je prisilno otključan (naljepnice i skladište stornirani)." },
+  missing: { tone: "err", text: "Upišite broj naloga." },
+  not_found: { tone: "err", text: "Nalog s tim brojem nije pronađen za ovu tvrtku." },
+  not_locked: { tone: "err", text: "Nalog nije zaključan pa nema što otključati." },
+};
+
+export default async function DangerZoneTab({
+  companyId,
+  forceUnlockFlash,
+}: {
+  companyId: string;
+  forceUnlockFlash?: string | null;
+}) {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
     select: {
@@ -27,6 +41,29 @@ export default async function DangerZoneTab({ companyId }: { companyId: string }
           log s actor-om PLATFORM.
         </p>
       </div>
+
+      <Section title="Prisilno otključavanje naloga">
+        <p className="text-sm text-slate-600">
+          Zaključani nalog za koji postoji račun u e-računima (koncept ili izdan) tenant vise ne
+          moze otkljucati sam — otkljucavanje je rezervirano za vendora u iznimnim slucajevima.
+          Otkljucavanjem se storniraju potrosene naljepnice i skidanje dijelova sa skladista;
+          eventualni racun u e-racunima treba uskladiti rucno.
+        </p>
+        {forceUnlockFlash && FORCE_UNLOCK_FLASH[forceUnlockFlash] ? (
+          <p
+            className={`mt-2 rounded-md px-3 py-2 text-sm ${
+              FORCE_UNLOCK_FLASH[forceUnlockFlash].tone === "ok"
+                ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
+                : "bg-red-50 text-red-800 ring-1 ring-red-200"
+            }`}
+          >
+            {FORCE_UNLOCK_FLASH[forceUnlockFlash].text}
+          </p>
+        ) : null}
+        <div className="mt-3">
+          <ForceUnlockOrderForm companyId={companyId} />
+        </div>
+      </Section>
 
       <Section title="Force logout svih korisnika tvrtke">
         <p className="text-sm text-slate-600">

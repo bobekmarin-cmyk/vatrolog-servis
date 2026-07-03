@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { restoreStockForWorkOrder } from "@/lib/partStock";
-import { revertLabelConsumptionOnUnlock } from "@/lib/serviceLabels";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
+import { unlockWorkOrderCore, hasBlockingInvoice } from "@/lib/workOrderUnlock";
 
 import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
@@ -26,32 +25,13 @@ export async function POST(
     return redirectRelative(`/work-orders/${id}`, 307);
   }
 
-  const { labelResult, stockResult } = await prisma.$transaction(async (tx) => {
-    await tx.workOrder.update({
-      where: { id },
-      data: {
-        status: "IN_PROGRESS",
-        lockedAt: null,
-        lockedById: null,
-        finishedAt: null,
-      },
-    });
-    const labels = await revertLabelConsumptionOnUnlock(
-      tx as unknown as Parameters<typeof revertLabelConsumptionOnUnlock>[0],
-      {
-        companyId: session.companyId,
-        workOrderId: id,
-      },
-    );
-    const stock = await restoreStockForWorkOrder(
-      tx as unknown as Parameters<typeof restoreStockForWorkOrder>[0],
-      {
-        companyId: session.companyId,
-        workOrderId: id,
-      },
-    );
-    return { labelResult: labels, stockResult: stock };
-  });
+  // Nakon kreiranja računa (koncept ili izdan) nalog je fiskalno vezan —
+  // otključati ga može samo vendor (platforma) u iznimnim slučajevima.
+  if (await hasBlockingInvoice(id)) {
+    return redirectRelative(`/work-orders/${id}?inv=unlock_blocked`, 303);
+  }
+
+  const { labelResult, stockResult } = await unlockWorkOrderCore(session.companyId, id);
 
   const audit = extractAuditMeta(req);
   await logAudit({

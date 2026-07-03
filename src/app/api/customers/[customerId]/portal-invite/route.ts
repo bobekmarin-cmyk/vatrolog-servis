@@ -11,6 +11,7 @@ import { ensureOwnerOrgForOib, ensureMembership, ownerOrgHasActiveAdmin } from "
 import { getAppBaseUrl } from "@/lib/appVersion";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 import { companyPlanAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
+import { getCompanyFeatures, isFeatureEnabledForRole, FEATURE_KEYS } from "@/lib/companyFeatures";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,11 @@ export const POST = apiHandler(
 
     if (!(await companyPlanAllows(session.companyId, "CUSTOMER_PORTAL"))) {
       throw new AppValidationError(planUpgradeMessage("CUSTOMER_PORTAL"));
+    }
+
+    const features = await getCompanyFeatures(session.companyId);
+    if (!isFeatureEnabledForRole(session.role, features, FEATURE_KEYS.CUSTOMER_PORTAL)) {
+      throw new AppValidationError("Modul Korisnički portal nije omogućen za vašu ulogu.");
     }
 
     const customer = await prisma.customer.findFirst({
