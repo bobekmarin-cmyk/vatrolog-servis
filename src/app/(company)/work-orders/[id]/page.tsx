@@ -14,12 +14,10 @@ import WorkOrderDateForm from "@/components/WorkOrderDateForm";
 import PlaceholderAddForm from "@/components/PlaceholderAddForm";
 import ScanExtinguisherModal from "@/components/ScanExtinguisherModal";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
-import PdfActionButton from "@/components/PdfActionButton";
+import WorkOrderDocumentsMenu from "@/components/WorkOrderDocumentsMenu";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
 import PendingSubmitForm from "@/components/PendingSubmitForm";
-import PendingNavigationLink from "@/components/PendingNavigationLink";
 import { getTenantMailStatus } from "@/lib/tenantMail";
-import ConfirmForm from "@/components/ConfirmForm";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -179,8 +177,6 @@ export default async function ServiceViewPage({
   const issuedDeliveryNotes = order.deliveryNotes.filter((n) => n.pdfStoragePath);
   const activeDeliveryNote = issuedDeliveryNotes.find((n) => !n.supersededAt) ?? null;
   const hasShippedDeliveryNote = !!activeDeliveryNote;
-  const canOpenDeliveryNotePdf = isLocked && hasShippedDeliveryNote;
-
   const remaining = Math.max(0, total - servicedCount);
   const pct = total > 0 ? Math.round((servicedCount / total) * 100) : 0;
   const allDone = total > 0 && servicedCount === total;
@@ -266,69 +262,15 @@ export default async function ServiceViewPage({
           <Link className="btn btn-outline px-4" href="/work-orders">
             ← Nalozi
           </Link>
-          <PdfActionButton
-            label="Primka"
-            kind="primka"
-            pdfUrl={`/work-orders/${order.id}/primka/pdf`}
+          <WorkOrderDocumentsMenu
             workOrderId={order.id}
             orderNumber={order.orderNumber}
             customerName={customerDisplayName(order.customer)}
             customerEmail={order.customer.email}
             mailConnected={mailConnected}
-          />
-          <PdfActionButton
-            label="Upisnik"
-            kind="register"
-            pdfUrl={`/work-orders/${order.id}/register/pdf`}
-            workOrderId={order.id}
-            orderNumber={order.orderNumber}
-            customerName={customerDisplayName(order.customer)}
-            customerEmail={order.customer.email}
-            mailConnected={mailConnected}
-          />
-          {isLocked && !hasShippedDeliveryNote ? (
-            <PendingSubmitForm
-              action={`/api/work-orders/${order.id}/delivery-notes/issue`}
-              method="post"
-              className="inline"
-              pendingTitle="Izdajem otpremnicu..."
-              pendingMessage="Molimo pričekajte, generira se PDF i broj otpremnice."
-            >
-              <button type="submit" className="btn btn-primary px-3 text-sm">
-                Izdaj otpremnicu
-              </button>
-            </PendingSubmitForm>
-          ) : null}
-          {isLocked && hasShippedDeliveryNote && session.role === "ADMIN" ? (
-            <ConfirmForm
-              action={`/api/work-orders/${order.id}/delivery-notes/reissue`}
-              method="post"
-              className="inline"
-              confirmTitle="Nova otpremnica (zamjena)"
-              confirmMessage="Dodijelit će se novi službeni broj. Stara otpremnica ostaje u arhivi. Nastaviti?"
-              confirmLabel="Izdaj novu"
-              danger
-            >
-              <button type="submit" className="btn btn-outline px-3 text-sm text-amber-800 border-amber-300">
-                Nova otpremnica
-              </button>
-            </ConfirmForm>
-          ) : null}
-          <PdfActionButton
-            label="Otpremnica"
-            kind="delivery-note"
-            pdfUrl={`/work-orders/${order.id}/delivery-note/pdf`}
-            workOrderId={order.id}
-            orderNumber={order.orderNumber}
-            customerName={customerDisplayName(order.customer)}
-            customerEmail={order.customer.email}
-            mailConnected={mailConnected}
-            disabled={!canOpenDeliveryNotePdf}
-            disabledTitle={
-              !isLocked
-                ? "Zaključaj radni nalog prije izdavanja ili slanja otpremnice."
-                : "Prvo izdajte otpremnicu (gumb lijevo), zatim otvorite PDF ili pošaljite mail."
-            }
+            isLocked={isLocked}
+            isAdmin={session.role === "ADMIN"}
+            deliveryNoteIssued={hasShippedDeliveryNote}
           />
           {eracuniEnabled && isLocked && (!invoice || invoice.status === "ERROR") ? (
             <PendingSubmitForm
@@ -373,16 +315,6 @@ export default async function ServiceViewPage({
               Račun{invoice.number ? ` ${invoice.number}` : ""}
             </a>
           ) : null}
-          {session.role === "ADMIN" && (
-            <PendingNavigationLink
-              className="btn btn-outline px-4"
-              href={`/work-orders/${order.id}/report`}
-              pendingTitle="Otvaram report..."
-              pendingMessage="Molimo pričekajte, priprema se pregled radnog naloga."
-            >
-              Report
-            </PendingNavigationLink>
-          )}
           {!isLocked ? (
             <PendingSubmitForm
               action={`/api/work-orders/${order.id}/lock`}
