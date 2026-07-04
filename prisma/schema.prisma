@@ -721,6 +721,7 @@ model Part {
   overrides    CompanyPartOverride[]
   receiptItems StockReceiptItem[]
   adjustments  StockAdjustment[]
+  consumptions WorkOrderPartConsumption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -975,6 +976,7 @@ model WorkOrder {
   documentLogs DocumentLog[]
 
   labelConsumptions WorkOrderLabelConsumption[]
+  partConsumptions  WorkOrderPartConsumption[]
 
   deliveryNotes DeliveryNote[]
 
@@ -1165,6 +1167,26 @@ model WorkOrderItemPart {
 
   @@id([workOrderItemId, partId])
   @@index([companyId])
+  @@index([partId])
+}
+
+/// Snapshot potrošnje dijelova u trenutku zaključavanja naloga (analogno
+/// WorkOrderLabelConsumption). Omogućuje točan povrat/diff stanja skladišta
+/// kod otključavanja i ponovnog zaključavanja — i kad vendor otključa nalog
+/// bez storniranja pa korisnik izmijeni stavke.
+model WorkOrderPartConsumption {
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  partId String
+  part   Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  quantity Int
+
+  createdAt DateTime @default(now())
+
+  @@id([workOrderId, partId])
+  @@index([workOrderId])
   @@index([partId])
 }
 

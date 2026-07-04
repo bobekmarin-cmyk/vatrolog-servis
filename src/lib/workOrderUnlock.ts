@@ -3,9 +3,9 @@ import { restoreStockForWorkOrder } from "@/lib/partStock";
 import { revertLabelConsumptionOnUnlock } from "@/lib/serviceLabels";
 
 /**
- * Zajednička logika otključavanja zaključanog naloga (tenant ruta i
- * platformski force-unlock): vraća status u IN_PROGRESS te stornira
- * potrošnju naljepnica i skidanje dijelova sa skladišta.
+ * Tenant otključavanje zaključanog naloga: vraća status u IN_PROGRESS te
+ * stornira potrošnju naljepnica i skidanje dijelova sa skladišta (simetrično
+ * zaključavanju).
  */
 export async function unlockWorkOrderCore(companyId: string, workOrderId: string) {
   return prisma.$transaction(async (tx) => {
@@ -27,6 +27,23 @@ export async function unlockWorkOrderCore(companyId: string, workOrderId: string
       { companyId, workOrderId },
     );
     return { labelResult, stockResult };
+  });
+}
+
+/**
+ * Vendor (platforma) otključavanje: SAMO otključa nalog, bez storniranja
+ * naljepnica i skladišta — korisnik nešto doradi i ponovo zaključa.
+ * Ponovno zaključavanje obračunava samo razliku (lock je diff-safe: prvo
+ * vrati prethodnu snapshot potrošnju, pa skine novu).
+ */
+export async function unlockWorkOrderStatusOnly(workOrderId: string) {
+  await prisma.workOrder.update({
+    where: { id: workOrderId },
+    data: {
+      status: "IN_PROGRESS",
+      lockedAt: null,
+      lockedById: null,
+    },
   });
 }
 

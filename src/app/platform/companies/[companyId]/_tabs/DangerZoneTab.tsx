@@ -4,7 +4,10 @@ import DangerConfirmButton from "../DangerConfirmButton";
 import ForceUnlockOrderForm from "../ForceUnlockOrderForm";
 
 const FORCE_UNLOCK_FLASH: Record<string, { tone: "ok" | "err"; text: string }> = {
-  ok: { tone: "ok", text: "Nalog je prisilno otključan (naljepnice i skladište stornirani)." },
+  ok: {
+    tone: "ok",
+    text: "Nalog je otključan. Naljepnice i skladište NISU dirani — kod ponovnog zaključavanja obračunava se samo razlika.",
+  },
   missing: { tone: "err", text: "Upišite broj naloga." },
   not_found: { tone: "err", text: "Nalog s tim brojem nije pronađen za ovu tvrtku." },
   not_locked: { tone: "err", text: "Nalog nije zaključan pa nema što otključati." },
@@ -46,8 +49,9 @@ export default async function DangerZoneTab({
         <p className="text-sm text-slate-600">
           Zaključani nalog za koji postoji račun u e-računima (koncept ili izdan) tenant vise ne
           moze otkljucati sam — otkljucavanje je rezervirano za vendora u iznimnim slucajevima.
-          Otkljucavanjem se storniraju potrosene naljepnice i skidanje dijelova sa skladista;
-          eventualni racun u e-racunima treba uskladiti rucno.
+          Nalog se SAMO otkljuca (korisnik doradi i ponovo zakljuca); naljepnice i skladiste se ne
+          diraju, a kod ponovnog zakljucavanja obracunava se samo razlika. Eventualni racun u
+          e-racunima treba uskladiti rucno.
         </p>
         {forceUnlockFlash && FORCE_UNLOCK_FLASH[forceUnlockFlash] ? (
           <p

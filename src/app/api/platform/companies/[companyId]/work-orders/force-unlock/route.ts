@@ -4,7 +4,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { redirectRelative } from "@/lib/httpRedirect";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
 import { extractAuditMeta } from "@/lib/auditLog";
-import { unlockWorkOrderCore } from "@/lib/workOrderUnlock";
+import { unlockWorkOrderStatusOnly } from "@/lib/workOrderUnlock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +13,9 @@ export const dynamic = "force-dynamic";
  * Vendor (platforma) prisilno otključava zaključani nalog — namijenjeno
  * iznimnim slučajevima, npr. kad je za nalog već kreiran/izdan račun pa
  * tenant više ne može otključati sam. Form body: orderNumber.
+ *
+ * Samo otključava (status → IN_PROGRESS), NE stornira naljepnice ni skladište;
+ * kod ponovnog zaključavanja obračunava se samo razlika.
  */
 export async function POST(
   req: NextRequest,
@@ -52,7 +55,7 @@ export async function POST(
   if (!order) return back("not_found");
   if (order.status !== "LOCKED") return back("not_locked");
 
-  const { labelResult, stockResult } = await unlockWorkOrderCore(companyId, order.id);
+  await unlockWorkOrderStatusOnly(order.id);
 
   const meta = extractAuditMeta(req);
   await prisma.auditLog.create({
@@ -66,8 +69,7 @@ export async function POST(
         orderNumber,
         invoiceStatus: order.eracuniInvoice?.status ?? null,
         invoiceNumber: order.eracuniInvoice?.number ?? null,
-        labelsReverted: labelResult.reverted,
-        stockRestored: stockResult.restored,
+        statusOnly: true,
       },
       ip: meta.ip,
       userAgent: meta.userAgent,

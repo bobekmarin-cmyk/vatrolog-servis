@@ -16,7 +16,7 @@ export default function ForceUnlockOrderForm({ companyId }: { companyId: string 
       e.preventDefault();
       return;
     }
-    if (!window.confirm(`Prisilno otključati nalog "${n}"? Storniraju se naljepnice i skidanje dijelova sa skladišta. Ako je za nalog izdan račun, uskladite ga ručno u e-računima.`)) {
+    if (!window.confirm(`Prisilno otključati nalog "${n}"? Nalog se samo otključava (naljepnice i skladište se ne diraju). Ako je za nalog izdan račun, uskladite ga ručno u e-računima.`)) {
       e.preventDefault();
     }
   }

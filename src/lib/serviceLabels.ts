@@ -126,17 +126,16 @@ export async function computeLabelUsage(
 
 /**
  * Zaključavanjem radnog naloga pohrani potrošnju naljepnica i smanji stanje.
- * Idempotentno: prvo pobriše prethodne consumption retke za isti nalog, pa
- * ponovo upiše izračunatu potrošnju.
+ * Idempotentno / diff-safe: eventualna prethodna potrošnja (npr. vendor je
+ * otključao nalog bez storniranja) prvo se vrati na stanje, pa se upiše i
+ * skine nova izračunata potrošnja — neto efekt je razlika.
  * Stanje smije ići u minus.
  */
 export async function consumeLabelsOnLock(
   tx: Tx,
   params: { companyId: string; workOrderId: string },
 ): Promise<{ consumed: number; rows: LabelUsageRow[] }> {
-  await tx.workOrderLabelConsumption.deleteMany({
-    where: { workOrderId: params.workOrderId },
-  });
+  await revertLabelConsumptionOnUnlock(tx, params);
 
   const rows = await computeLabelUsage(tx, params);
   let consumed = 0;
