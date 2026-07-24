@@ -112,7 +112,13 @@ export async function getPlatformHealth(): Promise<HealthItem[]> {
   try {
     const gmail = await prisma.platformIntegration.findUnique({
       where: { provider: "GMAIL" },
-      select: { email: true, accessTokenEnc: true, expiresAt: true, connectedAt: true },
+      select: {
+        email: true,
+        accessTokenEnc: true,
+        refreshTokenEnc: true,
+        expiresAt: true,
+        connectedAt: true,
+      },
     });
     if (!gmail || !gmail.accessTokenEnc) {
       items.push({
@@ -123,14 +129,16 @@ export async function getPlatformHealth(): Promise<HealthItem[]> {
         href: "/platform/settings",
       });
     } else {
-      const expired = gmail.expiresAt && gmail.expiresAt < new Date();
+      const hasRefresh = !!gmail.refreshTokenEnc;
+      const accessExpired = gmail.expiresAt && gmail.expiresAt < new Date();
       items.push({
         key: "gmail",
         label: "Vendor Gmail",
-        level: expired ? "warn" : "ok",
-        detail: expired
-          ? `${gmail.email} (access token istekao — refresh ce ga obnoviti)`
-          : `${gmail.email}`,
+        level: hasRefresh ? "ok" : accessExpired ? "warn" : "ok",
+        detail:
+          accessExpired && hasRefresh
+            ? `${gmail.email} (access token istekao — obnavlja se pri slanju)`
+            : `${gmail.email}`,
         href: "/platform/settings",
       });
     }

@@ -39,17 +39,79 @@ function getClient(): { client: S3Client; bucket: string } | null {
     credentials: { accessKeyId, secretAccessKey },
     maxAttempts: 2,
     requestHandler: {
-      // 3s socket timeout — ne smije blokirati dashboard ako R2 puknu.
-      requestTimeout: 3000,
-      connectionTimeout: 3000,
+      requestTimeout: 8000,
+      connectionTimeout: 5000,
     } as never,
   });
   return { client, bucket };
 }
 
+/** Prefixi db-backups/YYYY/MM/ — unatrag od trenutnog UTC mjeseca. */
+function backupMonthPrefixes(monthsBack: number): string[] {
+  const out: string[] = [];
+  const d = new Date();
+  d.setUTCDate(1);
+  d.setUTCHours(0, 0, 0, 0);
+  for (let i = 0; i < monthsBack; i++) {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    out.push(`db-backups/${y}/${m}/`);
+    d.setUTCMonth(d.getUTCMonth() - 1);
+  }
+  return out;
+}
+
+async function listAllUnderPrefix(
+  client: S3Client,
+  bucket: string,
+  prefix: string,
+): Promise<BackupObject[]> {
+  const objects: BackupObject[] = [];
+  let continuationToken: string | undefined;
+  let pages = 0;
+  const maxPages = 20;
+
+  do {
+    const out = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        MaxKeys: 1000,
+        ContinuationToken: continuationToken,
+      }),
+    );
+    for (const c of out.Contents ?? []) {
+      if (c.Key && c.LastModified && !c.Key.endsWith("/")) {
+        objects.push({
+          key: c.Key,
+          size: c.Size ?? 0,
+          lastModified: c.LastModified,
+        });
+      }
+    }
+    if (!out.IsTruncated) break;
+    continuationToken = out.NextContinuationToken;
+    pages++;
+  } while (continuationToken && pages < maxPages);
+
+  return objects;
+}
+
+function sortAndSlice(objects: BackupObject[], limit: number): BackupObject[] {
+  return objects
+    .slice()
+    .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
+    .slice(0, Math.max(1, Math.min(limit, 100)));
+}
+
 /**
  * Vraca listu zadnjih `limit` backupa (najnoviji prvi). Default 10.
  * Backup pipeline koristi prefix `db-backups/YYYY/MM/DD/...` (vidi scripts/backup-db.mjs).
+ *
+ * R2/S3 ListObjectsV2 vraca kljuceve leksikografski i po stranicama (max 1000).
+ * Stari kod je uzeo samo prvu stranicu (~50 kljuceva) pa je „najnoviji“ backup
+ * bio zastario cim je u bucketu bilo vise od ~50 datoteka. Sada listamo po
+ * mjesecima unatrag (najprije trenutni) s punom paginacijom po prefixu.
  */
 export async function listRecentBackups(limit = 10): Promise<BackupListing> {
   const prefix = "db-backups/";
@@ -65,30 +127,26 @@ export async function listRecentBackups(limit = 10): Promise<BackupListing> {
     };
   }
   try {
-    const out = await cfg.client.send(
-      new ListObjectsV2Command({
-        Bucket: cfg.bucket,
-        Prefix: prefix,
-        // R2 limit je 1000 po requestu; mi želimo zadnje N, sortiramo client-side.
-        // Za skromni broj backupa (jedan dnevni) ovo je benigno.
-        MaxKeys: Math.max(limit * 4, 50),
-      }),
-    );
-    const all = (out.Contents ?? [])
-      .filter((c) => c.Key && c.LastModified)
-      .map<BackupObject>((c) => ({
-        key: c.Key as string,
-        size: c.Size ?? 0,
-        lastModified: c.LastModified as Date,
-      }))
-      .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
-      .slice(0, Math.max(1, Math.min(limit, 100)));
+    const need = Math.max(1, Math.min(limit, 100));
+    let merged: BackupObject[] = [];
+
+    for (const monthPrefix of backupMonthPrefixes(18)) {
+      const batch = await listAllUnderPrefix(cfg.client, cfg.bucket, monthPrefix);
+      if (batch.length === 0) continue;
+      merged = sortAndSlice([...merged, ...batch], need);
+      if (merged.length >= need) break;
+    }
+
+    if (merged.length === 0) {
+      merged = sortAndSlice(await listAllUnderPrefix(cfg.client, cfg.bucket, prefix), need);
+    }
+
     return {
       ok: true,
       configured: true,
       prefix,
       bucket: cfg.bucket,
-      objects: all,
+      objects: merged,
       errorMessage: null,
     };
   } catch (err) {
