@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
+import { customerDisplayName } from "@/lib/customerDisplay";
 
 export async function GET(
   _req: NextRequest,
@@ -26,17 +27,46 @@ export async function GET(
   });
   if (!c) return NextResponse.json({ error: "Kupac nije pronađen." }, { status: 404 });
 
-  const lastWorkOrder = await prisma.workOrder.findFirst({
-    where: { customerId: c.id },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, orderNumber: true, status: true, createdAt: true, lockedAt: true },
-  });
-
-  const distinctExtinguishers = await prisma.workOrderItem.findMany({
-    where: { workOrder: { customerId: c.id } },
-    select: { extinguisherId: true },
-    distinct: ["extinguisherId"],
-  });
+  const [recentWorkOrders, distinctExtinguishers, siblingCustomers, ownerOrg] = await Promise.all([
+    prisma.workOrder.findMany({
+      where: { customerId: c.id },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        createdAt: true,
+        lockedAt: true,
+        deliveryNotes: {
+          where: { supersededAt: null, pdfStoragePath: { not: null } },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    }),
+    prisma.workOrderItem.findMany({
+      where: { workOrder: { customerId: c.id } },
+      select: { extinguisherId: true },
+      distinct: ["extinguisherId"],
+    }),
+    prisma.customer.findMany({
+      where: { oib: c.oib, id: { not: c.id }, deletedAt: null },
+      orderBy: [{ company: { serviceCode: "asc" } }],
+      select: {
+        id: true,
+        name: true,
+        shortName: true,
+        company: { select: { id: true, name: true, serviceCode: true } },
+        ownerLink: { select: { status: true, hiddenByVendorAt: true } },
+        _count: { select: { workOrders: true } },
+      },
+    }),
+    prisma.ownerOrg.findUnique({
+      where: { oib: c.oib },
+      select: { id: true, name: true },
+    }),
+  ]);
   const extinguisherCount = distinctExtinguishers.filter((x) => !!x.extinguisherId).length;
 
   await prisma.auditLog.create({
@@ -69,14 +99,22 @@ export async function GET(
       ...c._count,
       extinguishers: extinguisherCount,
     },
-    lastWorkOrder: lastWorkOrder
-      ? {
-          id: lastWorkOrder.id,
-          orderNumber: lastWorkOrder.orderNumber,
-          status: lastWorkOrder.status,
-          createdAt: lastWorkOrder.createdAt.toISOString(),
-          lockedAt: lastWorkOrder.lockedAt?.toISOString() ?? null,
-        }
-      : null,
+    recentWorkOrders: recentWorkOrders.map((wo) => ({
+      id: wo.id,
+      orderNumber: wo.orderNumber,
+      status: wo.status,
+      createdAt: wo.createdAt.toISOString(),
+      lockedAt: wo.lockedAt?.toISOString() ?? null,
+      hasShippedDeliveryNote: wo.deliveryNotes.length > 0,
+    })),
+    otherServicers: siblingCustomers.map((s) => ({
+      id: s.id,
+      displayName: customerDisplayName(s),
+      company: s.company,
+      workOrderCount: s._count.workOrders,
+      portalStatus: s.ownerLink?.status ?? null,
+      portalHidden: !!s.ownerLink?.hiddenByVendorAt,
+    })),
+    ownerOrg: ownerOrg ? { id: ownerOrg.id, name: ownerOrg.name } : null,
   });
 }
