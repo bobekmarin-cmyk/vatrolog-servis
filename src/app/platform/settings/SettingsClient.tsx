@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Link from "next/link";
 
-export type TabKey = "email" | "branding" | "health";
+export type TabKey = "email" | "branding";
 
 type VendorStatus = {
   connected: boolean;
@@ -28,22 +29,28 @@ export default function SettingsClient(props: {
   branding: Branding;
 }) {
   const [tab, setTab] = useState<TabKey>(
-    ["email", "branding", "health"].includes(props.initialTab) ? props.initialTab : "email",
+    props.initialTab === "branding" ? "branding" : "email",
   );
 
   return (
     <div className="space-y-6">
-      <nav className="flex flex-wrap gap-2 border-b border-slate-200">
-        <TabBtn active={tab === "email"} onClick={() => setTab("email")} label="Email integracija" />
-        <TabBtn active={tab === "branding"} onClick={() => setTab("branding")} label="Branding" />
-        <TabBtn active={tab === "health"} onClick={() => setTab("health")} label="Health" />
+      <nav className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200">
+        <div className="flex flex-wrap gap-2">
+          <TabBtn active={tab === "email"} onClick={() => setTab("email")} label="Email integracija" />
+          <TabBtn active={tab === "branding"} onClick={() => setTab("branding")} label="Branding" />
+        </div>
+        <Link
+          href="/platform/health"
+          className="-mb-px rounded-t-lg border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-800"
+        >
+          Zdravlje sustava →
+        </Link>
       </nav>
 
       {tab === "email" && (
         <EmailTab vendor={props.vendor} flash={props.gmailFlash} reason={props.gmailReason} />
       )}
       {tab === "branding" && <BrandingTab initial={props.branding} />}
-      {tab === "health" && <HealthTab />}
     </div>
   );
 }
@@ -414,121 +421,6 @@ function Field(props: {
         onChange={props.onChange}
         placeholder={props.placeholder}
       />
-    </div>
-  );
-}
-
-type HealthPayload = {
-  db?: { ok?: boolean; latencyMs?: number | null };
-  vendorGmail?: { connected?: boolean; email?: string | null };
-  smtp?: { configured?: boolean; host?: string | null };
-  stripe?: { ok?: boolean; mode?: string; configured?: boolean };
-  env?: { googleClient?: boolean; authSecret?: boolean; platformAuthSecret?: boolean };
-};
-
-function HealthTab() {
-  const [data, setData] = useState<HealthPayload | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/platform/health", { cache: "no-store" });
-      const d = (await res.json()) as HealthPayload & { error?: string };
-      if (!res.ok) throw new Error(d.error ?? "Greška.");
-      setData(d);
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Greška.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  return (
-    <section className="surface space-y-5 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Health pregled</h2>
-          <p className="text-sm text-slate-500">
-            Pregled baze, mail sustava i — ako je aktivna — online Stripe naplate (webhook).
-          </p>
-        </div>
-        <button type="button" className="btn btn-outline px-3" onClick={load} disabled={loading}>
-          {loading ? "Učitavam…" : "Osvježi"}
-        </button>
-      </div>
-
-      {err && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
-      {data && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <HealthCard
-            title="Baza"
-            ok={!!data.db?.ok}
-            okLabel={`OK · ${data.db?.latencyMs ?? "?"} ms`}
-            failLabel="Nedostupna"
-          />
-          <HealthCard
-            title="Vendor Gmail"
-            ok={!!data.vendorGmail?.connected}
-            okLabel={data.vendorGmail?.email ?? "Spojen"}
-            failLabel="Nije spojen"
-          />
-          <HealthCard
-            title="SMTP fallback"
-            ok={!!data.smtp?.configured}
-            okLabel={`Konfiguriran · ${data.smtp?.host ?? ""}`}
-            failLabel="Nije konfiguriran"
-          />
-          <HealthCard
-            title="Stripe"
-            ok={!!data.stripe?.ok}
-            okLabel={
-              data.stripe?.mode === "manual"
-                ? "Online Stripe naplata nije u upotrebi"
-                : "Webhook konfiguriran"
-            }
-            failLabel={data.stripe?.configured ? "Webhook fali" : "Nije konfiguriran"}
-          />
-          <HealthCard
-            title="Google OAuth env"
-            ok={!!data.env?.googleClient}
-            okLabel="ID i secret postavljeni"
-            failLabel="Nedostaju varijable"
-          />
-          <HealthCard
-            title="Auth secrets"
-            ok={!!data.env?.authSecret && !!data.env?.platformAuthSecret}
-            okLabel="AUTH_SECRET i PLATFORM_AUTH_SECRET postavljeni"
-            failLabel="Nedostaje secret"
-          />
-        </div>
-      )}
-    </section>
-  );
-}
-
-function HealthCard({ title, ok, okLabel, failLabel }: { title: string; ok: boolean; okLabel: string; failLabel: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold">{title}</div>
-        <span
-          className={[
-            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-            ok ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
-          ].join(" ")}
-        >
-          <span className={["h-2 w-2 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500"].join(" ")} />
-          {ok ? "OK" : "Provjeri"}
-        </span>
-      </div>
-      <div className="mt-2 text-xs text-slate-600">{ok ? okLabel : failLabel}</div>
     </div>
   );
 }

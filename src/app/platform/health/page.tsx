@@ -112,6 +112,42 @@ function Row({
   );
 }
 
+function SummaryCard({
+  title,
+  ok,
+  detail,
+  href,
+}: {
+  title: string;
+  ok: boolean;
+  detail: string;
+  href?: string;
+}) {
+  const body = (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 h-full">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold">{title}</div>
+        <span
+          className={[
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+            ok ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
+          ].join(" ")}
+        >
+          <span className={["h-2 w-2 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500"].join(" ")} />
+          {ok ? "OK" : "Provjeri"}
+        </span>
+      </div>
+      <div className="mt-2 text-xs text-slate-600">{detail}</div>
+    </div>
+  );
+  if (!href) return body;
+  return (
+    <Link href={href} className="block transition hover:opacity-95">
+      {body}
+    </Link>
+  );
+}
+
 export default async function PlatformHealthPage() {
   await requirePlatformSession();
 
@@ -131,14 +167,32 @@ export default async function PlatformHealthPage() {
     !!process.env.UPSTASH_REDIS_REST_URL?.trim() &&
     !!process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
 
+  const smtpConfigured = !!(
+    process.env.SMTP_HOST?.trim() &&
+    process.env.SMTP_USER?.trim() &&
+    process.env.SMTP_PASS?.trim()
+  );
+  const stripeConfigured = !!process.env.STRIPE_SECRET_KEY?.trim();
+  const stripeWebhookConfigured = !!process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  const stripeOk = billingMode === "manual" || (stripeConfigured && stripeWebhookConfigured);
+  const googleOAuthOk =
+    !!process.env.GOOGLE_CLIENT_ID?.trim() && !!process.env.GOOGLE_CLIENT_SECRET?.trim();
+  const authSecretsOk =
+    !!process.env.AUTH_SECRET?.trim() && !!process.env.PLATFORM_AUTH_SECRET?.trim();
+
   const sentryEnv = process.env.SENTRY_ENVIRONMENT?.trim() || process.env.NODE_ENV || "—";
   const sentryTrace = process.env.SENTRY_TRACES_SAMPLE_RATE?.trim() || "default";
 
-  // Brand info za R2/Sentry/Upstash linkove
   const githubBackupUrl =
     process.env.GITHUB_REPO?.includes("/")
       ? `https://github.com/${process.env.GITHUB_REPO}/actions/workflows/backup-db.yml`
       : "https://github.com/bobekmarin-cmyk/vatrolog-servis/actions/workflows/backup-db.yml";
+
+  const snapshotAt = new Date();
+  const latestBackup = backups.ok ? backups.objects[0] : null;
+  const backupFresh =
+    !!latestBackup &&
+    snapshotAt.getTime() - latestBackup.lastModified.getTime() <= 36 * 60 * 60 * 1000;
 
   return (
     <div className="space-y-6">
@@ -146,30 +200,90 @@ export default async function PlatformHealthPage() {
         <div>
           <h1 className="text-2xl font-bold">Zdravlje sustava</h1>
           <p className="text-sm text-slate-600">
-            Detaljan presjek konfiguracije, baze, backup-a i integracija. Read-only
-            stranica koja se uvijek izvršava na zahtjev.
+            Jedinstveni pregled baze, backupa, maila, naplate i env konfiguracije. Read-only —
+            osvježi stranicu za novi snapshot.
           </p>
         </div>
-        <Link
-          href="/platform"
-          className="text-sm font-medium text-slate-600 hover:text-slate-900"
-        >
-          ← Dashboard
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/platform/settings" className="btn btn-outline px-3 text-sm">
+            Postavke →
+          </Link>
+          <Link href="/platform" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+            ← Dashboard
+          </Link>
+        </div>
       </div>
 
-      {/* DB latency + connection mask */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <SummaryCard
+          title="Baza"
+          ok={db.ok}
+          detail={db.ok ? `SELECT 1 · ${db.latencyMs} ms` : (db.error ?? "Nedostupna")}
+        />
+        <SummaryCard
+          title="Backup (R2)"
+          ok={backups.configured && backups.ok && backupFresh}
+          detail={
+            !backups.configured
+              ? "S3 nije konfiguriran"
+              : !backups.ok
+                ? "Čitanje bucketa nije uspjelo"
+                : !latestBackup
+                  ? "Bucket prazan"
+                  : `${latestBackup.lastModified.toLocaleString("hr-HR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })} · ${formatBytes(latestBackup.size)}`
+          }
+        />
+        <SummaryCard
+          title="Vendor Gmail"
+          ok={vendor.connected}
+          detail={vendor.connected ? (vendor.email ?? "Spojen") : "Nije povezan — spoji u Postavkama"}
+          href="/platform/settings?tab=email"
+        />
+        <SummaryCard
+          title="SMTP fallback"
+          ok={smtpConfigured}
+          detail={
+            smtpConfigured
+              ? `Konfiguriran · ${process.env.SMTP_HOST}`
+              : "Nije konfiguriran (OK ako Gmail radi)"
+          }
+        />
+        <SummaryCard
+          title="Naplata (Stripe)"
+          ok={stripeOk}
+          detail={
+            billingMode === "manual"
+              ? "Ručna naplata (bez Stripea)"
+              : stripeOk
+                ? "Secret + webhook OK"
+                : stripeConfigured
+                  ? "Webhook fali"
+                  : "Nije konfiguriran"
+          }
+        />
+        <SummaryCard
+          title="Env / secrets"
+          ok={authSecretsOk && googleOAuthOk && errorsCount === 0}
+          detail={
+            errorsCount > 0
+              ? `${errorsCount} kritičnih env problema`
+              : warnsCount > 0
+                ? `${warnsCount} upozorenja`
+                : "Auth + OAuth + launch checks OK"
+          }
+        />
+      </section>
+
       <Section title="Baza podataka (PostgreSQL)">
         <div className="space-y-1">
           <Row
             label="SELECT 1 ping"
             tone={db.ok ? "ok" : "down"}
             value={db.ok ? "OK" : "FAIL"}
-            hint={
-              db.ok
-                ? `${db.latencyMs} ms`
-                : (db.error ?? "Greska bez detalja")
-            }
+            hint={db.ok ? `${db.latencyMs} ms` : (db.error ?? "Greska bez detalja")}
           />
           <Row
             label="DATABASE_URL"
@@ -196,7 +310,6 @@ export default async function PlatformHealthPage() {
         </div>
       </Section>
 
-      {/* Backup history (10) iz R2 */}
       <Section
         title="Backup arhiva (R2)"
         right={
@@ -251,14 +364,15 @@ export default async function PlatformHealthPage() {
               </tbody>
             </table>
             <p className="mt-3 text-xs text-slate-500">
-              Bucket: <code>{backups.bucket}</code> · Prefix:{" "}
-              <code>{backups.prefix}</code>
+              Bucket: <code>{backups.bucket}</code> · Prefix: <code>{backups.prefix}</code>
+              {!backupFresh ? (
+                <span className="ml-2 text-amber-700">· zadnji backup stariji od 36 h</span>
+              ) : null}
             </p>
           </div>
         )}
       </Section>
 
-      {/* Sentry, Upstash, Vendor Gmail */}
       <Section title="Integracije & infra">
         <div className="space-y-1">
           <Row
@@ -268,7 +382,7 @@ export default async function PlatformHealthPage() {
             hint={
               sentryConfigured
                 ? `env=${sentryEnv} · trace=${sentryTrace}`
-                : "Greske se loga ju samo lokalno"
+                : "Greske se logaju samo lokalno"
             }
           />
           <Row
@@ -290,7 +404,24 @@ export default async function PlatformHealthPage() {
                 ? vendor.connectedAt
                   ? `Povezan ${vendor.connectedAt.toLocaleString("hr-HR")}`
                   : null
-                : "Sistemski mailovi mogu pasti — povezi u /platform/settings"
+                : (
+                    <>
+                      Sistemski mailovi mogu pasti —{" "}
+                      <Link href="/platform/settings?tab=email" className="text-sky-700 hover:underline">
+                        poveži u Postavkama
+                      </Link>
+                    </>
+                  )
+            }
+          />
+          <Row
+            label="SMTP fallback"
+            tone={smtpConfigured ? "ok" : "off"}
+            value={smtpConfigured ? "Konfiguriran" : "Nije konfiguriran"}
+            hint={
+              smtpConfigured
+                ? `host=${process.env.SMTP_HOST}`
+                : "Koristi se ako Vendor Gmail nije dostupan"
             }
           />
           <Row
@@ -299,14 +430,50 @@ export default async function PlatformHealthPage() {
             value={billingMode}
             hint={
               billingMode === "stripe"
-                ? "Stripe SaaS"
+                ? stripeWebhookConfigured
+                  ? "Stripe SaaS · webhook OK"
+                  : "Stripe SaaS · webhook fali"
                 : "Rucna naplata (bez Stripe webhook-a)"
             }
+          />
+          <Row
+            label="Stripe secret / webhook"
+            tone={
+              billingMode === "manual"
+                ? "off"
+                : stripeConfigured && stripeWebhookConfigured
+                  ? "ok"
+                  : "warn"
+            }
+            value={
+              billingMode === "manual"
+                ? "N/A (manual)"
+                : `secret=${stripeConfigured ? "da" : "ne"} · webhook=${stripeWebhookConfigured ? "da" : "ne"}`
+            }
+          />
+          <Row
+            label="Google OAuth env"
+            tone={googleOAuthOk ? "ok" : "warn"}
+            value={googleOAuthOk ? "ID i secret postavljeni" : "Nedostaju varijable"}
+            hint="GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET (vendor + tenant Gmail)"
+          />
+          <Row
+            label="Auth secrets"
+            tone={authSecretsOk ? "ok" : "down"}
+            value={
+              authSecretsOk
+                ? "AUTH_SECRET i PLATFORM_AUTH_SECRET postavljeni"
+                : "Nedostaje secret"
+            }
+          />
+          <Row
+            label="VENDOR_FROM_EMAIL"
+            tone={process.env.VENDOR_FROM_EMAIL?.trim() ? "ok" : "off"}
+            value={process.env.VENDOR_FROM_EMAIL?.trim() || "—"}
           />
         </div>
       </Section>
 
-      {/* Env varijable checklist */}
       <Section
         title="Env varijable"
         right={
@@ -351,6 +518,11 @@ export default async function PlatformHealthPage() {
           </ul>
         )}
       </Section>
+
+      <p className="text-xs text-slate-500">
+        Snapshot: {snapshotAt.toLocaleString("hr-HR")} · konfiguracija Vendor Gmaila i brandinga je
+        u <Link href="/platform/settings" className="text-sky-700 hover:underline">Postavkama</Link>.
+      </p>
     </div>
   );
 }

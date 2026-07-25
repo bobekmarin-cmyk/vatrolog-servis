@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requirePlatformSession } from "@/lib/platformAuth";
 import { getVendorStatus } from "@/lib/platformGmail";
 import { getPlatformSettings } from "@/lib/platformSettings";
@@ -13,18 +14,23 @@ export default async function PlatformSettingsPage({
   await requirePlatformSession();
   const sp = await searchParams;
 
+  // Stari bookmark / linkovi na Health tab → jedinstvena stranica Zdravlje sustava.
+  if (sp.tab === "health") {
+    redirect("/platform/health");
+  }
+
   const [vendor, settings] = await Promise.all([getVendorStatus(), getPlatformSettings()]);
 
   const rawTab = sp.tab ?? "email";
-  const initialTab: TabKey =
-    rawTab === "email" || rawTab === "branding" || rawTab === "health" ? rawTab : "email";
+  const initialTab: TabKey = rawTab === "branding" ? "branding" : "email";
 
   return (
     <main className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Postavke</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Vendor mail integracija, branding sistemskih mailova i health pregled.
+          Vendor mail integracija i branding sistemskih mailova. Operativni status (baza, backup,
+          Stripe, env) je na Zdravlju sustava.
         </p>
       </div>
 
