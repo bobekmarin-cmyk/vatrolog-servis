@@ -11,10 +11,11 @@ export default async function PlatformOwnersPage() {
   return (
     <main className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Vlasnici (korisnički portal)</h1>
+        <h1 className="text-3xl font-bold">Vlasnici (portal)</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Vlasnici aparata grupirani po OIB-u. Vidite status portala, račune i servisere te
-          upravljate vidljivošću i pozivnicama.
+          Vlasnici aparata grupirani po OIB-u (korisnički portal). Vidite status portala, račune i
+          servisere te upravljate vidljivošću i pozivnicama. Zapisi kupaca po serviseru su na
+          Kupci (po serviseru).
         </p>
       </div>
 

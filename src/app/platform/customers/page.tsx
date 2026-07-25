@@ -13,10 +13,11 @@ export default async function PlatformCustomersPage() {
   return (
     <main className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Kupci</h1>
+        <h1 className="text-3xl font-bold">Kupci (po serviseru)</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Cross-tenant search po imenu, OIB-u, emailu ili telefonu. Read-only — svaki pristup
-          detalju se audit-loga.
+          Cross-tenant search po zapisu kupca kod pojedinog servisera (ime, OIB, email, telefon).
+          Isti OIB može imati više redova. Read-only — svaki pristup detalju se audit-loga. Za
+          portalni pregled po OIB-u koristi Vlasnici (portal).
         </p>
       </div>
       <CustomersClient companies={companies} />

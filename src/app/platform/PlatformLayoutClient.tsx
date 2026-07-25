@@ -8,17 +8,22 @@ const nav: PlatformNavSection[] = [
     items: [{ href: "/platform", label: "Dashboard", icon: "▣" }],
   },
   {
-    label: "Onboarding",
+    label: "Serviseri",
     items: [
       { href: "/platform/registration-requests", label: "Zahtjevi", icon: "📨" },
       { href: "/platform/companies", label: "Tvrtke", icon: "🏢" },
     ],
   },
   {
-    label: "Sadržaj",
+    label: "Kupci i portal",
     items: [
-      { href: "/platform/customers", label: "Kupci", icon: "👥" },
+      { href: "/platform/customers", label: "Kupci (po serviseru)", icon: "👥" },
       { href: "/platform/owners", label: "Vlasnici (portal)", icon: "🔑" },
+    ],
+  },
+  {
+    label: "Šifrarnici",
+    items: [
       { href: "/platform/manufacturers", label: "Proizvođači", icon: "🏭" },
       { href: "/platform/katalog", label: "Katalog", icon: "📚" },
     ],
@@ -32,7 +37,7 @@ const nav: PlatformNavSection[] = [
     ],
   },
   {
-    label: "Sustav",
+    label: "Operativa",
     items: [
       { href: "/platform/health", label: "Zdravlje sustava", icon: "❤️" },
       { href: "/platform/audit", label: "Audit log", icon: "🛡️" },
