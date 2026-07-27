@@ -62,12 +62,14 @@ function parseHealthFilter(raw: string | string[] | undefined): "all" | HealthCl
 export default async function PlatformCompaniesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ health?: string | string[] }>;
+  searchParams?: Promise<{ health?: string | string[]; hardPurge?: string | string[]; name?: string | string[] }>;
 }) {
   await requirePlatformSession();
 
   const sp = (await searchParams) ?? {};
   const healthFilter = parseHealthFilter(sp.health);
+  const hardPurge = Array.isArray(sp.hardPurge) ? sp.hardPurge[0] : sp.hardPurge;
+  const purgedName = Array.isArray(sp.name) ? sp.name[0] : sp.name;
 
   const [companies, healthScores] = await Promise.all([
     prisma.company.findMany({
@@ -117,6 +119,12 @@ export default async function PlatformCompaniesPage({
           + Nova tvrtka
         </Link>
       </div>
+
+      {hardPurge === "ok" ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Tvrtka{purgedName ? ` „${purgedName}”` : ""} je trajno obrisana.
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="font-semibold text-slate-500 uppercase tracking-wide">Health:</span>

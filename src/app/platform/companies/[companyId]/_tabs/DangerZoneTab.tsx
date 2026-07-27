@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Section, fmtDateTime } from "./shared";
 import DangerConfirmButton from "../DangerConfirmButton";
 import ForceUnlockOrderForm from "../ForceUnlockOrderForm";
+import HardPurgeCompanyForm from "../HardPurgeCompanyForm";
 
 const FORCE_UNLOCK_FLASH: Record<string, { tone: "ok" | "err"; text: string }> = {
   ok: {
@@ -13,12 +14,25 @@ const FORCE_UNLOCK_FLASH: Record<string, { tone: "ok" | "err"; text: string }> =
   not_locked: { tone: "err", text: "Nalog nije zaključan pa nema što otključati." },
 };
 
+const HARD_PURGE_FLASH: Record<string, { tone: "ok" | "err"; text: string }> = {
+  name_mismatch: {
+    tone: "err",
+    text: "Naziv se ne podudara — trajno brisanje nije pokrenuto.",
+  },
+  error: {
+    tone: "err",
+    text: "Trajno brisanje nije uspjelo. Provjeri log / pokušaj ponovo.",
+  },
+};
+
 export default async function DangerZoneTab({
   companyId,
   forceUnlockFlash,
+  hardPurgeFlash,
 }: {
   companyId: string;
   forceUnlockFlash?: string | null;
+  hardPurgeFlash?: string | null;
 }) {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -119,6 +133,29 @@ export default async function DangerZoneTab({
             </div>
           </>
         )}
+      </Section>
+
+      <Section title="Trajno brisanje tvrtke">
+        <p className="text-sm text-red-800">
+          Nepovratno briše tvrtku i sve povezane podatke: račune, kupce, aparate, naloge,
+          skladište, mail logove, e-računi postavke, portal linkove. Orphan portal vlasnici (OIB
+          bez drugih servisa) također se čiste. PDF-ovi u R2 (prefix pdf/companyId/) mogu ostati
+          kao orphan objekti — po želji ih obriši ručno u bucketu.
+        </p>
+        {hardPurgeFlash && HARD_PURGE_FLASH[hardPurgeFlash] ? (
+          <p
+            className={`mt-2 rounded-md px-3 py-2 text-sm ${
+              HARD_PURGE_FLASH[hardPurgeFlash].tone === "ok"
+                ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
+                : "bg-red-50 text-red-800 ring-1 ring-red-200"
+            }`}
+          >
+            {HARD_PURGE_FLASH[hardPurgeFlash].text}
+          </p>
+        ) : null}
+        <div className="mt-3">
+          <HardPurgeCompanyForm companyId={companyId} companyName={company.name} />
+        </div>
       </Section>
     </div>
   );

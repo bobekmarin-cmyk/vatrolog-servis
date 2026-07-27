@@ -54,6 +54,7 @@ export default async function PlatformCompanyDetailPage({
     emailStatus?: string | string[];
     emailKind?: string | string[];
     forceUnlock?: string | string[];
+    hardPurge?: string | string[];
   }>;
 }) {
   await requirePlatformSession();
@@ -184,7 +185,11 @@ export default async function PlatformCompanyDetailPage({
         )}
         {tab === "settings" && <SettingsTab companyId={company.id} />}
         {tab === "danger" && (
-          <DangerZoneTab companyId={company.id} forceUnlockFlash={parseSingle(sp.forceUnlock)} />
+          <DangerZoneTab
+            companyId={company.id}
+            forceUnlockFlash={parseSingle(sp.forceUnlock)}
+            hardPurgeFlash={parseSingle(sp.hardPurge)}
+          />
         )}
       </div>
     </main>
