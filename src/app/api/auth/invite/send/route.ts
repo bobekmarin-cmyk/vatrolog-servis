@@ -3,6 +3,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/authTokens";
 import { adminOnboardingEmail, sendSystemMail } from "@/lib/systemMail";
+import { getAppBaseUrl } from "@/lib/appVersion";
 
 /**
  * Generic invite send endpoint koji koristi sub-modal/akcijski API.
@@ -58,8 +59,7 @@ export async function POST(req: Request) {
     }),
   ]);
 
-  const origin = new URL(req.url).origin;
-  const acceptUrl = `${origin}/auth/invite/${encodeURIComponent(plaintext)}`;
+  const acceptUrl = `${getAppBaseUrl()}/auth/invite/${encodeURIComponent(plaintext)}`;
 
   const workshops = account.company.accounts
     .filter((a) => a.role !== "ADMIN")

@@ -3,7 +3,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 import { generateToken } from "@/lib/authTokens";
 import { sendSystemMail, subaccountSetupEmail } from "@/lib/systemMail";
-
+import { getAppBaseUrl } from "@/lib/appVersion";
 import { redirectRelative } from "@/lib/httpRedirect";
 /**
  * Pošalji setup mail za postojeći sub-račun (XX-usrN) — koristi se kad
@@ -72,8 +72,7 @@ export async function POST(
     }),
   ]);
 
-  const origin = new URL(req.url).origin;
-  const setupUrl = `${origin}/admin/users/setup/${encodeURIComponent(plaintext)}`;
+  const setupUrl = `${getAppBaseUrl()}/admin/users/setup/${encodeURIComponent(plaintext)}`;
   const tpl = await subaccountSetupEmail({
     companyName: company.name,
     username: account.username,

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
+import { redirectRelative } from "@/lib/httpRedirect";
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -97,15 +98,10 @@ export async function POST(req: Request) {
     });
 
     if (from === "work-order-new") {
-      const url = new URL("/work-orders/new", req.url);
-      url.searchParams.set("customerId", createdId);
-      url.searchParams.set("created", "1");
-      return NextResponse.redirect(url, 303);
+      return redirectRelative(`/work-orders/new?customerId=${encodeURIComponent(createdId)}&created=1`, 303);
     }
 
-    const successUrl = new URL("/customers", req.url);
-    successUrl.searchParams.set("created", "1");
-    return NextResponse.redirect(successUrl, 303);
+    return redirectRelative("/customers?created=1", 303);
   } catch (e: unknown) {
     if (e && typeof e === "object" && "code" in e && (e as { code: string }).code === "P2002") {
       return NextResponse.json({ error: "Kupac s tim OIB-om već postoji u tvrtki." }, { status: 409 });

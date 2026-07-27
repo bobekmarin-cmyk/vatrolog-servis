@@ -3,7 +3,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 import { generateToken } from "@/lib/authTokens";
 import { adminOnboardingEmail, sendSystemMail } from "@/lib/systemMail";
-
+import { getAppBaseUrl } from "@/lib/appVersion";
 import { redirectRelative } from "@/lib/httpRedirect";
 /**
  * Pošalji ADMIN onboarding pozivnicu — koristi se samo za XX-adm račun
@@ -75,8 +75,7 @@ export async function POST(
     }),
   ]);
 
-  const origin = new URL(req.url).origin;
-  const acceptUrl = `${origin}/auth/invite/${encodeURIComponent(plaintext)}`;
+  const acceptUrl = `${getAppBaseUrl()}/auth/invite/${encodeURIComponent(plaintext)}`;
 
   const adminUsername = account.username;
   const workshops = company.accounts

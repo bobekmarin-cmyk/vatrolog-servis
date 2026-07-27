@@ -4,7 +4,7 @@ import { getPlatformSession } from "@/lib/platformAuth";
 import { generateToken } from "@/lib/authTokens";
 import { passwordResetEmail, sendSystemMail } from "@/lib/systemMail";
 import { checkRateLimit } from "@/lib/rateLimit";
-
+import { getAppBaseUrl } from "@/lib/appVersion";
 import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
   req: NextRequest,
@@ -66,8 +66,7 @@ export async function POST(
     }),
   ]);
 
-  const origin = new URL(req.url).origin;
-  const resetUrl = `${origin}/auth/reset/${encodeURIComponent(plaintext)}`;
+  const resetUrl = `${getAppBaseUrl()}/auth/reset/${encodeURIComponent(plaintext)}`;
   const tpl = await passwordResetEmail(resetUrl);
 
   const sent = await sendSystemMail({

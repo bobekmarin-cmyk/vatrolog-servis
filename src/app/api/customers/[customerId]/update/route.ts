@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { redirectRelative } from "@/lib/httpRedirect";
 
-function redirectWithError(req: Request, customerId: string, msg: string) {
-  const url = new URL(`/customers/${customerId}`, req.url);
-  url.searchParams.set("error", msg);
-  return NextResponse.redirect(url, 303);
+function redirectWithError(customerId: string, msg: string) {
+  return redirectRelative(`/customers/${customerId}?error=${encodeURIComponent(msg)}`, 303);
 }
 
-function redirectWithSuccess(req: Request, customerId: string) {
-  const url = new URL(`/customers/${customerId}`, req.url);
-  url.searchParams.set("success", "1");
-  return NextResponse.redirect(url, 303);
+function redirectWithSuccess(customerId: string) {
+  return redirectRelative(`/customers/${customerId}?success=1`, 303);
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ customerId: string }> }) {
@@ -46,18 +43,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ custome
   const discountLabelsPct = parsePct("discountLabelsPct");
   const discountPartsPct = parsePct("discountPartsPct");
   if (discountServicesPct === undefined || discountLabelsPct === undefined || discountPartsPct === undefined) {
-    return redirectWithError(req, customerId, "Rabat mora biti broj između 0 i 100.");
+    return redirectWithError(customerId, "Rabat mora biti broj između 0 i 100.");
   }
 
   if (!name || !street || !city) {
-    return redirectWithError(req, customerId, "Nedostaju obavezna polja (naziv, ulica i broj, grad).");
+    return redirectWithError(customerId, "Nedostaju obavezna polja (naziv, ulica i broj, grad).");
   }
 
   const existing = await prisma.customer.findFirst({
     where: { id: customerId, companyId: session.companyId },
     select: { id: true },
   });
-  if (!existing) return redirectWithError(req, customerId, "Kupac ne postoji.");
+  if (!existing) return redirectWithError(customerId, "Kupac ne postoji.");
 
   try {
     await prisma.customer.update({
@@ -81,12 +78,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ custome
       },
     });
 
-    return redirectWithSuccess(req, customerId);
+    return redirectWithSuccess(customerId);
   } catch (e: unknown) {
     if (e && typeof e === "object" && "code" in e && (e as { code: string }).code === "P2002") {
-      return redirectWithError(req, customerId, "Kupac s tim OIB-om već postoji.");
+      return redirectWithError(customerId, "Kupac s tim OIB-om već postoji.");
     }
-    return redirectWithError(req, customerId, "Greška kod spremanja kupca.");
+    return redirectWithError(customerId, "Greška kod spremanja kupca.");
   }
 }
 

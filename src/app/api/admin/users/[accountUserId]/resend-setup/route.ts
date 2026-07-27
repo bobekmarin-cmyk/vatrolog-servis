@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { generateToken } from "@/lib/authTokens";
 import { sendSystemMail, subaccountSetupEmail } from "@/lib/systemMail";
 import { checkRateLimit, clientKeyFromRequest } from "@/lib/rateLimit";
+import { getAppBaseUrl } from "@/lib/appVersion";
 
 export const runtime = "nodejs";
 
@@ -93,8 +94,7 @@ export async function POST(
     }),
   ]);
 
-  const origin = new URL(req.url).origin;
-  const setupUrl = `${origin}/admin/users/setup/${encodeURIComponent(plaintext)}`;
+  const setupUrl = `${getAppBaseUrl()}/admin/users/setup/${encodeURIComponent(plaintext)}`;
   const tpl = await subaccountSetupEmail({
     companyName: company.name,
     username: target.username,

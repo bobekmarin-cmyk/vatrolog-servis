@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
 import { generateToken } from "@/lib/authTokens";
+import { getAppBaseUrl } from "@/lib/appVersion";
 
 /**
  * Generira SUBACCOUNT_PASSWORD_SETUP link za sub-račun bez slanja maila.
@@ -76,9 +77,7 @@ export async function POST(
     }),
   ]);
 
-  // Trebamo origin da generiramo apsolutni URL
-  const origin = new URL(_req.url).origin;
-  const setupUrl = `${origin}/admin/users/setup/${encodeURIComponent(plaintext)}`;
+  const setupUrl = `${getAppBaseUrl()}/admin/users/setup/${encodeURIComponent(plaintext)}`;
 
   return NextResponse.json({
     ok: true,

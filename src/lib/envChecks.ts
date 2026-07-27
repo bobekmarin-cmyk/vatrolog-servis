@@ -67,12 +67,18 @@ export function validateLaunchEnv(): EnvIssue[] {
     });
   }
 
-  // APP_BASE_URL — uvijek bolje da je eksplicitan, u produkciji error.
-  if (!process.env.APP_BASE_URL?.trim()) {
+  if (isProd && !process.env.APP_BASE_URL?.trim() && !process.env.NEXT_PUBLIC_APP_URL?.trim()) {
     issues.push({
-      severity: isProd ? "error" : "info",
+      severity: "error",
       key: "APP_BASE_URL",
-      message: "APP_BASE_URL nije postavljen — koristi se fallback (Vercel URL ili localhost).",
+      message:
+        "APP_BASE_URL (ili NEXT_PUBLIC_APP_URL) nije postavljen — mail linkovi bi pali na https://vatrolog.com fallback. Postavi eksplicitno na produkcijsku domenu.",
+    });
+  } else if (!process.env.APP_BASE_URL?.trim()) {
+    issues.push({
+      severity: isProd ? "warn" : "info",
+      key: "APP_BASE_URL",
+      message: "APP_BASE_URL nije postavljen — koristi se NEXT_PUBLIC_APP_URL / hosting fallback.",
     });
   }
 

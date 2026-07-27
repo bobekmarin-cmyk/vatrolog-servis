@@ -10,7 +10,7 @@ import {
   type LocationKind,
 } from "@/lib/companyAccountNaming";
 import { sendSystemMail, subaccountSetupEmail } from "@/lib/systemMail";
-
+import { getAppBaseUrl } from "@/lib/appVersion";
 import { redirectRelative } from "@/lib/httpRedirect";
 const MAX_LOCATIONS_PER_KIND = 20;
 
@@ -172,8 +172,7 @@ export async function POST(
   }
 
   if (setupEmail) {
-    const origin = new URL(req.url).origin;
-    const setupUrl = `${origin}/admin/users/setup/${encodeURIComponent(plaintext)}`;
+    const setupUrl = `${getAppBaseUrl()}/admin/users/setup/${encodeURIComponent(plaintext)}`;
     const tpl = await subaccountSetupEmail({
       companyName: company.name,
       username,

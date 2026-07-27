@@ -376,6 +376,22 @@ export default async function PlatformHealthPage() {
       <Section title="Integracije & infra">
         <div className="space-y-1">
           <Row
+            label="App base URL (mail / OAuth)"
+            tone={
+              process.env.APP_BASE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim()
+                ? "ok"
+                : "warn"
+            }
+            value={
+              <span className="font-mono text-xs">
+                {process.env.APP_BASE_URL?.trim() ||
+                  process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+                  "(fallback)"}
+              </span>
+            }
+            hint="Koristi se u pozivnicama, setup i reset linkovima — mora biti https://vatrolog.com"
+          />
+          <Row
             label="Sentry DSN"
             tone={sentryConfigured ? "ok" : "off"}
             value={sentryConfigured ? "Postavljen" : "Nije postavljen"}
