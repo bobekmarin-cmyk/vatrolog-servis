@@ -10,18 +10,11 @@ export async function countWorkOrderItemsForEmailDoc(
   kind: "primka" | "register" | "delivery-note",
 ): Promise<number> {
   if (kind === "primka") {
-    // Kao PrimkaPdfDocument: receivedQty (inicijalni primitak) + naknadne
-    // dostave (stavke koje nisu iz početne primke). Placeholderi se broje —
-    // primka se često šalje prije identifikacije aparata.
-    const order = await prisma.workOrder.findFirst({
-      where: { id: workOrderId, companyId },
-      select: {
-        receivedQty: true,
-        _count: { select: { items: { where: { fromInitialReceipt: false } } } },
-      },
+    // Primka: zbroj redaka u tablici (identificirani + placeholderi) —
+    // isto kao buildPrimkaReceiptLines / PrimkaPdfDocument.
+    return prisma.workOrderItem.count({
+      where: { workOrderId, companyId },
     });
-    if (!order) return 0;
-    return Math.max(0, order.receivedQty) + order._count.items;
   }
 
   if (kind === "register") {

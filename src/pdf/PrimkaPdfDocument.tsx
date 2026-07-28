@@ -51,11 +51,12 @@ export type PrimkaPdfData = {
   appVersion: string;
   qrDataUrl: string | null;
   rows: PrimkaItemRow[];
-  /** Količina s kreiranja naloga (inicijalni primitak). */
-  initialReceivedQty: number;
-  /** Jedan redak po kalendarskom danu — naknadno dodani placeholderi (još neidentificirani). */
-  subsequentDeliveryLines: string[];
-  /** Još neidentificirani aparati (inicijalni + naknadni placeholdteri). */
+  /**
+   * Retci primitka iz live stavki naloga (zbroj = broj redaka u tablici).
+   * Isti dan kao primitak = jedan redak „primljeno”; drugi dan = „dodatna”.
+   */
+  receiptDeliveryLines: string[];
+  /** Još neidentificirani aparati (placeholderi u tablici). */
   unidentifiedPlaceholderCount: number;
   note: string | null;
 };
@@ -427,8 +428,7 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
     appVersion,
     qrDataUrl,
     rows,
-    initialReceivedQty,
-    subsequentDeliveryLines,
+    receiptDeliveryLines,
     unidentifiedPlaceholderCount,
     note,
   } = data;
@@ -493,15 +493,24 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Primljeni aparati</Text>
         </View>
-        <Text style={[styles.receiptBlockText, styles.receivedSummary]} wrap={false}>
-          {dates.receiptDate} — Na servis je primljeno {initialReceivedQty}{" "}
-          {initialReceivedQty === 1 ? "vatrogasni aparat." : "vatrogasnih aparata."}
-        </Text>
-        {subsequentDeliveryLines.map((line, i) => (
-          <Text key={`sub-${i}`} style={[styles.receiptBlockText, styles.subsequentLine]} wrap={false}>
-            {line}
+        {receiptDeliveryLines.length > 0 ? (
+          receiptDeliveryLines.map((line, i) => (
+            <Text
+              key={`recv-${i}`}
+              style={[
+                styles.receiptBlockText,
+                i === 0 ? styles.receivedSummary : styles.subsequentLine,
+              ]}
+              wrap={false}
+            >
+              {line}
+            </Text>
+          ))
+        ) : (
+          <Text style={[styles.receiptBlockText, styles.empty]} wrap={false}>
+            Nema aparata u tablici naloga.
           </Text>
-        ))}
+        )}
         {rows.length > 0 ? (
           <>
             <Text style={styles.tableListTitle} wrap={false}>

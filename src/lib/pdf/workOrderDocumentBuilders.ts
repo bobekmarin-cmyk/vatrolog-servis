@@ -11,7 +11,7 @@ import { savePdf } from "@/lib/pdfStorage";
 import QRCode from "qrcode";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
-import { buildSubsequentDeliveryLinesByDay } from "@/lib/primkaDeliveryLines";
+import { buildPrimkaReceiptLines } from "@/lib/primkaDeliveryLines";
 import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 /**
@@ -57,12 +57,12 @@ export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | nu
 
   const now = new Date();
 
-  const subsequentDeliveryLines = buildSubsequentDeliveryLinesByDay(
+  const receiptLines = buildPrimkaReceiptLines(
     order.items.map((i) => ({
-      isPlaceholder: i.isPlaceholder,
       fromInitialReceipt: i.fromInitialReceipt,
       createdAt: i.createdAt,
     })),
+    order.receivedAt,
   );
   const unidentifiedPlaceholderCount = order.items.filter((i) => i.isPlaceholder).length;
 
@@ -151,8 +151,7 @@ export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | nu
     appVersion: APP_VERSION,
     qrDataUrl,
     rows,
-    initialReceivedQty: order.receivedQty,
-    subsequentDeliveryLines,
+    receiptDeliveryLines: receiptLines.allLines,
     unidentifiedPlaceholderCount,
     note: order.note,
   };
