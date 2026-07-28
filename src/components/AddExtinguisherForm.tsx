@@ -195,19 +195,19 @@ export default function AddExtinguisherForm(props: {
 
   return (
     <PendingSubmitForm
-      className="surface space-y-4 p-4"
+      className="surface space-y-5 p-5 sm:p-6"
       action={`/api/work-orders/${orderId}/items/${itemId}/fill`}
       method="post"
       pendingTitle="Spremam aparat..."
       pendingMessage="Molimo pričekajte, otvara se servisni nalog."
     >
       <div>
-        <h1 className="text-2xl font-bold">{title}</h1>
-        <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
+        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
       </div>
 
       {/* Interni broj */}
-      <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+      <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 ring-1 ring-black/[0.03]">
         <label className="label">Interni broj (opcionalno)</label>
 
         <div className="mt-1 flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function AddExtinguisherForm(props: {
             autoComplete="off"
           />
 
-          <div className="h-10 w-10 flex items-center justify-center">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center">
             {lookup.status === "checking" && (
               <span className="text-slate-400" title="Provjeravam…">…</span>
             )}
@@ -233,26 +233,26 @@ export default function AddExtinguisherForm(props: {
           </div>
         </div>
 
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">
           Ako upišeš interni broj, sustav mora pronaći postojeći aparat i automatski će popuniti polja ispod.
           Ako nema internog broja, ostavi prazno — novi broj dodjeljuje se automatski u formatu šifra servisa (2) + težina (3) + redni broj (5), npr. 0100300001.
         </p>
 
-        {/* ✅ Preview internog broja */}
         {internalCode.trim().length === 0 && extinguisherTypeId && lookup.status !== "found" && (
-          <div className="mt-2 text-xs text-slate-700">
+          <div className="mt-3 text-xs text-slate-700">
             {previewLoading ? (
               <span className="text-slate-400">Predloženi interni broj: …</span>
             ) : previewCode ? (
-              <span className="inline-flex items-center gap-2 rounded border border-black/10 bg-white px-2 py-1">
-                Predloženi interni broj: <span className="font-mono font-semibold">{previewCode}</span>
+              <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
+                Predloženi interni broj:{" "}
+                <span className="font-mono text-sm font-semibold text-slate-900">{previewCode}</span>
               </span>
             ) : null}
           </div>
         )}
 
         {lookup.status === "found" && (
-          <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-900">
+          <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
             Nađen aparat: <span className="font-mono">{lookup.extinguisher.internalCode}</span>
             {lookup.extinguisher.typeName ? ` · ${lookup.extinguisher.typeName}` : ""}
             {lookup.extinguisher.manufacturerName ? ` · ${lookup.extinguisher.manufacturerName}` : ""}
@@ -260,32 +260,35 @@ export default function AddExtinguisherForm(props: {
         )}
 
         {lookup.status === "not_found" && (
-          <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs text-rose-900">
+          <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900">
             Interni broj nije pronađen. Ako je to novi aparat, ostavi polje prazno i unesi podatke ručno.
           </div>
         )}
 
         {qrCodeValue && qrPreviewDataUrl ? (
-          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-2">
-            <div className="text-xs text-slate-600">QR (interni broj)</div>
-            <div className="mt-1 flex items-center gap-3">
-              <Image
-                src={qrPreviewDataUrl}
-                alt={`QR ${qrCodeValue}`}
-                width={72}
-                height={72}
-                unoptimized
-              />
-              <div className="text-xs">
-                <div className="font-mono font-semibold">{qrCodeValue}</div>
-                <div className="text-slate-500">Naljepnicu možeš ispisati kasnije iz popisa aparata.</div>
+          <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+            <Image
+              src={qrPreviewDataUrl}
+              alt={`QR ${qrCodeValue}`}
+              width={72}
+              height={72}
+              unoptimized
+              className="rounded-md"
+            />
+            <div className="min-w-0 text-xs">
+              <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                QR (interni broj)
+              </div>
+              <div className="mt-0.5 font-mono text-sm font-semibold text-slate-900">{qrCodeValue}</div>
+              <div className="mt-1 text-slate-500">
+                Naljepnicu možeš ispisati kasnije iz popisa aparata.
               </div>
             </div>
           </div>
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="space-y-4">
         <div>
           <label className="label">Proizvođač</label>
           <select
@@ -309,91 +312,103 @@ export default function AddExtinguisherForm(props: {
           </select>
         </div>
 
-        <div>
-          <label className="label">Tip aparata</label>
-          {(() => {
-            const selectedM = manufacturers.find((m) => m.id === manufacturerId);
-            const allowedIds = selectedM
-              ? new Set((selectedM.supportedTypes ?? []).map((s) => s.extinguisherTypeId))
-              : null;
-            const visibleTypes = allowedIds ? types.filter((t) => allowedIds.has(t.id)) : [];
-            const noTypesForManufacturer = !!selectedM && visibleTypes.length === 0;
-            return (
-              <div className="space-y-2">
-                <ExtinguisherTypeCombobox
-                  name="extinguisherTypeId"
-                  value={extinguisherTypeId}
-                  onChange={setExtinguisherTypeId}
-                  options={visibleTypes}
-                  required={internalCode.trim().length === 0}
-                  disabled={lookup.status === "found" || !selectedM || noTypesForManufacturer}
-                  placeholder={selectedM ? "-- odaberi --" : "Prvo odaberi proizvođača"}
-                />
-                {noTypesForManufacturer ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
-                    Ovaj proizvođač nema unesene tipove aparata. Odaberi drugog proizvođača ili se javi vendoru.
-                  </div>
-                ) : null}
-              </div>
-            );
-          })()}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className="label">Tip aparata</label>
+            {(() => {
+              const selectedM = manufacturers.find((m) => m.id === manufacturerId);
+              const allowedIds = selectedM
+                ? new Set((selectedM.supportedTypes ?? []).map((s) => s.extinguisherTypeId))
+                : null;
+              const visibleTypes = allowedIds ? types.filter((t) => allowedIds.has(t.id)) : [];
+              const noTypesForManufacturer = !!selectedM && visibleTypes.length === 0;
+              return (
+                <div className="space-y-2">
+                  <ExtinguisherTypeCombobox
+                    name="extinguisherTypeId"
+                    value={extinguisherTypeId}
+                    onChange={setExtinguisherTypeId}
+                    options={visibleTypes}
+                    required={internalCode.trim().length === 0}
+                    disabled={lookup.status === "found" || !selectedM || noTypesForManufacturer}
+                    placeholder={selectedM ? "-- odaberi --" : "Prvo odaberi proizvođača"}
+                  />
+                  {noTypesForManufacturer ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      Ovaj proizvođač nema unesene tipove aparata. Odaberi drugog proizvođača ili se javi vendoru.
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
+          </div>
+
+          <div>
+            <label className="label">Dodatni opis tipa (opcionalno)</label>
+            <input
+              name="typeDescription"
+              className="input"
+              value={typeDescription}
+              onChange={(e) => setTypeDescription(e.target.value)}
+              placeholder="npr. P6+, P2A, FX6"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
+          <div>
+            <label className="label" htmlFor="add-ext-serial">
+              Serijski broj
+            </label>
+            <input
+              id="add-ext-serial"
+              name="serialNumber"
+              className="input"
+              required={internalCode.trim().length === 0}
+              value={serialNumber}
+              onChange={(e) => setSerialNumber(e.target.value)}
+              disabled={lookup.status === "found"}
+              autoComplete="off"
+            />
+          </div>
+
+          <div>
+            <label className="label" htmlFor="add-ext-year">
+              Godina proizvodnje
+            </label>
+            <input
+              id="add-ext-year"
+              name="productionYear"
+              type="number"
+              className="input"
+              required={internalCode.trim().length === 0}
+              min={1900}
+              max={2099}
+              pattern="(19|20)[0-9]{2}"
+              value={productionYear}
+              onChange={(e) => setProductionYear(e.target.value)}
+              disabled={lookup.status === "found"}
+              autoComplete="off"
+            />
+          </div>
         </div>
 
         <div>
-          <label className="label">Serijski broj</label>
+          <label className="label">Lokacija (opcionalno)</label>
           <input
-            name="serialNumber"
+            name="serviceLocationText"
             className="input"
-            required={internalCode.trim().length === 0}
-            value={serialNumber}
-            onChange={(e) => setSerialNumber(e.target.value)}
-            disabled={lookup.status === "found"}
-          />
-        </div>
-
-        <div>
-          <label className="label">Dodatni opis tipa (opcionalno)</label>
-          <input
-            name="typeDescription"
-            className="input"
-            value={typeDescription}
-            onChange={(e) => setTypeDescription(e.target.value)}
-            placeholder="npr. P6+, P2A, FX6"
-          />
-        </div>
-
-        <div>
-          <label className="label">Godina proizvodnje</label>
-          <input
-            name="productionYear"
-            type="number"
-            className="input"
-            required={internalCode.trim().length === 0}
-            min={1900}
-            max={2099}
-            pattern="(19|20)[0-9]{2}"
-            value={productionYear}
-            onChange={(e) => setProductionYear(e.target.value)}
-            disabled={lookup.status === "found"}
+            value={serviceLocationText}
+            onChange={(e) => setServiceLocationText(e.target.value)}
           />
         </div>
       </div>
 
-      <div>
-        <label className="label">Lokacija (opcionalno)</label>
-        <input
-          name="serviceLocationText"
-          className="input"
-          value={serviceLocationText}
-          onChange={(e) => setServiceLocationText(e.target.value)}
-        />
-      </div>
-
-      <div className="flex gap-2 pt-2">
+      <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
         <button
           className={[
-            "btn px-4",
-            canSubmit ? "btn-primary" : "bg-slate-300 text-slate-500 cursor-not-allowed",
+            "btn px-5",
+            canSubmit ? "btn-primary" : "cursor-not-allowed bg-slate-200 text-slate-500",
           ].join(" ")}
           type="submit"
           disabled={!canSubmit}
@@ -401,7 +416,7 @@ export default function AddExtinguisherForm(props: {
           Spremi
         </button>
 
-        <Link className="btn btn-outline px-4" href={`/work-orders/${orderId}`}>
+        <Link className="btn btn-outline px-5" href={`/work-orders/${orderId}`}>
           Odustani
         </Link>
       </div>

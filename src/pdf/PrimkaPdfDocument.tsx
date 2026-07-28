@@ -239,14 +239,14 @@ const styles = StyleSheet.create({
   },
 
   tableListTitle: {
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: "Roboto",
     fontWeight: 400,
     color: "#0f172a",
     letterSpacing: 0.5,
     textTransform: "uppercase" as const,
-    marginTop: 24,
-    marginBottom: 6,
+    marginTop: 16,
+    marginBottom: 4,
   },
 
   table: { marginTop: 0 },
@@ -258,50 +258,55 @@ const styles = StyleSheet.create({
   },
   th: {
     paddingVertical: 3,
-    paddingHorizontal: 4,
-    fontSize: 9,
-    fontWeight: 400,
+    paddingHorizontal: 3,
+    fontSize: 7.4,
+    fontWeight: 700,
     fontFamily: "Roboto",
     color: "#64748b",
-    letterSpacing: 0.4,
+    letterSpacing: 0.35,
     textTransform: "uppercase" as const,
   },
-  tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#edf2f7" },
+  tr: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#edf2f7",
+    minHeight: 16,
+  },
   trAlt: {},
   td: {
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    fontSize: 9,
+    paddingVertical: 2.5,
+    paddingHorizontal: 3,
+    fontSize: 7.8,
     fontWeight: 400,
     fontFamily: "Roboto",
     color: "#0f172a",
   },
+  tdMono: {
+    fontFamily: "Roboto",
+    fontSize: 7.4,
+  },
 
-  colRbr: { width: 28, textAlign: "center" as const },
-  colCode: { width: 68 },
-  colMan: { width: 90 },
-  colType: { flex: 1, minWidth: 120 },
-  colSerial: { width: 90 },
-  colYear: { width: 50, textAlign: "center" as const },
-  colNote: { flex: 1, minWidth: 120 },
+  colRbr: { width: 24, textAlign: "center" as const },
+  colCode: { width: 78 },
+  colMan: { width: 108 },
+  colType: { width: 100 },
+  colSerial: { width: 72 },
+  colYear: { width: 34, textAlign: "center" as const },
+  colNote: { flex: 1 },
 
-  noteBox: {
+  noteSection: {
     marginTop: 10,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 3,
-    backgroundColor: "#f8fafc",
+    marginBottom: 2,
   },
-  noteLabel: {
-    fontSize: 7,
-    color: "#64748b",
-    letterSpacing: 0.6,
-    textTransform: "uppercase" as const,
-    fontWeight: 700,
-    marginBottom: 3,
+  noteSectionBody: {
+    marginTop: 6,
+    fontSize: 9,
+    fontFamily: "Roboto",
+    fontWeight: 400,
+    color: "#0f172a",
+    lineHeight: 1.35,
   },
-  noteText: { fontSize: 9, color: "#0f172a" },
 
   empty: {
     paddingVertical: 6,
@@ -490,6 +495,15 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
           </View>
         </View>
 
+        {note && note.trim().length > 0 ? (
+          <View style={styles.noteSection} wrap={false}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Napomena</Text>
+            </View>
+            <Text style={styles.noteSectionBody}>{note.trim()}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Primljeni aparati</Text>
         </View>
@@ -518,12 +532,12 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
             </Text>
             <View style={styles.table}>
               <View style={styles.tableHead} fixed>
-                <Text style={[styles.th, styles.colRbr]}>Rb.</Text>
+                <Text style={[styles.th, styles.colRbr]}>R.br.</Text>
                 <Text style={[styles.th, styles.colCode]}>Interni br.</Text>
                 <Text style={[styles.th, styles.colMan]}>Proizvođač</Text>
-                <Text style={[styles.th, styles.colType]}>Tip aparata</Text>
-                <Text style={[styles.th, styles.colSerial]}>Serijski br.</Text>
-                <Text style={[styles.th, styles.colYear]}>Godina</Text>
+                <Text style={[styles.th, styles.colType]}>Tip</Text>
+                <Text style={[styles.th, styles.colSerial]}>Serijski</Text>
+                <Text style={[styles.th, styles.colYear]}>God.</Text>
                 <Text style={[styles.th, styles.colNote]}>Napomena</Text>
               </View>
               {rows.map((r, idx) => (
@@ -532,13 +546,27 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
                   style={idx % 2 === 1 ? [styles.tr, styles.trAlt] : styles.tr}
                   wrap={false}
                 >
-                  <Text style={[styles.td, styles.colRbr]}>{r.rbr}</Text>
-                  <Text style={[styles.td, styles.colCode]}>{r.internalCode}</Text>
-                  <Text style={[styles.td, styles.colMan]}>{r.manufacturer}</Text>
-                  <Text style={[styles.td, styles.colType]}>{r.type}</Text>
-                  <Text style={[styles.td, styles.colSerial]}>{r.serial}</Text>
-                  <Text style={[styles.td, styles.colYear]}>{r.year}</Text>
-                  <Text style={[styles.td, styles.colNote]}>{r.note}</Text>
+                  <Text style={[styles.td, styles.colRbr]} wrap={false}>
+                    {r.rbr}
+                  </Text>
+                  <Text style={[styles.td, styles.tdMono, styles.colCode]} wrap={false}>
+                    {r.internalCode}
+                  </Text>
+                  <Text style={[styles.td, styles.colMan]} wrap={false}>
+                    {r.manufacturer}
+                  </Text>
+                  <Text style={[styles.td, styles.colType]} wrap={false}>
+                    {r.type}
+                  </Text>
+                  <Text style={[styles.td, styles.colSerial]} wrap={false}>
+                    {r.serial || "-"}
+                  </Text>
+                  <Text style={[styles.td, styles.colYear]} wrap={false}>
+                    {r.year || "-"}
+                  </Text>
+                  <Text style={[styles.td, styles.colNote]} wrap={false}>
+                    {r.note || ""}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -553,13 +581,6 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
             Još nije identificirano u tablici: {unidentifiedPlaceholderCount}{" "}
             {unidentifiedPlaceholderCount === 1 ? "aparat" : "aparata"}
           </Text>
-        ) : null}
-
-        {note && note.trim().length > 0 ? (
-          <View style={styles.noteBox} wrap={false}>
-            <Text style={styles.noteLabel}>Napomena</Text>
-            <Text style={styles.noteText}>{note}</Text>
-          </View>
         ) : null}
 
         <View style={styles.spacer} />
