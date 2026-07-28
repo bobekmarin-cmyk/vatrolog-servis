@@ -148,6 +148,8 @@ export default async function PartsCatalogSettingsPage({
       tenantPrice: p.override?.price ? Number(p.override.price) : null,
       active: p.override?.active ?? true,
       partActive: p.part.active,
+      isCommon: p.isCommon,
+      platformCommon: !!p.part.common,
     }));
 
   const customRows: CustomPartRow[] = allParts
@@ -160,6 +162,7 @@ export default async function PartsCatalogSettingsPage({
       price: p.part.defaultPrice ? Number(p.part.defaultPrice) : null,
       unit: p.part.unit,
       active: p.part.active,
+      isCommon: p.isCommon,
       typeIds: p.part.types.map((t) => t.extinguisherTypeId),
     }));
 
@@ -171,7 +174,9 @@ export default async function PartsCatalogSettingsPage({
           Za svakog proizvođača postoje dva kataloga rezervnih dijelova:{" "}
           <b>dijelovi proizvođača</b> (platform katalog) — koje za vas održavamo i možete isključiti ako
           ne želite koristiti — i <b>vlastiti</b> dijelovi koje slobodno dodajete, šifrirate i
-          uređujete.
+          uređujete. Zvjezdicom (★) označite <b>uobičajene</b> dijelove — pojavljuju se u brzom
+          izborniku pri dodavanju dijelova na upisniku. Platform može unaprijed označiti neke; vi to
+          možete promijeniti za svoju tvrtku.
         </p>
       </div>
 

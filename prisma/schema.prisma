@@ -771,6 +771,9 @@ model CompanyPartOverride {
   price  Decimal? @db.Decimal(10, 2)
   /// Aktivacija pojedinog dijela na razini tenanta. Default TRUE.
   active Boolean  @default(true)
+  /// Uobičajen / favorit za brzi izbornik na upisniku.
+  /// Null = naslijedi `Part.common` (platform default); true/false = tenantov override.
+  common Boolean?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -22,6 +22,10 @@ export type PlatformPartRow = {
   tenantPrice: number | null;
   active: boolean;
   partActive: boolean;
+  /** Efektivni favorit (tenant override ili platform default). */
+  isCommon: boolean;
+  /** Platform default „Uobičajen“ (prije tenant overridea). */
+  platformCommon: boolean;
 };
 
 export type PartUnitOption = "KOM" | "KG" | "L";
@@ -34,6 +38,7 @@ export type CustomPartRow = {
   price: number | null;
   unit: PartUnitOption;
   active: boolean;
+  isCommon: boolean;
   typeIds: string[];
 };
 
@@ -359,6 +364,38 @@ function ToggleSwitch({
 const MIN_TH = "px-3 py-2 align-middle";
 const MIN_TD = "px-3 py-2.5 align-middle";
 
+function FavoriteStar({
+  active,
+  disabled,
+  onClick,
+  title,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      aria-pressed={active}
+      className={
+        "inline-flex h-8 w-8 items-center justify-center rounded-md text-base leading-none transition " +
+        (active
+          ? "text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+          : "text-slate-300 hover:bg-slate-100 hover:text-slate-500") +
+        (disabled ? " cursor-not-allowed opacity-40" : "")
+      }
+    >
+      <span aria-hidden>{active ? "★" : "☆"}</span>
+    </button>
+  );
+}
+
 function SearchInput({
   value,
   onChange,
@@ -468,9 +505,14 @@ function PlatformPartsTable({
 
   const visible = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) =>
-      `${r.manufacturerCode} ${r.tenantCode} ${r.name}`.toLowerCase().includes(q),
+    const filtered = !q
+      ? rows
+      : rows.filter((r) =>
+          `${r.manufacturerCode} ${r.tenantCode} ${r.name}`.toLowerCase().includes(q),
+        );
+    // Uobičajeni na vrh — brži pristup za favoriziranje/pregled.
+    return [...filtered].sort(
+      (a, b) => Number(b.isCommon) - Number(a.isCommon) || a.name.localeCompare(b.name, "hr"),
     );
   }, [rows, filter]);
 
@@ -550,6 +592,28 @@ function PlatformPartsTable({
     }
   }
 
+  async function toggleFavorite(r: PlatformPartRow) {
+    setBusyPartId(r.partId);
+    try {
+      const res = await fetch("/api/admin/settings/parts/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partId: r.partId, common: !r.isCommon }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j?.error || "Greška.");
+      onSavedRefresh();
+    } catch (e) {
+      await dialog.alert({
+        title: "Nije moguće promijeniti favorit",
+        message: e instanceof Error ? e.message : "Greška.",
+        variant: "error",
+      });
+    } finally {
+      setBusyPartId(null);
+    }
+  }
+
   if (rows.length === 0) return null;
 
   return (
@@ -573,6 +637,9 @@ function PlatformPartsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              <th className={MIN_TH + " w-10 text-center"} title="Uobičajen">
+                ★
+              </th>
               <th className={MIN_TH}>Šifra proizvođača</th>
               <th className={MIN_TH}>Vaša šifra</th>
               <th className={MIN_TH}>Naziv</th>
@@ -592,6 +659,18 @@ function PlatformPartsTable({
                   key={r.partId}
                   className={"hover:bg-slate-50/60 " + (inactive ? "opacity-60" : "")}
                 >
+                  <td className={MIN_TD + " text-center"}>
+                    <FavoriteStar
+                      active={r.isCommon}
+                      disabled={busy || disabled || !r.partActive}
+                      onClick={() => toggleFavorite(r)}
+                      title={
+                        r.isCommon
+                          ? "Ukloni iz uobičajenih (brzi izbornik)"
+                          : "Dodaj u uobičajene (brzi izbornik)"
+                      }
+                    />
+                  </td>
                   <td className={MIN_TD + " font-mono text-xs text-slate-900"}>
                     {r.manufacturerCode || <span className="text-slate-400">—</span>}
                   </td>
@@ -678,7 +757,7 @@ function PlatformPartsTable({
             })}
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-sm text-slate-500">
+                <td colSpan={8} className="p-6 text-center text-sm text-slate-500">
                   Nema dijelova koji odgovaraju pretrazi.
                 </td>
               </tr>
@@ -795,9 +874,35 @@ function CustomPartsTable({
 
   const visible = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => `${r.code} ${r.name}`.toLowerCase().includes(q));
+    const filtered = !q
+      ? rows
+      : rows.filter((r) => `${r.code} ${r.name}`.toLowerCase().includes(q));
+    return [...filtered].sort(
+      (a, b) => Number(b.isCommon) - Number(a.isCommon) || a.name.localeCompare(b.name, "hr"),
+    );
   }, [rows, filter]);
+
+  async function toggleFavorite(r: CustomPartRow) {
+    setBusyPartId(r.partId);
+    try {
+      const res = await fetch("/api/admin/settings/parts/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partId: r.partId, common: !r.isCommon }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j?.error || "Greška.");
+      onSavedRefresh();
+    } catch (e) {
+      await dialog.alert({
+        title: "Nije moguće promijeniti favorit",
+        message: e instanceof Error ? e.message : "Greška.",
+        variant: "error",
+      });
+    } finally {
+      setBusyPartId(null);
+    }
+  }
 
   async function toggleActive(r: CustomPartRow) {
     setBusyPartId(r.partId);
@@ -853,6 +958,9 @@ function CustomPartsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              <th className={MIN_TH + " w-10 text-center"} title="Uobičajen">
+                ★
+              </th>
               <th className={MIN_TH}>Šifra</th>
               <th className={MIN_TH}>Naziv</th>
               <th className={MIN_TH}>Tipovi aparata</th>
@@ -869,6 +977,18 @@ function CustomPartsTable({
                   key={r.partId}
                   className={"hover:bg-slate-50/60 " + (!r.active ? "opacity-60" : "")}
                 >
+                  <td className={MIN_TD + " text-center"}>
+                    <FavoriteStar
+                      active={r.isCommon}
+                      disabled={busy}
+                      onClick={() => toggleFavorite(r)}
+                      title={
+                        r.isCommon
+                          ? "Ukloni iz uobičajenih (brzi izbornik)"
+                          : "Dodaj u uobičajene (brzi izbornik)"
+                      }
+                    />
+                  </td>
                   <td className={MIN_TD + " font-mono text-xs"}>{r.code}</td>
                   <td className={MIN_TD + " text-slate-900"}>{r.name}</td>
                   <td className={MIN_TD + " text-xs text-slate-600"}>
@@ -905,7 +1025,7 @@ function CustomPartsTable({
             })}
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-sm text-slate-500">
+                <td colSpan={7} className="p-6 text-center text-sm text-slate-500">
                   {rows.length === 0
                     ? "Još nemate vlastitih dijelova za ovog proizvođača."
                     : "Nema dijelova koji odgovaraju pretrazi."}

@@ -104,6 +104,7 @@ export default async function ServiceItemPage({
             manufacturerCode: true,
             defaultPrice: true,
             unit: true,
+            common: true,
           },
         },
       },
@@ -133,27 +134,13 @@ export default async function ServiceItemPage({
   const initialSelectedIds = Array.from(new Set(selectedRows.map((r) => r.partId)));
 
   // Dohvati dostupne dijelove (i seed već odabranih) prema novim pravilima.
+  // `isCommon` je efektivni favorit: platform Part.common ± tenant override.
   const availableParts = await listAvailablePartsForCompany(prisma, {
     companyId: session.companyId,
     manufacturerId: ex.manufacturerId,
     extinguisherTypeId: ex.extinguisherTypeId,
     seedPartIds: initialSelectedIds,
   });
-  // Posebno common = true (dohvat za picker treba tražiti zasebno: filtriramo iz availableParts).
-  // Pošto helper ne čuva common bit, dohvatimo common id-jeve odvojeno.
-  const commonIds = new Set(
-    (
-      await prisma.part.findMany({
-        where: {
-          manufacturerId: ex.manufacturerId,
-          common: true,
-          types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
-          OR: [{ companyId: null }, { companyId: session.companyId }],
-        },
-        select: { id: true },
-      })
-    ).map((x) => x.id),
-  );
 
   const initialSelectedCustomServiceIds = Array.from(
     new Set(selectedCustomRows.map((r) => r.customServiceId)),
@@ -194,7 +181,7 @@ export default async function ServiceItemPage({
       name: a.part.name,
       unit: a.part.unit,
       isCustom: a.isCustom,
-      isCommon: commonIds.has(a.part.id),
+      isCommon: a.isCommon,
     })),
     ...extraSelectedRaw.map((p) => ({
       id: p.id,
@@ -203,7 +190,7 @@ export default async function ServiceItemPage({
       name: p.name,
       unit: p.unit,
       isCustom: !!p.companyId,
-      isCommon: commonIds.has(p.id),
+      isCommon: !!p.common,
     })),
   ];
 

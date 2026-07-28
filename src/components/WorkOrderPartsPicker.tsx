@@ -413,7 +413,9 @@ function PartsSelectionModal(props: {
         />
 
         <div>
-          <div className="mb-2 text-sm font-semibold text-slate-900">Česti dijelovi</div>
+          <div className="mb-2 text-sm font-semibold text-slate-900">
+            Uobičajeni dijelovi
+          </div>
           <div className="max-h-[28vh] overflow-auto rounded-xl bg-white shadow-sm ring-1 ring-black/5">
             <table className="table">
               <thead className="table-head sticky top-0 bg-white">
@@ -427,7 +429,10 @@ function PartsSelectionModal(props: {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {renderRows(filteredCommon, "Nema čestih dijelova za ovaj aparat.")}
+                {renderRows(
+                  filteredCommon,
+                  "Nema uobičajenih dijelova za ovaj aparat. Označite ih zvjezdicom u Postavke → Rezervni dijelovi.",
+                )}
               </tbody>
             </table>
           </div>

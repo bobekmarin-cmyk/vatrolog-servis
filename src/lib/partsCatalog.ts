@@ -29,8 +29,9 @@ export function formatPartUnit(unit: PartUnit | null | undefined): string {
  *   - Vidljivi tenantu samo ako je za pripadajućeg proizvođača uključen
  *     `CompanyPartCatalogSetting.usePlatformCatalog` (default TRUE).
  *   - Tenant može preko `CompanyPartOverride` dodijeliti vlastitu (interno
- *     računovodstvenu) šifru, vlastitu cijenu i deaktivirati pojedini dio
- *     neovisno o globalnom toggle-u.
+ *     računovodstvenu) šifru, vlastitu cijenu, deaktivirati pojedini dio i
+ *     overrideati „uobičajen“ (favorit za brzi izbornik) neovisno o
+ *     platform defaultu `Part.common`.
  *   - Šifra proizvođača (`Part.manufacturerCode`) je read-only za tenanta.
  *   - Naziv (`Part.name`) i tipovi aparata su definirani na platform razini
  *     i nisu tenant-editabilni.
@@ -60,6 +61,8 @@ export type PartLite = {
   manufacturerCode: string | null;
   name: string;
   active: boolean;
+  /** Opcionalno — potrebno samo za efektivni favorit / brzi izbornik. */
+  common?: boolean;
   defaultPrice: Prisma.Decimal | null;
   unit: PartUnit;
 };
@@ -69,6 +72,8 @@ export type PartOverrideLite = {
   code: string | null;
   price: Prisma.Decimal | null;
   active: boolean;
+  /** null = naslijedi Part.common */
+  common: boolean | null;
 };
 
 /**
@@ -121,6 +126,20 @@ export function partActiveForCompany(part: PartLite, override?: PartOverrideLite
 }
 
 /**
+ * Efektivno „uobičajen“ (favorit) za brzi izbornik na upisniku:
+ *  - vlastiti dio: `Part.common`
+ *  - platform: `CompanyPartOverride.common` ako je postavljen, inače `Part.common`
+ */
+export function partEffectiveCommon(
+  part: Pick<PartLite, "companyId" | "common">,
+  override?: Pick<PartOverrideLite, "common"> | null,
+): boolean {
+  if (part.companyId) return part.common === true;
+  if (override?.common != null) return override.common;
+  return part.common === true;
+}
+
+/**
  * Vrati skup `manufacturerId` za koje tenant ima `usePlatformCatalog = true`.
  * Default je TRUE — ako zapis ne postoji, smatramo da je platform katalog
  * uključen.
@@ -166,7 +185,7 @@ export async function getCompanyPartOverridesByPartIds(
   if (params.partIds.length === 0) return new Map();
   const rows = await (db as PrismaClient).companyPartOverride.findMany({
     where: { companyId: params.companyId, partId: { in: params.partIds } },
-    select: { partId: true, code: true, price: true, active: true },
+    select: { partId: true, code: true, price: true, active: true, common: true },
   });
   const out = new Map<string, PartOverrideLite>();
   for (const r of rows) out.set(r.partId, r);
@@ -186,7 +205,8 @@ export async function getCompanyPartOverridesByPartIds(
  * Filtri:
  *  - `manufacturerId` (obavezno — picker je vezan za aparat tog proizvođača)
  *  - `extinguisherTypeId` (opcionalno — filtrira po vrijedi-za-tip)
- *  - `common` (opcionalno — true = samo `Part.common` dijelovi)
+ *  - `common` (opcionalno — true = samo efektivno uobičajeni dijelovi
+ *    nakon tenant overridea)
  *  - `seedPartIds` — uvijek uključi te id-jeve (npr. već odabrani dijelovi
  *    na servisu, čak i ako su u međuvremenu deaktivirani).
  */
@@ -206,6 +226,7 @@ export async function listAvailablePartsForCompany(
     displayCode: string;
     manufacturerCode: string | null;
     isCustom: boolean;
+    isCommon: boolean;
     available: boolean;
   }>
 > {
@@ -222,7 +243,6 @@ export async function listAvailablePartsForCompany(
     ...(params.extinguisherTypeId
       ? { types: { some: { extinguisherTypeId: params.extinguisherTypeId } } }
       : {}),
-    ...(params.common ? { common: true } : {}),
   };
 
   const parts = await (db as PrismaClient).part.findMany({
@@ -251,6 +271,8 @@ export async function listAvailablePartsForCompany(
     .map((p) => {
       const ov = overrides.get(p.id) ?? null;
       const isCustom = p.companyId !== null;
+      const isCommon = partEffectiveCommon(p, ov);
+      if (params.common && !isCommon && !seed.has(p.id)) return null;
       const inCatalog = isCustom || platformEnabled;
       const active = partActiveForCompany(p, ov);
       const available = inCatalog && active;
@@ -262,6 +284,7 @@ export async function listAvailablePartsForCompany(
         displayCode: partDisplayCode(p, ov),
         manufacturerCode: partManufacturerCode(p),
         isCustom,
+        isCommon,
         available,
       };
     })
@@ -289,6 +312,7 @@ export async function listSettingsPartsForCompany(
     displayCode: string;
     manufacturerCode: string | null;
     isCustom: boolean;
+    isCommon: boolean;
   }>
 > {
   const sourceFilter: Prisma.PartWhereInput = params.onlyCustom
@@ -312,6 +336,7 @@ export async function listSettingsPartsForCompany(
       manufacturerCode: true,
       name: true,
       active: true,
+      common: true,
       defaultPrice: true,
       unit: true,
       types: { select: { extinguisherTypeId: true } },
@@ -332,6 +357,7 @@ export async function listSettingsPartsForCompany(
       displayCode: partDisplayCode(p, ov),
       manufacturerCode: partManufacturerCode(p),
       isCustom: p.companyId !== null,
+      isCommon: partEffectiveCommon(p, ov),
     };
   });
 }
@@ -414,6 +440,7 @@ export const partsCatalog = {
   partDisplayCode,
   partManufacturerCode,
   partEffectivePrice,
+  partEffectiveCommon,
   partActiveForCompany,
   buildWorkOrderPartSnapshot,
   readPartDisplayFromUsage,
