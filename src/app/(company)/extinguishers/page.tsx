@@ -126,7 +126,7 @@ export default async function ExtinguishersPage({
               <input
                 name="internalCode"
                 defaultValue={internalCode}
-                placeholder="10090001"
+                placeholder="0100900001"
                 className="input h-9 w-[140px] font-mono text-xs"
               />
             </div>

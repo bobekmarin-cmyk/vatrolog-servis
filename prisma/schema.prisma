@@ -1274,7 +1274,7 @@ model InternalCodeCounter {
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  /// npr. "09" (težina punjenja kao prefix)
+  /// npr. "009" (troznamenkasta težina punjenja; usklađeno s QR naljepnicama)
   weightCode String
 
   /// zadnji korišten broj za tu težinu

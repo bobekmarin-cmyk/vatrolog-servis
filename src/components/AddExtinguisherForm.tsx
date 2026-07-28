@@ -216,7 +216,7 @@ export default function AddExtinguisherForm(props: {
             value={internalCode}
             onChange={(e) => setInternalCode(e.target.value)}
             className="input w-full font-mono"
-            placeholder="npr. 10090001"
+            placeholder="npr. 0100900001"
             autoComplete="off"
           />
 
@@ -235,7 +235,7 @@ export default function AddExtinguisherForm(props: {
 
         <p className="mt-1 text-xs text-slate-500">
           Ako upišeš interni broj, sustav mora pronaći postojeći aparat i automatski će popuniti polja ispod.
-          Ako nema internog broja, ostavi prazno — novi broj dodjeljuje se automatski u formatu servis + količina + redni broj (npr. 10090001).
+          Ako nema internog broja, ostavi prazno — novi broj dodjeljuje se automatski u formatu šifra servisa (2) + težina (3) + redni broj (5), npr. 0100300001.
         </p>
 
         {/* ✅ Preview internog broja */}
