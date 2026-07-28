@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPlatformSession } from "@/lib/platformAuth";
 import { NextResponse } from "next/server";
-import { PartUnit } from "@prisma/client";
+import { PartUnit, Prisma } from "@prisma/client";
 
 function badRequest(msg: string) {
   return NextResponse.json({ error: msg }, { status: 400 });
@@ -10,6 +10,13 @@ function badRequest(msg: string) {
 function parseUnit(value: unknown): PartUnit {
   if (value === "KG" || value === "L" || value === "KOM") return value;
   return PartUnit.KOM;
+}
+
+function parsePrice(value: unknown): Prisma.Decimal | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "number" ? value : Number(String(value).replace(",", "."));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return new Prisma.Decimal(n.toFixed(2));
 }
 
 export async function POST(
@@ -26,6 +33,7 @@ export async function POST(
     name?: string;
     common?: boolean;
     unit?: string;
+    defaultPrice?: number | string | null;
     typeIds?: string[];
   };
 
@@ -33,60 +41,80 @@ export async function POST(
   const name = String(body.name ?? "").trim();
   const common = !!body.common;
   const unit = parseUnit(body.unit);
+  const defaultPrice = parsePrice(body.defaultPrice);
+  // Tipovi su opcionalni — dijelovi se mogu uvesti bez pridruživanja tipovima.
   const typeIds = Array.isArray(body.typeIds) ? body.typeIds.filter((x) => !!x) : [];
 
   if (!code) return badRequest("Šifra je obavezna.");
   if (!name) return badRequest("Naziv je obavezan.");
-  if (typeIds.length === 0) return badRequest("Odaberi barem jedan tip aparata.");
 
-  // validiraj da su svi typeId-evi od ovog proizvođača
-  const mfLinks = await prisma.manufacturerExtinguisherType.findMany({
-    where: { manufacturerId, extinguisherTypeId: { in: typeIds } },
-    select: { extinguisherTypeId: true },
-  });
-  const validIds = new Set(mfLinks.map((x) => x.extinguisherTypeId));
-  const invalid = typeIds.filter((id) => !validIds.has(id));
-  if (invalid.length > 0) {
-    return badRequest("Neki odabrani tipovi ne pripadaju ovom proizvođaču.");
+  if (typeIds.length > 0) {
+    const mfLinks = await prisma.manufacturerExtinguisherType.findMany({
+      where: { manufacturerId, extinguisherTypeId: { in: typeIds } },
+      select: { extinguisherTypeId: true },
+    });
+    const validIds = new Set(mfLinks.map((x) => x.extinguisherTypeId));
+    const invalid = typeIds.filter((id) => !validIds.has(id));
+    if (invalid.length > 0) {
+      return badRequest("Neki odabrani tipovi ne pripadaju ovom proizvođaču.");
+    }
   }
 
   try {
     if (body.id) {
-      // update part
       const existing = await prisma.part.findUnique({
         where: { id: body.id },
         select: { id: true, manufacturerId: true, companyId: true },
       });
       if (!existing || existing.manufacturerId !== manufacturerId || existing.companyId !== null) {
-        return NextResponse.json({ error: "Dio ne pripada globalnom katalogu ovog proizvođača." }, { status: 404 });
+        return NextResponse.json(
+          { error: "Dio ne pripada globalnom katalogu ovog proizvođača." },
+          { status: 404 },
+        );
       }
 
       await prisma.$transaction([
         prisma.part.update({
           where: { id: body.id },
-          data: { code, name, common, unit },
+          data: {
+            code,
+            manufacturerCode: code,
+            name,
+            common,
+            unit,
+            defaultPrice,
+          },
         }),
         prisma.partExtinguisherType.deleteMany({ where: { partId: body.id } }),
-        prisma.partExtinguisherType.createMany({
-          data: typeIds.map((tid) => ({ partId: body.id!, extinguisherTypeId: tid })),
-        }),
+        ...(typeIds.length > 0
+          ? [
+              prisma.partExtinguisherType.createMany({
+                data: typeIds.map((tid) => ({ partId: body.id!, extinguisherTypeId: tid })),
+              }),
+            ]
+          : []),
       ]);
 
       return NextResponse.json({ ok: true, id: body.id });
     }
 
-    // create
     const created = await prisma.part.create({
       data: {
         manufacturerId,
         code,
+        manufacturerCode: code,
         name,
         common,
         unit,
+        defaultPrice,
         active: true,
-        types: {
-          create: typeIds.map((tid) => ({ extinguisherTypeId: tid })),
-        },
+        ...(typeIds.length > 0
+          ? {
+              types: {
+                create: typeIds.map((tid) => ({ extinguisherTypeId: tid })),
+              },
+            }
+          : {}),
       },
     });
     return NextResponse.json({ ok: true, id: created.id });

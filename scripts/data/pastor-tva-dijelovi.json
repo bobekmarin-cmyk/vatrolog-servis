@@ -1,0 +1,2402 @@
+[
+  {
+    "code": "BB0000",
+    "name": "BOČICA CO2,  130 g.",
+    "unit": "KOM",
+    "defaultPrice": 26.6
+  },
+  {
+    "code": "BB0001",
+    "name": "BOČICA CO2,  170 g.",
+    "unit": "KOM",
+    "defaultPrice": 26.8
+  },
+  {
+    "code": "BB0002",
+    "name": "BOČICA CO2,  200 g.",
+    "unit": "KOM",
+    "defaultPrice": 33.4
+  },
+  {
+    "code": "BB0003",
+    "name": "BOČICA CO2,  70 g.",
+    "unit": "KOM",
+    "defaultPrice": 29.1
+  },
+  {
+    "code": "BB0007",
+    "name": "BOČICA CO2,  60 g.",
+    "unit": "KOM",
+    "defaultPrice": 29.1
+  },
+  {
+    "code": "BB0008",
+    "name": "BOČICA CO2,  60 g.",
+    "unit": "KOM",
+    "defaultPrice": 27.8
+  },
+  {
+    "code": "BB0009",
+    "name": "BOČICA CO2,  70 g.",
+    "unit": "KOM",
+    "defaultPrice": 28.5
+  },
+  {
+    "code": "BB0200",
+    "name": "MATICA BRTVENA",
+    "unit": "KOM",
+    "defaultPrice": 3.5
+  },
+  {
+    "code": "BB0201",
+    "name": "MATICA BRTVENA",
+    "unit": "KOM",
+    "defaultPrice": 3.5
+  },
+  {
+    "code": "BB0400",
+    "name": "MEMBRANA BAKRENA",
+    "unit": "KOM",
+    "defaultPrice": 0.3
+  },
+  {
+    "code": "BB0401",
+    "name": "MEMBRANA BAKRENA",
+    "unit": "KOM",
+    "defaultPrice": 0.5
+  },
+  {
+    "code": "BB0600",
+    "name": "BRTVA BAKRENA",
+    "unit": "KOM",
+    "defaultPrice": 0.5
+  },
+  {
+    "code": "BB0601",
+    "name": "BRTVA BAKRENA",
+    "unit": "KOM",
+    "defaultPrice": 0.5
+  },
+  {
+    "code": "BB0800",
+    "name": "MATICA",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "BB1200",
+    "name": "UZBUDA S6A FI-170",
+    "unit": "KOM",
+    "defaultPrice": 9.4
+  },
+  {
+    "code": "BB1201",
+    "name": "UZBUDA S6 FI-150",
+    "unit": "KOM",
+    "defaultPrice": 12.6
+  },
+  {
+    "code": "BB1202",
+    "name": "UZBUDA S9",
+    "unit": "KOM",
+    "defaultPrice": 12.6
+  },
+  {
+    "code": "BB1400",
+    "name": "TRAKA BOČICE ARMIRANA",
+    "unit": "KOM",
+    "defaultPrice": 6.9
+  },
+  {
+    "code": "BB1600",
+    "name": "NALJEPNICA ZAŠTITNA",
+    "unit": "KOM",
+    "defaultPrice": 0.25
+  },
+  {
+    "code": "BB1650",
+    "name": "NALJEPNICA ZAŠTITNA",
+    "unit": "KOM",
+    "defaultPrice": 0.25
+  },
+  {
+    "code": "BB1805",
+    "name": "CIJEV UZBUDNA S6L S6Z",
+    "unit": "KOM",
+    "defaultPrice": 6.4
+  },
+  {
+    "code": "BB1806",
+    "name": "CIJEV UZBUDNA S9L S9Z",
+    "unit": "KOM",
+    "defaultPrice": 7.1
+  },
+  {
+    "code": "BB1807",
+    "name": "CIJEV UZBUDNA S12L",
+    "unit": "KOM",
+    "defaultPrice": 8.7
+  },
+  {
+    "code": "BB1850",
+    "name": "CIJEV UZBUDNA S50",
+    "unit": "KOM",
+    "defaultPrice": 11.05
+  },
+  {
+    "code": "BB1851",
+    "name": "CIJEV UZBUDNA S50A",
+    "unit": "KOM",
+    "defaultPrice": 12.05
+  },
+  {
+    "code": "BB1852",
+    "name": "CIJEV UZBUDNA S100",
+    "unit": "KOM",
+    "defaultPrice": 16.5
+  },
+  {
+    "code": "BB1855",
+    "name": "CIJEV UZBUDNA PZ50LUX",
+    "unit": "KOM",
+    "defaultPrice": 11.0
+  },
+  {
+    "code": "BB1857",
+    "name": "CIJEV UZBUDNA S100CE",
+    "unit": "KOM",
+    "defaultPrice": 16.8
+  },
+  {
+    "code": "BB2000",
+    "name": "MEMBRANA UZBUDNE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 0.25
+  },
+  {
+    "code": "BB2200",
+    "name": "ČEP UZBUDNE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "BB2201",
+    "name": "ČEP UZBUDNE CIJEVI S6L-S12L",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "BB2450",
+    "name": "BOCA CO2 KPL. S50, S50A,",
+    "unit": "KOM",
+    "defaultPrice": 142.7
+  },
+  {
+    "code": "BB2451",
+    "name": "BOCA CO2 KPL. S100, S100L",
+    "unit": "KOM",
+    "defaultPrice": 170.1
+  },
+  {
+    "code": "BB2452",
+    "name": "BOCA ZA ZRAK KPL. PZ50 CE",
+    "unit": "KOM",
+    "defaultPrice": 186.5
+  },
+  {
+    "code": "BB2453",
+    "name": "BOCA ZA ZRAK KPL. PZ140",
+    "unit": "KOM",
+    "defaultPrice": 211.8
+  },
+  {
+    "code": "BB2456",
+    "name": "BOCA CO2 KPL.",
+    "unit": "KOM",
+    "defaultPrice": 138.3
+  },
+  {
+    "code": "BB2640",
+    "name": "BRTVA FI14",
+    "unit": "KOM",
+    "defaultPrice": 0.4
+  },
+  {
+    "code": "BB2800",
+    "name": "SPOJNA CIJEV CO2 S-50",
+    "unit": "KOM",
+    "defaultPrice": 34.6
+  },
+  {
+    "code": "BB3050",
+    "name": "MATICA SPOJNA UZB.CIJEV",
+    "unit": "KOM",
+    "defaultPrice": 6.6
+  },
+  {
+    "code": "BB3051",
+    "name": "MATICA SPOJNA UZB.CIJEV",
+    "unit": "KOM",
+    "defaultPrice": 6.6
+  },
+  {
+    "code": "BB3251",
+    "name": "RASPRŠIVAČ",
+    "unit": "KOM",
+    "defaultPrice": 12.1
+  },
+  {
+    "code": "BB3451",
+    "name": "BRTVA RASPRŠIVAČA",
+    "unit": "KOM",
+    "defaultPrice": 0.9
+  },
+  {
+    "code": "BB3600",
+    "name": "PRIČUVNO PUNJENJE PZ9",
+    "unit": "KOM",
+    "defaultPrice": 46.09
+  },
+  {
+    "code": "BB3800",
+    "name": "PUNJENJE PJENILA ZA PZ9 LUX",
+    "unit": "KOM",
+    "defaultPrice": 13.2
+  },
+  {
+    "code": "BB3815",
+    "name": "PUNJENJE PJENILA ZA VP15",
+    "unit": "KOM",
+    "defaultPrice": 16.5
+  },
+  {
+    "code": "BB3850",
+    "name": "PUNJENJE PJENILA ZA PZ50,",
+    "unit": "KOM",
+    "defaultPrice": 42.8
+  },
+  {
+    "code": "BB3851",
+    "name": "PUNJENJE PJENILA ZA PZ140",
+    "unit": "KOM",
+    "defaultPrice": 97.1
+  },
+  {
+    "code": "BR0004",
+    "name": "BRTVENA MASA (T PLUS 2)",
+    "unit": "KOM",
+    "defaultPrice": 49.3
+  },
+  {
+    "code": "KT0020",
+    "name": "KOTAČ GUMIRANI CO2-10",
+    "unit": "KOM",
+    "defaultPrice": 24.1
+  },
+  {
+    "code": "KT0050",
+    "name": "KOTAČ PLASTIČNI FI 28",
+    "unit": "KOM",
+    "defaultPrice": 24.2
+  },
+  {
+    "code": "KT0051",
+    "name": "KOTAČ GUMIRANI FI 25",
+    "unit": "KOM",
+    "defaultPrice": 88.4
+  },
+  {
+    "code": "KT0053",
+    "name": "KOTAČ PLASTIČNI FI 25",
+    "unit": "KOM",
+    "defaultPrice": 23.1
+  },
+  {
+    "code": "NA0000",
+    "name": "NALJEPNICA APARATA P1",
+    "unit": "KOM",
+    "defaultPrice": 1.6
+  },
+  {
+    "code": "NA0007",
+    "name": "NALJEPNICA APARATA P12",
+    "unit": "KOM",
+    "defaultPrice": 1.6
+  },
+  {
+    "code": "NA0100",
+    "name": "NALJEPNICA APARATA P2EA",
+    "unit": "KOM",
+    "defaultPrice": 1.6
+  },
+  {
+    "code": "NA0201",
+    "name": "NALJEPNICA APARATA P2A, P",
+    "unit": "KOM",
+    "defaultPrice": 1.6
+  },
+  {
+    "code": "NA0202",
+    "name": "NALJEPNICA APARATA P2E",
+    "unit": "KOM",
+    "defaultPrice": 1.6
+  },
+  {
+    "code": "NA0224",
+    "name": "NALJEPNICA P2E CAR PR.",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "NA0225",
+    "name": "NALJEPNICA P2E CAR STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.8
+  },
+  {
+    "code": "NA0226",
+    "name": "NALJEPNICA P3E CAR PR.",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "NA0227",
+    "name": "NALJEPNICA P3E CAR STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.8
+  },
+  {
+    "code": "NA0228",
+    "name": "NALJEPNICA Pz2E BOAT PR.",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "NA0229",
+    "name": "NALJEPNICA Pz2E BOAT STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.8
+  },
+  {
+    "code": "NA0238",
+    "name": "NALJEPNICA PZ3E HOME PR.",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "NA0239",
+    "name": "NALJEPNICA PZ3E HOME STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0240",
+    "name": "NALJEPNICA P2E COMP PR.",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "NA0241",
+    "name": "NALJEPNICA P2E COMP STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0242",
+    "name": "NALJEPNICA P3E COMP PR.",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "NA0243",
+    "name": "NALJEPNICA P3E COMP STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0300",
+    "name": "NALJEPNICA APARATA P3",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0301",
+    "name": "NALJEPNICA APARATA P3E",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0601",
+    "name": "NALJEPNICA APARATA S6LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0602",
+    "name": "NALJEPNICA APARATA S6LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0603",
+    "name": "NALJEPNICA APARATA S6A",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0604",
+    "name": "NALJEPNICA APARATA P6, P6",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0606",
+    "name": "NALJEPNICA APARATA S6L",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0615",
+    "name": "NALJEPNICA PZ6 HOME PR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0616",
+    "name": "NALJEPNICA PZ6 HOME STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0617",
+    "name": "NALJEPNICA Pz6 BOAT PR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0618",
+    "name": "NALJEPNICA Pz6 BOAT STR.",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0619",
+    "name": "NALJEPNICA S6+ HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0620",
+    "name": "NALJEPNICA P6+ HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0655",
+    "name": "NALJEPNICA P6F",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0656",
+    "name": "NALJEPNICA P9F",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0657",
+    "name": "NALJEPNICA F6P HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0659",
+    "name": "NALJEPNICA PZ6 (F6) HR -UNITEQ",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0901",
+    "name": "NALJEPNICA APARATA S9LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0902",
+    "name": "NALJEPNICA APARATA S9LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0903",
+    "name": "NALJEPNICA APARATA S9",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0904",
+    "name": "NALJEPNICA APARATA P9, P9",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0906",
+    "name": "NALJEPNICA APARATA S9L",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0908",
+    "name": "NALJEPNICA APARATA PZ9LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0909",
+    "name": "NALJEPNICA APARATA VR9LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0950",
+    "name": "NALJEPNICA S9+ HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0951",
+    "name": "NALJEPNICA P9+ HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0952",
+    "name": "NALJEPNICA F9P HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0953",
+    "name": "NALJEPNICA PZ9 (F9) HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0954",
+    "name": "NALJEPNICA W9P HR",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA0955",
+    "name": "NALJEPNICA F9P HR - UNITEQ",
+    "unit": "KOM",
+    "defaultPrice": 3.04
+  },
+  {
+    "code": "NA1200",
+    "name": "NALJEPNICA APARATA S12",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA1201",
+    "name": "NALJEPNICA APARATA S12LUX",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA1500",
+    "name": "NALJEPNICA APARATA VP15",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA1501",
+    "name": "NALJEPNICA VP15 DODATNA",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA2000",
+    "name": "NALJEPNICA APARATA CO2-3",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA2001",
+    "name": "NALJEPNICA APARATA CO2-3",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA2002",
+    "name": "NALJEPNICA APARATA CO2-5",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA2003",
+    "name": "NALJEPNICA APARATA CO2-5",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA2004",
+    "name": "NALJEPNICA APARATA CO2-10",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA2005",
+    "name": "NALJEPNICA APARATA CO2-30",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA2006",
+    "name": "NALJEPNICA APARATA CO2-60",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA2014",
+    "name": "NALJEPNICA CO2-2",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "NA4040",
+    "name": "NALJEPNICA DODATNA TROKUT",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5000",
+    "name": "NALJEPNICA APARATA S50 AB",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5001",
+    "name": "NALJEPNICA APARATA S50A",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5002",
+    "name": "NALJEPNICA APARATA S100 A",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5003",
+    "name": "NALJEPNICA S50LUX BC",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5004",
+    "name": "NALJEPNICA S100LUX BC",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5016",
+    "name": "NALJEPNICA APARATA PZ140H",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5009",
+    "name": "NALJEPNICA S50LUX ABC",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5010",
+    "name": "NALJEPNICA S100LUX ABC",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5012",
+    "name": "NALJEPNICA APARATA S50 (ODVRT.)",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5022",
+    "name": "NALJEPNICA APARATA S50",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5023",
+    "name": "NALJEPNICA APARATA PZ140",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5024",
+    "name": "NALJEPNICA APARATA PZ50 NA PREKIDANJE",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5025",
+    "name": "NALJEPNICA APARATA PZ50 NA ODVRTANJE",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NA5026",
+    "name": "NALJEPNICA APARATA PZ140",
+    "unit": "KOM",
+    "defaultPrice": 2.75
+  },
+  {
+    "code": "NR0000",
+    "name": "NOSAČ APARATA P1",
+    "unit": "KOM",
+    "defaultPrice": 4.95
+  },
+  {
+    "code": "NR0003",
+    "name": "NOSAČ APARATA P1 Ø85",
+    "unit": "KOM",
+    "defaultPrice": 4.95
+  },
+  {
+    "code": "NR0004",
+    "name": "NOSAČ APARATA P3 Ø130",
+    "unit": "KOM",
+    "defaultPrice": 6.95
+  },
+  {
+    "code": "NR0200",
+    "name": "NOSAČ APARATA P2, P2A",
+    "unit": "KOM",
+    "defaultPrice": 6.95
+  },
+  {
+    "code": "NR0201",
+    "name": "NOSAČ APARATA P2E",
+    "unit": "KOM",
+    "defaultPrice": 6.95
+  },
+  {
+    "code": "NR0210",
+    "name": "OBUJMICA APARATA",
+    "unit": "KOM",
+    "defaultPrice": 3.2
+  },
+  {
+    "code": "NR0250",
+    "name": "OBUJMICA BOCE",
+    "unit": "KOM",
+    "defaultPrice": 2.4
+  },
+  {
+    "code": "NR0300",
+    "name": "NOSAČ APARATA P3",
+    "unit": "KOM",
+    "defaultPrice": 6.9
+  },
+  {
+    "code": "NR0301",
+    "name": "NOSAČ APARATA P3E",
+    "unit": "KOM",
+    "defaultPrice": 6.9
+  },
+  {
+    "code": "NR0400",
+    "name": "RUČKA KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 12.4
+  },
+  {
+    "code": "NR0401",
+    "name": "RUČKA APARATA",
+    "unit": "KOM",
+    "defaultPrice": 8.35
+  },
+  {
+    "code": "NR0404",
+    "name": "RUČKA KOMPLET - ZELENA",
+    "unit": "KOM",
+    "defaultPrice": 11.5
+  },
+  {
+    "code": "NR0415",
+    "name": "RUČKA VP-15",
+    "unit": "KOM",
+    "defaultPrice": 17.0
+  },
+  {
+    "code": "NR0420",
+    "name": "RUČKA APARATA CO2 ODVRT.",
+    "unit": "KOM",
+    "defaultPrice": 8.35
+  },
+  {
+    "code": "NR0800",
+    "name": "ZAKOVICA ŠUPLJA",
+    "unit": "KOM",
+    "defaultPrice": 2.1
+  },
+  {
+    "code": "NR1000",
+    "name": "NOSAČ APARATA P4, P6, P9,",
+    "unit": "KOM",
+    "defaultPrice": 2.6
+  },
+  {
+    "code": "NR1040",
+    "name": "NOSAČ APARATA ZIDNI",
+    "unit": "KOM",
+    "defaultPrice": 2.6
+  },
+  {
+    "code": "NR1200",
+    "name": "VIJAK KAPE",
+    "unit": "KOM",
+    "defaultPrice": 0.25
+  },
+  {
+    "code": "PL0000",
+    "name": "OLOVNA PLOMBA",
+    "unit": "KG",
+    "defaultPrice": 19.2
+  },
+  {
+    "code": "PL0001",
+    "name": "PLOMBA PLASTIČNA",
+    "unit": "KOM",
+    "defaultPrice": 0.3
+  },
+  {
+    "code": "PS0001",
+    "name": "PLASTIČNO STOPALO Ø150",
+    "unit": "KOM",
+    "defaultPrice": 3.3
+  },
+  {
+    "code": "PS0002",
+    "name": "PLASTIČNO STOPALO Ø170",
+    "unit": "KOM",
+    "defaultPrice": 3.5
+  },
+  {
+    "code": "PS0003",
+    "name": "PLASTIČNO STOPALO Ø185",
+    "unit": "KOM",
+    "defaultPrice": 3.95
+  },
+  {
+    "code": "PS0004",
+    "name": "PLASTIČNI PRSTEN ZA BOCU S50",
+    "unit": "KOM",
+    "defaultPrice": 1.05
+  },
+  {
+    "code": "PS0005",
+    "name": "PLASTIČNA VEZICA",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "PS0006",
+    "name": "PLASTIČNA OBUJMICA",
+    "unit": "KOM",
+    "defaultPrice": 1.85
+  },
+  {
+    "code": "RP0000",
+    "name": "SISALJKA KOMPLET V25",
+    "unit": "KOM",
+    "defaultPrice": 66.9
+  },
+  {
+    "code": "RP0100",
+    "name": "RUKOHVAT",
+    "unit": "KOM",
+    "defaultPrice": 1.0
+  },
+  {
+    "code": "RP0102",
+    "name": "OPNA",
+    "unit": "KOM",
+    "defaultPrice": 3.85
+  },
+  {
+    "code": "RP0103",
+    "name": "SJEDIŠTE OPNE",
+    "unit": "KOM",
+    "defaultPrice": 0.3
+  },
+  {
+    "code": "RP0104",
+    "name": "PODLOŽNA PLOČICA",
+    "unit": "KOM",
+    "defaultPrice": 0.3
+  },
+  {
+    "code": "RP0200",
+    "name": "TLAČNA PUMPA VP15",
+    "unit": "KOM",
+    "defaultPrice": 148.2
+  },
+  {
+    "code": "RP0400",
+    "name": "MLAZNICA V25",
+    "unit": "KOM",
+    "defaultPrice": 7.7
+  },
+  {
+    "code": "RP0800",
+    "name": "PRIKLJUČAK ISPUSNI V25",
+    "unit": "KOM",
+    "defaultPrice": 6.5
+  },
+  {
+    "code": "RP1000",
+    "name": "BRTVA POKLOPCA V25",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "RP1200",
+    "name": "POKLOPAC V25",
+    "unit": "KOM",
+    "defaultPrice": 8.7
+  },
+  {
+    "code": "RP1400",
+    "name": "STEZNIK VP-15",
+    "unit": "KOM",
+    "defaultPrice": 18.1
+  },
+  {
+    "code": "RP1615",
+    "name": "BRTVILO GRAFITNO",
+    "unit": "KOM",
+    "defaultPrice": 2.3
+  },
+  {
+    "code": "RP1800",
+    "name": "BRTVA TLAČNE PUMPE VP-15",
+    "unit": "KOM",
+    "defaultPrice": 1.0
+  },
+  {
+    "code": "RP2000",
+    "name": "KUGLICA FI16",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "RP2001",
+    "name": "KUGLICA FI18",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "RP2202",
+    "name": "BRTVA KLIPA",
+    "unit": "KOM",
+    "defaultPrice": 0.9
+  },
+  {
+    "code": "RP2204",
+    "name": "BRTVA PLOSNATA",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "RP2206",
+    "name": "PLOČICA PODLOŽNA FI10.5",
+    "unit": "KOM",
+    "defaultPrice": 0.25
+  },
+  {
+    "code": "RP2208",
+    "name": "VIJAK M10X15 CINCANI",
+    "unit": "KOM",
+    "defaultPrice": 0.6
+  },
+  {
+    "code": "SG0000",
+    "name": "PRAH FUREX ABC40 EURO 25 KG",
+    "unit": "KG",
+    "defaultPrice": 7.1
+  },
+  {
+    "code": "SG0001",
+    "name": "PRAH FUREX ABC20 25 KG",
+    "unit": "KG",
+    "defaultPrice": 6.7
+  },
+  {
+    "code": "SG0002",
+    "name": "PRAH FUREX ABC SPEC. 25 KG.",
+    "unit": "KG",
+    "defaultPrice": 7.2
+  },
+  {
+    "code": "SG0003",
+    "name": "PRAH FUREX ABC GENIUS",
+    "unit": "KG",
+    "defaultPrice": 6.6
+  },
+  {
+    "code": "SG0004",
+    "name": "PRAH FUREX BCE300 25 KG.",
+    "unit": "KG",
+    "defaultPrice": 6.6
+  },
+  {
+    "code": "SG1000",
+    "name": "PRAH FUREX D",
+    "unit": "KG",
+    "defaultPrice": 15.2
+  },
+  {
+    "code": "SG2001",
+    "name": "PJENILO AFFF 6%",
+    "unit": "L",
+    "defaultPrice": 15.4
+  },
+  {
+    "code": "SG3002",
+    "name": "PUNJENJE PJENILA ZA APARATE F6 I F9",
+    "unit": "KOM",
+    "defaultPrice": 17.5
+  },
+  {
+    "code": "SG3003",
+    "name": "PUNJENJE PJENILA ZA APARATE F6P I F9P",
+    "unit": "KOM",
+    "defaultPrice": 14.5
+  },
+  {
+    "code": "SG3004",
+    "name": "PUNJENJE PJENILA za Pz3E",
+    "unit": "KOM",
+    "defaultPrice": 14.5
+  },
+  {
+    "code": "SG3005",
+    "name": "PUNJENJE PJENILA za Pz2E",
+    "unit": "KOM",
+    "defaultPrice": 14.5
+  },
+  {
+    "code": "SG5000",
+    "name": "ADITIV",
+    "unit": "L",
+    "defaultPrice": 19.2
+  },
+  {
+    "code": "SG5001",
+    "name": "ADITIV ZA PZ6, F6, F6P",
+    "unit": "KOM",
+    "defaultPrice": 12.1
+  },
+  {
+    "code": "SG5002",
+    "name": "ADITIV ZA PZ9, F9, F9P",
+    "unit": "KOM",
+    "defaultPrice": 15.6
+  },
+  {
+    "code": "SM0000",
+    "name": "MLAZNICA KOMPLET S6,9,12",
+    "unit": "KOM",
+    "defaultPrice": 24.8
+  },
+  {
+    "code": "310880",
+    "name": "MLAZNICA APARATA S6Z, S9Z,S9L.S12L",
+    "unit": "KOM",
+    "defaultPrice": 26.2
+  },
+  {
+    "code": "SM0008",
+    "name": "MLAZNICA KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 24.1
+  },
+  {
+    "code": "SM0013",
+    "name": "MLAZNICA P6 S MAGNETOM",
+    "unit": "KOM",
+    "defaultPrice": 12.1
+  },
+  {
+    "code": "SM0014",
+    "name": "MLAZNICA P9 S MAGNETOM",
+    "unit": "KOM",
+    "defaultPrice": 12.1
+  },
+  {
+    "code": "SM0015",
+    "name": "MLAZNICA P6 FELIX",
+    "unit": "KOM",
+    "defaultPrice": 9.2
+  },
+  {
+    "code": "SM0016",
+    "name": "MLAZNICA P9 FELIX",
+    "unit": "KOM",
+    "defaultPrice": 9.5
+  },
+  {
+    "code": "SM0018",
+    "name": "MLAZNICA KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 11.5
+  },
+  {
+    "code": "SM0020",
+    "name": "MLAZNICA CO2-3, CO2-2",
+    "unit": "KOM",
+    "defaultPrice": 23.6
+  },
+  {
+    "code": "SM0021",
+    "name": "MLAZNICA KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 22.5
+  },
+  {
+    "code": "SM0022",
+    "name": "MLAZNICA KOMPLET CO2-5",
+    "unit": "KOM",
+    "defaultPrice": 37.3
+  },
+  {
+    "code": "SM0023",
+    "name": "MLAZNICA KOMPLET CO2-10",
+    "unit": "KOM",
+    "defaultPrice": 62.6
+  },
+  {
+    "code": "SM0024",
+    "name": "MLAZNICA KOMPLETCO2-30",
+    "unit": "KOM",
+    "defaultPrice": 76.6
+  },
+  {
+    "code": "SM0028",
+    "name": "MLAZNICA P6+ S MAGNETOM",
+    "unit": "KOM",
+    "defaultPrice": 13.1
+  },
+  {
+    "code": "SM0029",
+    "name": "MLAZNICA P9+ S MAGNETOM",
+    "unit": "KOM",
+    "defaultPrice": 13.1
+  },
+  {
+    "code": "SM0036",
+    "name": "MLAZNICA P6++ S MAGNETOM",
+    "unit": "KOM",
+    "defaultPrice": 13.1
+  },
+  {
+    "code": "SM0220",
+    "name": "MLAZNICA",
+    "unit": "KOM",
+    "defaultPrice": 19.0
+  },
+  {
+    "code": "SM0250",
+    "name": "MLAZNICA ZA PREKIDANJE S50",
+    "unit": "KOM",
+    "defaultPrice": 73.2
+  },
+  {
+    "code": "SM0251",
+    "name": "MLAZNICA ZA PREKIDANJE S100",
+    "unit": "KOM",
+    "defaultPrice": 73.2
+  },
+  {
+    "code": "SM0400",
+    "name": "MAGNET MLAZNICE P4,P6,P9",
+    "unit": "KOM",
+    "defaultPrice": 4.2
+  },
+  {
+    "code": "SM0401",
+    "name": "MAGNET P6,P9 NOVI",
+    "unit": "KOM",
+    "defaultPrice": 3.5
+  },
+  {
+    "code": "SM0650",
+    "name": "CIJEV MLAZNICE",
+    "unit": "KOM",
+    "defaultPrice": 4.8
+  },
+  {
+    "code": "SM0651",
+    "name": "CIJEV MLAZNICE",
+    "unit": "KOM",
+    "defaultPrice": 4.8
+  },
+  {
+    "code": "SM0652",
+    "name": "CIJEV MLAZNICE PZ50",
+    "unit": "KOM",
+    "defaultPrice": 23.4
+  },
+  {
+    "code": "SM0653",
+    "name": "CIJEV MLAZNICE PZ140",
+    "unit": "KOM",
+    "defaultPrice": 23.9
+  },
+  {
+    "code": "SM0654",
+    "name": "MLAZNICA ZA \"D\" PRAH",
+    "unit": "KOM",
+    "defaultPrice": 28.7
+  },
+  {
+    "code": "SM0655",
+    "name": "CIJEV MLAZNICE \"D\"",
+    "unit": "KOM",
+    "defaultPrice": 11.7
+  },
+  {
+    "code": "SM0815",
+    "name": "SPOJNA CIJEV VP-15",
+    "unit": "KOM",
+    "defaultPrice": 31.7
+  },
+  {
+    "code": "SM0820",
+    "name": "CIJEV SPOJNA CO2-10",
+    "unit": "KOM",
+    "defaultPrice": 35.2
+  },
+  {
+    "code": "SM0821",
+    "name": "CIJEV SPOJNA CO2-30",
+    "unit": "KOM",
+    "defaultPrice": 48.9
+  },
+  {
+    "code": "SM0822",
+    "name": "CIJEV SPOJNA CO2-60",
+    "unit": "KOM",
+    "defaultPrice": 57.5
+  },
+  {
+    "code": "SM0850",
+    "name": "CIJEV SPOJNA S50,Pz50,",
+    "unit": "KOM",
+    "defaultPrice": 93.8
+  },
+  {
+    "code": "SM0852",
+    "name": "CIJEV SPOJNA S100 SA KOLJ",
+    "unit": "KOM",
+    "defaultPrice": 105.2
+  },
+  {
+    "code": "SM0853",
+    "name": "CIJEV SPOJNA S100 LUX",
+    "unit": "KOM",
+    "defaultPrice": 103.1
+  },
+  {
+    "code": "SM0854",
+    "name": "CIJEV SPOJNA S100",
+    "unit": "KOM",
+    "defaultPrice": 103.1
+  },
+  {
+    "code": "SM1000",
+    "name": "MLAZNICA FI 6.5 S6Z I S6L",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "310840B",
+    "name": "MLAZNICA FI 8",
+    "unit": "KOM",
+    "defaultPrice": 2.2
+  },
+  {
+    "code": "SM1005",
+    "name": "MLAZNICA FI 5,1 ZA S6+",
+    "unit": "KOM",
+    "defaultPrice": 1.5
+  },
+  {
+    "code": "SM1006",
+    "name": "MLAZNICA FI 5,5 ZA S9+",
+    "unit": "KOM",
+    "defaultPrice": 1.5
+  },
+  {
+    "code": "SM1240",
+    "name": "MEMBRANA SPOJ. CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 1.05
+  },
+  {
+    "code": "SM1250",
+    "name": "MEMBRANA SPOJ. CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 1.2
+  },
+  {
+    "code": "SM1251",
+    "name": "MEMBRANA SPOJ. CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 1.3
+  },
+  {
+    "code": "SM1253",
+    "name": "SITO",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "SM1300",
+    "name": "KOLJENO 3/4\"",
+    "unit": "KOM",
+    "defaultPrice": 6.8
+  },
+  {
+    "code": "SM1450",
+    "name": "PRIKLJUČAK SPOJNE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 8.5
+  },
+  {
+    "code": "SM1451",
+    "name": "PRIKLJUČAK SPOJNE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 10.5
+  },
+  {
+    "code": "SM1452",
+    "name": "PRIKLJUČAK SPOJNE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 10.5
+  },
+  {
+    "code": "SM1600",
+    "name": "CIJEV USPONSKA S6A",
+    "unit": "KOM",
+    "defaultPrice": 4.2
+  },
+  {
+    "code": "SM1601",
+    "name": "CIJEV USPONSKA S6",
+    "unit": "KOM",
+    "defaultPrice": 4.2
+  },
+  {
+    "code": "SM1602",
+    "name": "CIJEV USPONSKA S9",
+    "unit": "KOM",
+    "defaultPrice": 5.2
+  },
+  {
+    "code": "SM1603",
+    "name": "CIJEV USPONSKA S12",
+    "unit": "KOM",
+    "defaultPrice": 6.05
+  },
+  {
+    "code": "SM1608",
+    "name": "CIJEV USPONSKA S6LUX",
+    "unit": "KOM",
+    "defaultPrice": 4.7
+  },
+  {
+    "code": "SM1609",
+    "name": "CIJEV USPONSKA S9LUX",
+    "unit": "KOM",
+    "defaultPrice": 4.9
+  },
+  {
+    "code": "SM1611",
+    "name": "CIJEV USPONSKA PZ9LUX",
+    "unit": "KOM",
+    "defaultPrice": 4.9
+  },
+  {
+    "code": "SM1612",
+    "name": "CIJEV USPONSKA S6L",
+    "unit": "KOM",
+    "defaultPrice": 4.5
+  },
+  {
+    "code": "SM1613",
+    "name": "CIJEV USPONSKA PZ6",
+    "unit": "KOM",
+    "defaultPrice": 4.25
+  },
+  {
+    "code": "SM1614",
+    "name": "CIJEV USPONSKA F6P,PZ9",
+    "unit": "KOM",
+    "defaultPrice": 5.2
+  },
+  {
+    "code": "SM1616",
+    "name": "CIJEV USPONSKA F9P",
+    "unit": "KOM",
+    "defaultPrice": 5.2
+  },
+  {
+    "code": "SM1619",
+    "name": "CIJEV USPONSKA F9",
+    "unit": "KOM",
+    "defaultPrice": 6.05
+  },
+  {
+    "code": "SM1800",
+    "name": "MEMBRANA USP. CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 1.0
+  },
+  {
+    "code": "SM2050",
+    "name": "VENTIL KUGLASTI R3/4\"",
+    "unit": "KOM",
+    "defaultPrice": 18.1
+  },
+  {
+    "code": "SM2200",
+    "name": "REDUKCIJA M14 AL",
+    "unit": "KOM",
+    "defaultPrice": 2.9
+  },
+  {
+    "code": "SM2201",
+    "name": "REDUKCIJA M16",
+    "unit": "KOM",
+    "defaultPrice": 2.9
+  },
+  {
+    "code": "SM2400",
+    "name": "BRTVA SPOJNE CIJEVI FI16",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "SM2601",
+    "name": "MLAZNICA ZA VODU",
+    "unit": "KOM",
+    "defaultPrice": 12.5
+  },
+  {
+    "code": "SM2602",
+    "name": "MLAZNICA ZA VODU ZA VP15",
+    "unit": "KOM",
+    "defaultPrice": 8.8
+  },
+  {
+    "code": "SM2604",
+    "name": "MLAZNICA ZA PJENU Pz6,Pz9",
+    "unit": "KOM",
+    "defaultPrice": 9.8
+  },
+  {
+    "code": "SM2605",
+    "name": "MLAZNICA ZA PJENU",
+    "unit": "KOM",
+    "defaultPrice": 7.3
+  },
+  {
+    "code": "SP0000",
+    "name": "PRSTEN SERVISNI 2 GODINE",
+    "unit": "KOM",
+    "defaultPrice": 1.9
+  },
+  {
+    "code": "SP0001",
+    "name": "PRSTEN SERVISNI 5 GODINA",
+    "unit": "KOM",
+    "defaultPrice": 1.9
+  },
+  {
+    "code": "VT0000",
+    "name": "VENTIL P2E P3E",
+    "unit": "KOM",
+    "defaultPrice": 15.1
+  },
+  {
+    "code": "VT0003",
+    "name": "VENTIL",
+    "unit": "KOM",
+    "defaultPrice": 15.1
+  },
+  {
+    "code": "VT0004",
+    "name": "VENTIL P4 P6 P9",
+    "unit": "KOM",
+    "defaultPrice": 15.6
+  },
+  {
+    "code": "VT0008",
+    "name": "VENTIL P1, P2",
+    "unit": "KOM",
+    "defaultPrice": 8.8
+  },
+  {
+    "code": "VT0020",
+    "name": "VENTIL CO2 NA PREKIDANJE",
+    "unit": "KOM",
+    "defaultPrice": 27.15
+  },
+  {
+    "code": "VT0021",
+    "name": "VENTIL CO2 NA PREKIDANJE",
+    "unit": "KOM",
+    "defaultPrice": 29.6
+  },
+  {
+    "code": "VT0040",
+    "name": "VENTIL CO2 NA ODVRTANJE",
+    "unit": "KOM",
+    "defaultPrice": 34.0
+  },
+  {
+    "code": "VT0041",
+    "name": "VENTIL CO2 NA PREKIDANJE",
+    "unit": "KOM",
+    "defaultPrice": 29.1
+  },
+  {
+    "code": "VT0042",
+    "name": "VENTIL CO2 NA PREKID M25X2",
+    "unit": "KOM",
+    "defaultPrice": 26.35
+  },
+  {
+    "code": "VT0044",
+    "name": "VENTIL CO2 NA ODVRTANJE (BOCE ISP.TLAKA 310BAR)",
+    "unit": "KOM",
+    "defaultPrice": 35.1
+  },
+  {
+    "code": "VT0200",
+    "name": "OSIGURAČ VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.4
+  },
+  {
+    "code": "VT0201",
+    "name": "OSIGURAČ VENTILA P2,P3",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "VT0202",
+    "name": "OSIGURAČ",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "VT0220",
+    "name": "OSIGURAČ VENT.CO2 PREKID.",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0221",
+    "name": "OSIGURAČ VENTILA CO2",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0400",
+    "name": "BRTVA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0401",
+    "name": "BRTVA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0402",
+    "name": "BRTVA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0403",
+    "name": "BRTVA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0600",
+    "name": "BRTVA IGLE GORNJA",
+    "unit": "KOM",
+    "defaultPrice": 1.65
+  },
+  {
+    "code": "VT0621",
+    "name": "BRTVA IGLE GORNJA",
+    "unit": "KOM",
+    "defaultPrice": 1.65
+  },
+  {
+    "code": "VT0802",
+    "name": "IGLA KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 6.1
+  },
+  {
+    "code": "VT0804",
+    "name": "IGLA KOMPLET P4,P6,P9",
+    "unit": "KOM",
+    "defaultPrice": 6.1
+  },
+  {
+    "code": "VT0806",
+    "name": "IGLA KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 6.1
+  },
+  {
+    "code": "VT0821",
+    "name": "IGLA - TIJELO CO2-5",
+    "unit": "KOM",
+    "defaultPrice": 3.7
+  },
+  {
+    "code": "VT0823",
+    "name": "BRTVA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT0824",
+    "name": "IGLA S BRTVAMA",
+    "unit": "KOM",
+    "defaultPrice": 6.3
+  },
+  {
+    "code": "VT0825",
+    "name": "OPRUGA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.7
+  },
+  {
+    "code": "VT0826",
+    "name": "NOSAČ USPONSKE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT1001",
+    "name": "OPRUGA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "VT1002",
+    "name": "OPRUGA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "VT1021",
+    "name": "OPRUGA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "VT1200",
+    "name": "NOSAČ USPONSKE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 2.25
+  },
+  {
+    "code": "VT1221",
+    "name": "NOSAČ USPONSKE CIJEVI",
+    "unit": "KOM",
+    "defaultPrice": 3.75
+  },
+  {
+    "code": "VT1421",
+    "name": "BRTVA IGLE DONJA",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT1600",
+    "name": "MLAZNICA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.4
+  },
+  {
+    "code": "VT1601",
+    "name": "MLAZNICA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 3.2
+  },
+  {
+    "code": "VT1602",
+    "name": "MLAZNICA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.65
+  },
+  {
+    "code": "VT1603",
+    "name": "MLAZNICA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.65
+  },
+  {
+    "code": "VT1604",
+    "name": "MLAZNICA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.65
+  },
+  {
+    "code": "VT1605",
+    "name": "MLAZNICA VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.65
+  },
+  {
+    "code": "VT1606",
+    "name": "MLAZNICA VENTILA P3A",
+    "unit": "KOM",
+    "defaultPrice": 2.65
+  },
+  {
+    "code": "VT1607",
+    "name": "MLAZNICA ZA FE36",
+    "unit": "KOM",
+    "defaultPrice": 0.85
+  },
+  {
+    "code": "VT1608",
+    "name": "MLAZNICA ZA PJENU",
+    "unit": "KOM",
+    "defaultPrice": 9.2
+  },
+  {
+    "code": "VT1800",
+    "name": "BRTVA KONTROLNOG VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 1.8
+  },
+  {
+    "code": "VT2000",
+    "name": "IGLA KONTROLNOG VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 1.9
+  },
+  {
+    "code": "VT2200",
+    "name": "STEZNIK KONTROLNOG VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 6.0
+  },
+  {
+    "code": "VT2400",
+    "name": "BRTVA MANOMETRA",
+    "unit": "KOM",
+    "defaultPrice": 1.75
+  },
+  {
+    "code": "VT2600",
+    "name": "MANOMETAR S BRTVOM",
+    "unit": "KOM",
+    "defaultPrice": 10.45
+  },
+  {
+    "code": "VT3000",
+    "name": "CIJEV USPONSKA P1",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT3001",
+    "name": "CIJEV USPONSKA P2, P2A, P",
+    "unit": "KOM",
+    "defaultPrice": 2.15
+  },
+  {
+    "code": "VT3002",
+    "name": "CIJEV USPONSKA P3E",
+    "unit": "KOM",
+    "defaultPrice": 2.35
+  },
+  {
+    "code": "VT3003",
+    "name": "CIJEV USPONSKA P2EA",
+    "unit": "KOM",
+    "defaultPrice": 3.0
+  },
+  {
+    "code": "VT3005",
+    "name": "CIJEV USPONSKA P6",
+    "unit": "KOM",
+    "defaultPrice": 3.0
+  },
+  {
+    "code": "VT3006",
+    "name": "CIJEV USPONSKA P9, P9C",
+    "unit": "KOM",
+    "defaultPrice": 4.6
+  },
+  {
+    "code": "VT3012",
+    "name": "USPONSKA CIJEV P12",
+    "unit": "KOM",
+    "defaultPrice": 5.4
+  },
+  {
+    "code": "VT3020",
+    "name": "CIJEV USPONSKA CO2-3 PR",
+    "unit": "KOM",
+    "defaultPrice": 5.1
+  },
+  {
+    "code": "VT3021",
+    "name": "CIJEV USPONSKA CO2-3 OD",
+    "unit": "KOM",
+    "defaultPrice": 5.1
+  },
+  {
+    "code": "VT3022",
+    "name": "CIJEV USPONSKA CO2-5 PR",
+    "unit": "KOM",
+    "defaultPrice": 5.7
+  },
+  {
+    "code": "VT3023",
+    "name": "CIJEV USPONSKA CO2-5 OD",
+    "unit": "KOM",
+    "defaultPrice": 5.7
+  },
+  {
+    "code": "VT3024",
+    "name": "CIJEV USPONSKA CO2-10",
+    "unit": "KOM",
+    "defaultPrice": 9.5
+  },
+  {
+    "code": "VT3025",
+    "name": "CIJEV USPONSKA CO2-30, 60",
+    "unit": "KOM",
+    "defaultPrice": 14.9
+  },
+  {
+    "code": "VT3050",
+    "name": "CIJEV USPONSKA",
+    "unit": "KOM",
+    "defaultPrice": 5.4
+  },
+  {
+    "code": "VT3051",
+    "name": "CIJEV USPONSKA",
+    "unit": "KOM",
+    "defaultPrice": 5.4
+  },
+  {
+    "code": "VT3053",
+    "name": "CIJEV USPONSKA CO2-5 ALU BOCA",
+    "unit": "KOM",
+    "defaultPrice": 5.7
+  },
+  {
+    "code": "VT3054",
+    "name": "CIJEV USPONSKA CO2-2 ALU BOCA",
+    "unit": "KOM",
+    "defaultPrice": 5.7
+  },
+  {
+    "code": "VT3441",
+    "name": "STEZNIK SIGURNOSNOG VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 2.4
+  },
+  {
+    "code": "VT3620",
+    "name": "MEMBRANA 250 BAR",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "VT3621",
+    "name": "MEMBRANA 225 BAR CPF",
+    "unit": "KOM",
+    "defaultPrice": 2.65
+  },
+  {
+    "code": "VT3640",
+    "name": "MEMBRANA 200 BAR",
+    "unit": "KOM",
+    "defaultPrice": 2.6
+  },
+  {
+    "code": "VT3841",
+    "name": "PLOČICA PODLOŽNA CPF",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "VT4021",
+    "name": "PODLOGA BRTVE",
+    "unit": "KOM",
+    "defaultPrice": 2.6
+  },
+  {
+    "code": "VT4240",
+    "name": "UČVRŠĆENJE KOTAČIĆA",
+    "unit": "KOM",
+    "defaultPrice": 0.35
+  },
+  {
+    "code": "VT4440",
+    "name": "KOTAČIĆ VENT. CO2 ODVRT.",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "VT4640",
+    "name": "STEZNA MATICA",
+    "unit": "KOM",
+    "defaultPrice": 6.7
+  },
+  {
+    "code": "VT4840",
+    "name": "O-BRTVA MATICE",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "VT5040",
+    "name": "BRTVA",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "VT5240",
+    "name": "BRTVA NAVOJA VENT.CO2",
+    "unit": "KOM",
+    "defaultPrice": 2.9
+  },
+  {
+    "code": "VT5440",
+    "name": "O-BRTVA NAVOJA VENT.CO2",
+    "unit": "KOM",
+    "defaultPrice": 0.7
+  },
+  {
+    "code": "VT5640",
+    "name": "VRETENO",
+    "unit": "KOM",
+    "defaultPrice": 3.9
+  },
+  {
+    "code": "VT5840",
+    "name": "DRŽAČ BRTVE VENT.CO2 ODVR",
+    "unit": "KOM",
+    "defaultPrice": 4.0
+  },
+  {
+    "code": "VT6040",
+    "name": "PODLOŠKA VRETENA",
+    "unit": "KOM",
+    "defaultPrice": 2.3
+  },
+  {
+    "code": "ZP0000",
+    "name": "ŽICA ZA PLOMBIR. FI 0.3",
+    "unit": "KG",
+    "defaultPrice": 55.4
+  },
+  {
+    "code": "ZP0001",
+    "name": "ŽICA ZA PLOMBIR. FI 0.4",
+    "unit": "KG",
+    "defaultPrice": 55.4
+  },
+  {
+    "code": "ZP0002",
+    "name": "ŽICA ZA PLOMBIR. FI 0.5",
+    "unit": "KG",
+    "defaultPrice": 57.9
+  },
+  {
+    "code": "ZT0000",
+    "name": "ZATVARAČ KOMPLET",
+    "unit": "KOM",
+    "defaultPrice": 23.0
+  },
+  {
+    "code": "ZT0003",
+    "name": "ZATVARAČ KOMPLET PA",
+    "unit": "KOM",
+    "defaultPrice": 22.5
+  },
+  {
+    "code": "ZT0051",
+    "name": "ZATVARAČ CE",
+    "unit": "KOM",
+    "defaultPrice": 52.3
+  },
+  {
+    "code": "ZT0500",
+    "name": "OSIGURAČ ZATVARAČA PLAST.",
+    "unit": "KOM",
+    "defaultPrice": 1.0
+  },
+  {
+    "code": "ZT0740",
+    "name": "HOLENDER ZATVARAČA",
+    "unit": "KOM",
+    "defaultPrice": 18.1
+  },
+  {
+    "code": "ZT1201",
+    "name": "ZATVARAČ PA",
+    "unit": "KOM",
+    "defaultPrice": 14.2
+  },
+  {
+    "code": "ZT1500",
+    "name": "BRTVA ZATVARAČA",
+    "unit": "KOM",
+    "defaultPrice": 2.05
+  },
+  {
+    "code": "ZT1501",
+    "name": "BRTVA ZATVARAČA \"PD\"",
+    "unit": "KOM",
+    "defaultPrice": 2.2
+  },
+  {
+    "code": "ZT1540",
+    "name": "BRTVA ZATVARAČA Lux \"O\"",
+    "unit": "KOM",
+    "defaultPrice": 1.95
+  },
+  {
+    "code": "ZT1550",
+    "name": "BRTVA ZATVARAČA",
+    "unit": "KOM",
+    "defaultPrice": 4.15
+  },
+  {
+    "code": "ZT1551",
+    "name": "BRTVA ZATVARAČA",
+    "unit": "KOM",
+    "defaultPrice": 6.05
+  },
+  {
+    "code": "ZT2000",
+    "name": "BRTVA IGLE",
+    "unit": "KOM",
+    "defaultPrice": 0.75
+  },
+  {
+    "code": "ZT2002",
+    "name": "BRTVA IGLE",
+    "unit": "KOM",
+    "defaultPrice": 0.75
+  },
+  {
+    "code": "ZT2003",
+    "name": "BRTVA IGLE",
+    "unit": "KOM",
+    "defaultPrice": 0.75
+  },
+  {
+    "code": "ZT2500",
+    "name": "IGLA UDARNA",
+    "unit": "KOM",
+    "defaultPrice": 3.2
+  },
+  {
+    "code": "ZT2504",
+    "name": "IGLA UDARNA",
+    "unit": "KOM",
+    "defaultPrice": 2.35
+  },
+  {
+    "code": "ZT2800",
+    "name": "OPRUGA UDARNOG GUMBA",
+    "unit": "KOM",
+    "defaultPrice": 0.8
+  },
+  {
+    "code": "ZT3000",
+    "name": "OSIGURAČ PRSTENASTI",
+    "unit": "KOM",
+    "defaultPrice": 0.2
+  },
+  {
+    "code": "ZT3200",
+    "name": "GUMB UDARNI",
+    "unit": "KOM",
+    "defaultPrice": 2.35
+  },
+  {
+    "code": "ZT3400",
+    "name": "POKLOPAC GUMBA",
+    "unit": "KOM",
+    "defaultPrice": 0.85
+  },
+  {
+    "code": "ZT3401",
+    "name": "NALJEPNICA GUMBA",
+    "unit": "KOM",
+    "defaultPrice": 0.75
+  },
+  {
+    "code": "ZT3651",
+    "name": "VENTIL SIGURNOSNI",
+    "unit": "KOM",
+    "defaultPrice": 22.5
+  },
+  {
+    "code": "ZT3652",
+    "name": "VENTIL SIGURNOSNI",
+    "unit": "KOM",
+    "defaultPrice": 21.7
+  },
+  {
+    "code": "ZT3653",
+    "name": "VENTIL SIGURNOSNI",
+    "unit": "KOM",
+    "defaultPrice": 21.5
+  },
+  {
+    "code": "ZT3850",
+    "name": "BRTVA SIG.VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 1.3
+  },
+  {
+    "code": "ZT3851",
+    "name": "BRTVA SIG.VENTILA",
+    "unit": "KOM",
+    "defaultPrice": 1.3
+  },
+  {
+    "code": "507422",
+    "name": "ČEP SIGURNOSNI SA SIG. VENTILOM I BRTVOM",
+    "unit": "KOM",
+    "defaultPrice": 24.15
+  },
+  {
+    "code": "407227",
+    "name": "BOCA N2 Pz50 BR",
+    "unit": "KOM",
+    "defaultPrice": 178.5
+  },
+  {
+    "code": "407228",
+    "name": "BOCA CO2 S50 BR",
+    "unit": "KOM",
+    "defaultPrice": 132.3
+  },
+  {
+    "code": "310871",
+    "name": "VENTIL SPREMNIKA PZ50",
+    "unit": "KOM",
+    "defaultPrice": 53.55
+  },
+  {
+    "code": "407385",
+    "name": "SPOJNA CIJEV Pz50",
+    "unit": "KOM",
+    "defaultPrice": 89.8
+  },
+  {
+    "code": "316023",
+    "name": "SPOJNA CIJEV S50",
+    "unit": "KOM",
+    "defaultPrice": 89.8
+  },
+  {
+    "code": "310900",
+    "name": "MLAZNICA KOMPLET Pz50",
+    "unit": "KOM",
+    "defaultPrice": 63.0
+  },
+  {
+    "code": "370011",
+    "name": "KOTAČ FI300 Pz50/S50",
+    "unit": "KOM",
+    "defaultPrice": 39.9
+  },
+  {
+    "code": "370012",
+    "name": "OSIGURAČ KOTAČA Pz50/S50",
+    "unit": "KOM",
+    "defaultPrice": 4.2
+  },
+  {
+    "code": "234020",
+    "name": "BRTVA ZATVARAČA S50",
+    "unit": "KOM",
+    "defaultPrice": 1.95
+  },
+  {
+    "code": "407390",
+    "name": "CIJEVNI PRIKLJUČAK S50",
+    "unit": "KOM",
+    "defaultPrice": 8.15
+  },
+  {
+    "code": "310901",
+    "name": "MLAZNICA S50",
+    "unit": "KOM",
+    "defaultPrice": 63.0
+  },
+  {
+    "code": "311004",
+    "name": "SKLOP VENTILA P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 5.25
+  },
+  {
+    "code": "310729",
+    "name": "MLAZNICA P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 2.25
+  },
+  {
+    "code": "400317",
+    "name": "OSIGURAČ P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 2.35
+  },
+  {
+    "code": "300930",
+    "name": "MANOMETAR P1,P2 BR",
+    "unit": "KOM",
+    "defaultPrice": 9.95
+  },
+  {
+    "code": "311015",
+    "name": "PLASTIČNI NOSAČ P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 3.65
+  },
+  {
+    "code": "311005",
+    "name": "SKLOP VENTILA P2 BR",
+    "unit": "KOM",
+    "defaultPrice": 6.3
+  },
+  {
+    "code": "310736",
+    "name": "MLAZNICA P2 BR",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "181267",
+    "name": "OSIGURAČ KAPICA P2,P6,P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 0.35
+  },
+  {
+    "code": "181265X",
+    "name": "OSIGURAČ KAPICA P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 0.35
+  },
+  {
+    "code": "311016",
+    "name": "NOSAČ APARATA P2 BR",
+    "unit": "KOM",
+    "defaultPrice": 5.8
+  },
+  {
+    "code": "234051",
+    "name": "BRTVA VENTILA P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 1.99
+  },
+  {
+    "code": "234050",
+    "name": "BRTVA VENTILA P2,P6,P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 1.99
+  },
+  {
+    "code": "401471",
+    "name": "USPONSKA CIJEV P2 BR",
+    "unit": "KOM",
+    "defaultPrice": 2.05
+  },
+  {
+    "code": "401470",
+    "name": "USPONSKA CIJEV P1 BR",
+    "unit": "KOM",
+    "defaultPrice": 2.05
+  },
+  {
+    "code": "311007",
+    "name": "SKLOP VENTILA P6,P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 9.95
+  },
+  {
+    "code": "310737",
+    "name": "MLAZNICA P6 BR",
+    "unit": "KOM",
+    "defaultPrice": 8.8
+  },
+  {
+    "code": "401472",
+    "name": "USPONSKA CIJEV P6 BR",
+    "unit": "KOM",
+    "defaultPrice": 3.85
+  },
+  {
+    "code": "310878",
+    "name": "PLASTIČNO STOPALO P6 BR",
+    "unit": "KOM",
+    "defaultPrice": 3.15
+  },
+  {
+    "code": "311017",
+    "name": "NOSAČ P6,P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 2.5
+  },
+  {
+    "code": "310738",
+    "name": "MLAZNICA P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 9.15
+  },
+  {
+    "code": "401473",
+    "name": "USPOSNKA CIJEV P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 4.4
+  },
+  {
+    "code": "310888",
+    "name": "PLASTIČNO STOPALO P9 BR",
+    "unit": "KOM",
+    "defaultPrice": 3.4
+  }
+]

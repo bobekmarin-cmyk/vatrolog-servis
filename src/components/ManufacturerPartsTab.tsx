@@ -20,9 +20,15 @@ type PartRow = {
   name: string;
   common: boolean;
   unit: PartUnit;
+  defaultPrice: number | null;
   active: boolean;
   typeIds: string[];
 };
+
+function fmtPrice(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return `${n.toLocaleString("hr-HR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
 
 export default function ManufacturerPartsTab(props: {
   manufacturerId: string;
@@ -39,6 +45,7 @@ export default function ManufacturerPartsTab(props: {
   const [name, setName] = useState("");
   const [common, setCommon] = useState(false);
   const [unit, setUnit] = useState<PartUnit>("KOM");
+  const [defaultPrice, setDefaultPrice] = useState("");
   const [typeIds, setTypeIds] = useState<string[]>([]);
 
   function resetForm() {
@@ -47,6 +54,7 @@ export default function ManufacturerPartsTab(props: {
     setName("");
     setCommon(false);
     setUnit("KOM");
+    setDefaultPrice("");
     setTypeIds([]);
     setError(null);
   }
@@ -57,6 +65,7 @@ export default function ManufacturerPartsTab(props: {
     setName(p.name);
     setCommon(p.common);
     setUnit(p.unit);
+    setDefaultPrice(p.defaultPrice != null ? String(p.defaultPrice) : "");
     setTypeIds([...p.typeIds]);
     setError(null);
   }
@@ -109,6 +118,7 @@ export default function ManufacturerPartsTab(props: {
           name,
           common,
           unit,
+          defaultPrice: defaultPrice.trim() === "" ? null : defaultPrice.trim(),
           typeIds,
         }),
       },
@@ -160,7 +170,7 @@ export default function ManufacturerPartsTab(props: {
         </h3>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-2">
               <label className="label">Šifra</label>
               <input
                 className="input font-mono"
@@ -170,7 +180,7 @@ export default function ManufacturerPartsTab(props: {
                 required
               />
             </div>
-            <div className="sm:col-span-5">
+            <div className="sm:col-span-4">
               <label className="label">Naziv</label>
               <input
                 className="input"
@@ -192,6 +202,19 @@ export default function ManufacturerPartsTab(props: {
                 <option value="L">L</option>
               </select>
             </div>
+            <div className="sm:col-span-2">
+              <label className="label">Cijena (EUR)</label>
+              <input
+                className="input"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={defaultPrice}
+                onChange={(e) => setDefaultPrice(e.target.value)}
+                placeholder="npr. 26.60"
+              />
+            </div>
             <div className="sm:col-span-2 flex items-end">
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -207,7 +230,7 @@ export default function ManufacturerPartsTab(props: {
 
           <div>
             <div className="flex items-center justify-between">
-              <label className="label">Za koje tipove aparata?</label>
+              <label className="label">Za koje tipove aparata? (opcionalno)</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -285,11 +308,7 @@ export default function ManufacturerPartsTab(props: {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <button
-              className="btn btn-primary px-4"
-              type="submit"
-              disabled={busy || typeIds.length === 0}
-            >
+            <button className="btn btn-primary px-4" type="submit" disabled={busy}>
               {editingId ? "Spremi promjene" : "Dodaj dio"}
             </button>
             {editingId && (
@@ -315,6 +334,7 @@ export default function ManufacturerPartsTab(props: {
                 <th className="p-3">Šifra</th>
                 <th className="p-3">Naziv</th>
                 <th className="p-3">Jed.</th>
+                <th className="p-3 text-right">Cijena</th>
                 <th className="p-3">Uobičajen</th>
                 <th className="p-3">Tipovi</th>
                 <th className="p-3">Status</th>
@@ -333,6 +353,9 @@ export default function ManufacturerPartsTab(props: {
                     <td className="p-3">{p.name}</td>
                     <td className="p-3 text-xs text-slate-600">
                       {p.unit === "KG" ? "kg" : p.unit === "L" ? "L" : "kom"}
+                    </td>
+                    <td className="p-3 text-right tabular-nums text-xs text-slate-700">
+                      {fmtPrice(p.defaultPrice)}
                     </td>
                     <td className="p-3">
                       {p.common ? (
@@ -382,7 +405,7 @@ export default function ManufacturerPartsTab(props: {
               })}
               {props.parts.length === 0 && (
                 <tr>
-                  <td className="p-6 text-slate-500 text-center" colSpan={7}>
+                  <td className="p-6 text-slate-500 text-center" colSpan={8}>
                     Nema dijelova.
                   </td>
                 </tr>
