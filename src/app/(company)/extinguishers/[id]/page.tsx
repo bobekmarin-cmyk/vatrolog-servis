@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
 import PrintPageButton from "@/components/PrintPageButton";
+import DeleteExtinguisherButton from "@/components/DeleteExtinguisherButton";
 
 function StatusIcon({ isOk }: { isOk: boolean }) {
   return (
@@ -195,6 +196,13 @@ export default async function ExtinguisherHistoryPage({ params }: { params: Prom
           )}
         </div>
         <div className="flex items-center gap-2">
+          {session.role === "ADMIN" && (
+            <DeleteExtinguisherButton
+              extinguisherId={extinguisher.id}
+              internalCode={extinguisher.internalCode}
+              hasServiceHistory={serviceHistory.length > 0}
+            />
+          )}
           <PrintPageButton label="Ispiši stranicu" />
           <Link className="btn btn-outline px-4" href="/extinguishers">
             ← Aparati
