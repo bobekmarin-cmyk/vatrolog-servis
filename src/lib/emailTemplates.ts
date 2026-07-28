@@ -38,8 +38,7 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
     calloutText: "Broj aparata kojima ističe servis: {broj}",
     closingText:
       "Molimo Vas da nas kontaktirate radi dogovora oko servisiranja Vaših vatrogasnih aparata kako biste ostali u skladu s propisima.",
-    footerNote:
-      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+    footerNote: null,
   },
   BEFORE_EXPIRY: {
     type: "BEFORE_EXPIRY",
@@ -51,8 +50,7 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
     calloutText: "Rok ističe krajem mjeseca {mjesec} — preostalo je samo 5 dana!",
     closingText:
       "Molimo Vas da nas hitno kontaktirate radi dogovora oko servisiranja.",
-    footerNote:
-      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+    footerNote: null,
   },
   AFTER_EXPIRY: {
     type: "AFTER_EXPIRY",
@@ -64,8 +62,7 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
     calloutText: "Broj aparata s isteklim rokom: {broj}",
     closingText:
       "Molimo Vas da nas što hitnije kontaktirate kako bismo dogovorili termin servisiranja i doveli Vaše aparate u ispravno stanje.",
-    footerNote:
-      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+    footerNote: null,
   },
   REGISTER: {
     type: "REGISTER",
@@ -77,8 +74,7 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
     calloutText: "Upisnik sadrži {broj} servisiranih aparata.",
     closingText:
       "Molimo Vas da pregledate upisnik i kontaktirate nas u slučaju pitanja.",
-    footerNote:
-      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+    footerNote: null,
   },
   RECEIPT: {
     type: "RECEIPT",
@@ -90,8 +86,7 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
     calloutText: "Zaprimljeno aparata: {broj}",
     closingText:
       "O statusu servisa obavijestit ćemo Vas na vrijeme. Za sva pitanja stojimo Vam na raspolaganju.",
-    footerNote:
-      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+    footerNote: null,
   },
   DELIVERY_NOTE: {
     type: "DELIVERY_NOTE",
@@ -103,8 +98,7 @@ const DEFAULTS: Record<TemplateType, TemplateFields> = {
     calloutText: "Otpremljeno aparata: {broj}",
     closingText:
       "Molimo Vas da pregledate priloženi dokument. Za sva pitanja ili eventualne reklamacije stojimo Vam na raspolaganju.",
-    footerNote:
-      "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+    footerNote: null,
   },
 };
 
@@ -115,7 +109,7 @@ export function getDefaultTemplate(type: TemplateType): TemplateFields {
 export async function ensureDefaultTemplates(companyId: string) {
   const existing = await prisma.emailTemplate.findMany({
     where: { companyId },
-    select: { type: true },
+    select: { type: true, footerNote: true },
   });
   const existingTypes = new Set(existing.map((e) => e.type));
 
@@ -127,6 +121,14 @@ export async function ensureDefaultTemplates(companyId: string) {
       });
     }
   }
+
+  // Ukloni stari generički footer — VatroLog branding sada živi u shellu.
+  const legacy =
+    "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.";
+  await prisma.emailTemplate.updateMany({
+    where: { companyId, footerNote: legacy },
+    data: { footerNote: null },
+  });
 
   return prisma.emailTemplate.findMany({
     where: { companyId },

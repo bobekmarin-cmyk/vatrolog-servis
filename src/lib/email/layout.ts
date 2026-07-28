@@ -9,7 +9,7 @@
  * standardne 6-poljne predloške dovoljno je proslijediti `fields`.
  */
 
-import { EMAIL_COLORS, EMAIL_FONTS, EMAIL_MAX_WIDTH } from "./design";
+import { EMAIL_COLORS, EMAIL_FONTS, EMAIL_MAX_WIDTH, VATROLOG_SITE_URL } from "./design";
 import {
   emailCallout,
   emailFooter,
@@ -114,6 +114,7 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
       fields.calloutText,
       fields.closingText,
       fields.footerNote ? `\n--\n${fields.footerNote}` : "",
+      `\n--\nPoslano iz programa VatroLog\n${VATROLOG_SITE_URL}\nSoftver za upravljanje servisom vatrogasnih aparata`,
     ]
       .filter((s): s is string => Boolean(s?.trim()))
       .join("\n\n");

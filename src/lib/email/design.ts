@@ -58,5 +58,9 @@ export const EMAIL_SIZES = {
 
 export const EMAIL_MAX_WIDTH = 600;
 
+/** Javni URL proizvoda — footer i header link u svim mailovima. */
+export const VATROLOG_SITE_URL = "https://vatrolog.com";
+export const VATROLOG_PRODUCT_NAME = "VatroLog";
+
 /** Dimenzije akcentne crtice (32×2) — istovjetno kao `introAccent` u PDF-u. */
 export const EMAIL_ACCENT_BAR = { width: 32, height: 2 } as const;

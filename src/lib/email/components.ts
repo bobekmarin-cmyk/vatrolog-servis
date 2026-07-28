@@ -9,7 +9,14 @@
  * pravilo "uvijek escapaj" bi razbilo bold u tijelu.
  */
 
-import { EMAIL_ACCENT_BAR, EMAIL_COLORS, EMAIL_FONTS, EMAIL_SIZES } from "./design";
+import {
+  EMAIL_ACCENT_BAR,
+  EMAIL_COLORS,
+  EMAIL_FONTS,
+  EMAIL_SIZES,
+  VATROLOG_PRODUCT_NAME,
+  VATROLOG_SITE_URL,
+} from "./design";
 
 export type EmailBranding = {
   fromName: string;
@@ -20,37 +27,78 @@ export type EmailBranding = {
 };
 
 /** Dvobojni "VatroLog" naslov (Vatro tamno, Log brand) — istovjetno kao u PDF headeru. */
-export function emailBrandTitle(name: string, brandColor: string): string {
+export function emailBrandTitle(
+  name: string,
+  brandColor: string,
+  opts?: { fontSize?: number },
+): string {
   const trimmed = name.trim();
+  const size = opts?.fontSize ?? 22;
   if (trimmed.toLowerCase() === "vatrolog") {
     return (
-      `<div style="font-family:${EMAIL_FONTS.body};font-weight:800;font-size:22px;letter-spacing:-0.01em;line-height:1;">` +
+      `<div style="font-family:${EMAIL_FONTS.body};font-weight:800;font-size:${size}px;letter-spacing:-0.01em;line-height:1;">` +
       `<span style="color:${EMAIL_COLORS.text};font-weight:800;">Vatro</span>` +
       `<span style="color:${brandColor};font-weight:800;">Log</span>` +
       `</div>`
     );
   }
   return (
-    `<div style="font-family:${EMAIL_FONTS.body};font-weight:800;font-size:22px;letter-spacing:-0.01em;color:${brandColor};">` +
+    `<div style="font-family:${EMAIL_FONTS.body};font-weight:800;font-size:${size}px;letter-spacing:-0.01em;color:${brandColor};line-height:1.15;">` +
     `${escapeHtmlLite(trimmed)}` +
     `</div>`
   );
 }
 
-/** Jedan brand red (slika ili tipografski naslov) + debela crvena crta ispod — bez duplog logotipa. */
+function emailVatrologWordmarkLink(brandColor: string, fontSize: number): string {
+  return (
+    `<a href="${VATROLOG_SITE_URL}" target="_blank" rel="noopener" ` +
+    `style="text-decoration:none;border:0;color:inherit;display:inline-block;">` +
+    emailBrandTitle(VATROLOG_PRODUCT_NAME, brandColor, { fontSize }) +
+    `</a>`
+  );
+}
+
+/**
+ * Header: pošiljatelj (tvrtka ili VatroLog) + VatroLog marka.
+ * Tenant mailovi: lijevo tvrtka, desno VatroLog.
+ * Vendor mailovi (fromName = VatroLog): jedna marka, bez duplikata.
+ */
 export function emailHeader(branding: EmailBranding, documentLabel?: string): string {
-  const logoBlock = branding.logoUrl
-    ? `<img src="${escapeHtmlLite(branding.logoUrl)}" alt="${escapeHtmlLite(branding.fromName)}" height="28" style="height:28px;display:block;border:0;outline:none;" />`
-    : emailBrandTitle(branding.fromName, branding.brandColor);
+  const brandColor = branding.brandColor;
+  const fromName = branding.fromName.trim() || VATROLOG_PRODUCT_NAME;
+  const isVatrologSender = fromName.toLowerCase() === "vatrolog";
 
   const labelBlock = documentLabel
     ? `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textSubtle};text-transform:uppercase;letter-spacing:0.6px;font-weight:600;margin-bottom:6px;">${escapeHtmlLite(documentLabel)}</div>`
     : "";
 
+  const senderBlock = branding.logoUrl
+    ? `<img src="${escapeHtmlLite(branding.logoUrl)}" alt="${escapeHtmlLite(fromName)}" height="28" style="height:28px;display:block;border:0;outline:none;" />`
+    : emailBrandTitle(fromName, brandColor);
+
+  if (isVatrologSender) {
+    return (
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-bottom:4px solid ${brandColor};padding-bottom:14px;margin-bottom:18px;">` +
+      `<tr>` +
+      `<td valign="top" style="padding:0;">` +
+      `${labelBlock}` +
+      emailVatrologWordmarkLink(brandColor, 22) +
+      `</td>` +
+      `</tr>` +
+      `</table>`
+    );
+  }
+
   return (
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-bottom:4px solid ${branding.brandColor};padding-bottom:14px;margin-bottom:18px;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-bottom:4px solid ${brandColor};padding-bottom:14px;margin-bottom:18px;">` +
     `<tr>` +
-    `<td valign="top" style="padding:0;">${labelBlock}${logoBlock}</td>` +
+    `<td valign="top" style="padding:0;padding-right:12px;">` +
+    `${labelBlock}${senderBlock}` +
+    `</td>` +
+    `<td valign="top" align="right" style="padding:0;white-space:nowrap;">` +
+    `<div style="font-family:${EMAIL_FONTS.body};font-size:10px;color:${EMAIL_COLORS.textSubtle};text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px;">via</div>` +
+    emailVatrologWordmarkLink(brandColor, 16) +
+    `</td>` +
     `</tr>` +
     `</table>`
   );
@@ -143,22 +191,53 @@ export function emailCodeBlock(code: string, brandColor: string = EMAIL_COLORS.a
   );
 }
 
-/** Footer: tanka crta + `signatureHtml` ako postoji + auto-tekst + copyright. */
+/** Stari default footer iz tenant predložaka — zamjenjuje se VatroLog blokom. */
+export const LEGACY_GENERIC_FOOTER_NOTE =
+  "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.";
+
+/**
+ * Footer: potpis pošiljatelja + opcionalna napomena + obavezni VatroLog product block.
+ */
 export function emailFooter(branding: EmailBranding, footerNote: string | null): string {
+  const brandColor = branding.brandColor;
+  const fromName = branding.fromName.trim() || VATROLOG_PRODUCT_NAME;
+  const cleanedNote =
+    footerNote?.trim() && footerNote.trim() !== LEGACY_GENERIC_FOOTER_NOTE
+      ? footerNote.trim()
+      : null;
+
   const sig = branding.signatureHtml
     ? `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.small}px;color:${EMAIL_COLORS.textMuted};margin:0 0 12px 0;">${branding.signatureHtml}</div>`
     : "";
-  const note = footerNote
-    ? `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.small}px;color:${EMAIL_COLORS.textSubtle};margin:0 0 8px 0;line-height:1.5;">${escapeHtmlLite(footerNote)}</div>`
+  const note = cleanedNote
+    ? `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.small}px;color:${EMAIL_COLORS.textSubtle};margin:0 0 12px 0;line-height:1.5;">${escapeHtmlLite(cleanedNote)}</div>`
     : "";
+
   const year = new Date().getFullYear();
+  const productBlock =
+    `<div style="margin:0 0 10px 0;">` +
+    `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textSubtle};margin:0 0 6px 0;line-height:1.4;">` +
+    `Poslano iz programa` +
+    `</div>` +
+    emailVatrologWordmarkLink(brandColor, 18) +
+    `<div style="margin-top:6px;">` +
+    `<a href="${VATROLOG_SITE_URL}" target="_blank" rel="noopener" ` +
+    `style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.small}px;color:${brandColor};font-weight:600;text-decoration:none;">` +
+    `vatrolog.com</a>` +
+    `</div>` +
+    `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textFaint};margin-top:6px;line-height:1.45;">` +
+    `Softver za upravljanje servisom vatrogasnih aparata` +
+    `</div>` +
+    `</div>`;
+
   return (
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border-top:1px solid ${EMAIL_COLORS.border};margin-top:24px;padding-top:16px;">` +
     `<tr><td style="padding:0;">` +
     `${sig}` +
     `${note}` +
-    `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textFaint};line-height:1.5;">` +
-    `&copy; ${year} ${escapeHtmlLite(branding.fromName)}. Ova poruka je automatski generirana.` +
+    `${productBlock}` +
+    `<div style="font-family:${EMAIL_FONTS.body};font-size:${EMAIL_SIZES.caption}px;color:${EMAIL_COLORS.textFaint};line-height:1.5;margin-top:4px;">` +
+    `&copy; ${year} ${escapeHtmlLite(fromName)}. Ova poruka je automatski generirana.` +
     `</div>` +
     `</td></tr></table>`
   );
