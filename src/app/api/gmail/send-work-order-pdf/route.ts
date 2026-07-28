@@ -18,6 +18,7 @@ import {
 import { buildWorkOrderPdfNames, type WorkOrderDocSlug } from "@/lib/workOrderDocumentNames";
 import { getActiveDeliveryNote } from "@/lib/deliveryNoteIssue";
 import { readPdf } from "@/lib/pdfStorage";
+import { countWorkOrderItemsForEmailDoc } from "@/lib/workOrderEmailCounts";
 
 export const runtime = "nodejs";
 
@@ -172,7 +173,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const broj = await countItemsForKind(session.companyId, order.id, kind);
+  const broj = await countWorkOrderItemsForEmailDoc(session.companyId, order.id, kind);
 
   const vars: RenderVars = {
     mjesec: "",
@@ -210,7 +211,7 @@ export async function POST(req: NextRequest) {
         subject,
         htmlBody: html,
         month: monthTag,
-        itemCount: 0,
+        itemCount: broj,
         status: "FAILED",
         error: errMsg.slice(0, 500),
       },
@@ -226,45 +227,10 @@ export async function POST(req: NextRequest) {
       subject,
       htmlBody: html,
       month: monthTag,
-      itemCount: 0,
+      itemCount: broj,
       status: "SENT",
     },
   });
 
   return NextResponse.json({ ok: true });
-}
-
-/**
- * Vraća broj relevantnih aparata za pojedini dokument:
- *  - REGISTER (upisnik) — broj realno servisiranih aparata (periodicDone=true).
- *  - RECEIPT  (primka)  — broj zaprimljenih aparata (sve realne stavke naloga).
- *  - DELIVERY_NOTE (otpremnica) — broj otpremljenih aparata
- *    (sve stavke naloga, isto pravilo kao primka — fizički su to isti aparati
- *    koji su se vratili nakon servisa).
- */
-async function countItemsForKind(
-  companyId: string,
-  workOrderId: string,
-  kind: KindKey,
-): Promise<number> {
-  if (kind === "register") {
-    return prisma.workOrderItem.count({
-      where: {
-        workOrderId,
-        companyId,
-        isPlaceholder: false,
-        periodicDone: true,
-        extinguisherId: { not: null },
-      },
-    });
-  }
-
-  return prisma.workOrderItem.count({
-    where: {
-      workOrderId,
-      companyId,
-      isPlaceholder: false,
-      extinguisherId: { not: null },
-    },
-  });
 }

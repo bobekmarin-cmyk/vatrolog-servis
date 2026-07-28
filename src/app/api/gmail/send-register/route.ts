@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
   }
 
   const custName = customerDisplayName(order.customer);
-  const itemCount = order.items.filter((i) => !i.isPlaceholder && i.extinguisher && i.servicedAt).length;
+  // Usklađeno s PDF upisnikom: identificirani aparati (ne zahtijeva servicedAt).
+  const itemCount = order.items.filter((i) => !i.isPlaceholder && i.extinguisher).length;
 
   const vars: RenderVars = {
     mjesec: "",
