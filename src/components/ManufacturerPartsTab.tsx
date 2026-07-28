@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Modal from "@/components/ui/Modal";
 import { useDialog } from "@/components/ui/useDialog";
 
 type ExType = {
@@ -25,9 +26,51 @@ type PartRow = {
   typeIds: string[];
 };
 
+type Draft = {
+  id: string | null;
+  code: string;
+  name: string;
+  common: boolean;
+  unit: PartUnit;
+  defaultPrice: string;
+  typeIds: string[];
+};
+
 function fmtPrice(n: number | null): string {
   if (n == null || !Number.isFinite(n)) return "—";
   return `${n.toLocaleString("hr-HR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
+function emptyDraft(): Draft {
+  return {
+    id: null,
+    code: "",
+    name: "",
+    common: false,
+    unit: "KOM",
+    defaultPrice: "",
+    typeIds: [],
+  };
+}
+
+function summarizeTypes(
+  typeIds: string[],
+  availableTypes: ExType[],
+): { label: string; title: string } {
+  if (typeIds.length === 0) return { label: "—", title: "Nema pridruženih tipova" };
+  if (typeIds.length === availableTypes.length && availableTypes.length > 0) {
+    return { label: "Svi tipovi", title: availableTypes.map((t) => t.code).join(", ") };
+  }
+  const codes = typeIds
+    .map((id) => availableTypes.find((t) => t.id === id)?.code)
+    .filter(Boolean) as string[];
+  if (codes.length <= 3) {
+    return { label: codes.join(", "), title: codes.join(", ") };
+  }
+  return {
+    label: `${codes.length} tipova`,
+    title: codes.join(", "),
+  };
 }
 
 export default function ManufacturerPartsTab(props: {
@@ -39,68 +82,109 @@ export default function ManufacturerPartsTab(props: {
   const dialog = useDialog();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [draft, setDraft] = useState<Draft>(emptyDraft());
+  const [typeFilter, setTypeFilter] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [common, setCommon] = useState(false);
-  const [unit, setUnit] = useState<PartUnit>("KOM");
-  const [defaultPrice, setDefaultPrice] = useState("");
-  const [typeIds, setTypeIds] = useState<string[]>([]);
+  const typeGroups = useMemo(() => {
+    const order: Array<{ key: string; label: string; sortOrder: number }> = [];
+    const map = new Map<string, { label: string; sortOrder: number; types: ExType[] }>();
+    for (const t of props.availableTypes) {
+      const key = t.construction?.code ?? "__OTHER__";
+      const label = t.construction?.label ?? "Ostalo";
+      const sortOrder = t.construction?.sortOrder ?? 9999;
+      if (!map.has(key)) {
+        map.set(key, { label, sortOrder, types: [] });
+        order.push({ key, label, sortOrder });
+      }
+      map.get(key)!.types.push(t);
+    }
+    order.sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, "hr"));
+    for (const g of map.values()) {
+      g.types.sort((a, b) => a.code.localeCompare(b.code, "hr"));
+    }
+    return { order, map };
+  }, [props.availableTypes]);
 
-  function resetForm() {
-    setEditingId(null);
-    setCode("");
-    setName("");
-    setCommon(false);
-    setUnit("KOM");
-    setDefaultPrice("");
-    setTypeIds([]);
+  const visibleParts = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return props.parts;
+    return props.parts.filter((p) =>
+      `${p.code} ${p.name}`.toLowerCase().includes(q),
+    );
+  }, [props.parts, filter]);
+
+  function openCreate() {
+    setDraft(emptyDraft());
+    setTypeFilter("");
     setError(null);
+    setModalOpen(true);
   }
 
-  function startEdit(p: PartRow) {
-    setEditingId(p.id);
-    setCode(p.code);
-    setName(p.name);
-    setCommon(p.common);
-    setUnit(p.unit);
-    setDefaultPrice(p.defaultPrice != null ? String(p.defaultPrice) : "");
-    setTypeIds([...p.typeIds]);
+  function openEdit(p: PartRow) {
+    setDraft({
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      common: p.common,
+      unit: p.unit,
+      defaultPrice: p.defaultPrice != null ? String(p.defaultPrice) : "",
+      typeIds: [...p.typeIds],
+    });
+    setTypeFilter("");
     setError(null);
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    if (busy) return;
+    setModalOpen(false);
+    setError(null);
+    setDraft(emptyDraft());
+    setTypeFilter("");
   }
 
   function toggleType(id: string) {
-    setTypeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setDraft((prev) => ({
+      ...prev,
+      typeIds: prev.typeIds.includes(id)
+        ? prev.typeIds.filter((x) => x !== id)
+        : [...prev.typeIds, id],
+    }));
   }
 
-  function selectAll() {
-    setTypeIds(props.availableTypes.map((t) => t.id));
+  function selectAllTypes() {
+    setDraft((prev) => ({
+      ...prev,
+      typeIds: props.availableTypes.map((t) => t.id),
+    }));
   }
-  function clearAll() {
-    setTypeIds([]);
+
+  function clearTypes() {
+    setDraft((prev) => ({ ...prev, typeIds: [] }));
   }
 
   function selectGroup(types: ExType[]) {
     const ids = types.map((t) => t.id);
-    setTypeIds((prev) => Array.from(new Set([...prev, ...ids])));
+    setDraft((prev) => ({
+      ...prev,
+      typeIds: Array.from(new Set([...prev.typeIds, ...ids])),
+    }));
   }
 
-  // Grupiraj tipove po izvedbi (Stalni tlak → Bočica → CO2). Tipovi bez izvedbe
-  // (rijetko, npr. nepotpuno popunjeni) idu na kraj pod „Ostalo".
-  const groupOrder: Array<{ key: string; label: string; sortOrder: number }> = [];
-  const groupsMap = new Map<string, { label: string; sortOrder: number; types: ExType[] }>();
-  for (const t of props.availableTypes) {
-    const key = t.construction?.code ?? "__OTHER__";
-    const label = t.construction?.label ?? "Ostalo";
-    const sortOrder = t.construction?.sortOrder ?? 9999;
-    if (!groupsMap.has(key)) {
-      groupsMap.set(key, { label, sortOrder, types: [] });
-      groupOrder.push({ key, label, sortOrder });
-    }
-    groupsMap.get(key)!.types.push(t);
+  function clearGroup(types: ExType[]) {
+    const ids = new Set(types.map((t) => t.id));
+    setDraft((prev) => ({
+      ...prev,
+      typeIds: prev.typeIds.filter((id) => !ids.has(id)),
+    }));
   }
-  groupOrder.sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
+
+  function toggleGroupCollapse(key: string) {
+    setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,13 +197,13 @@ export default function ManufacturerPartsTab(props: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: editingId ?? undefined,
-          code,
-          name,
-          common,
-          unit,
-          defaultPrice: defaultPrice.trim() === "" ? null : defaultPrice.trim(),
-          typeIds,
+          id: draft.id ?? undefined,
+          code: draft.code,
+          name: draft.name,
+          common: draft.common,
+          unit: draft.unit,
+          defaultPrice: draft.defaultPrice.trim() === "" ? null : draft.defaultPrice.trim(),
+          typeIds: draft.typeIds,
         }),
       },
     );
@@ -129,7 +213,8 @@ export default function ManufacturerPartsTab(props: {
       setError(data.error ?? "Greška.");
       return;
     }
-    resetForm();
+    setModalOpen(false);
+    setDraft(emptyDraft());
     router.refresh();
   }
 
@@ -162,168 +247,39 @@ export default function ManufacturerPartsTab(props: {
     router.refresh();
   }
 
+  const selectedCount = draft.typeIds.length;
+  const totalTypes = props.availableTypes.length;
+  const typeQ = typeFilter.trim().toLowerCase();
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <section className="surface p-4">
-        <h3 className="text-base font-semibold mb-3">
-          {editingId ? "Uredi dio" : "Dodaj novi dio"}
-        </h3>
-        <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-            <div className="sm:col-span-2">
-              <label className="label">Šifra</label>
-              <input
-                className="input font-mono"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="BRT-01"
-                required
-              />
-            </div>
-            <div className="sm:col-span-4">
-              <label className="label">Naziv</label>
-              <input
-                className="input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Brtva ventila"
-                required
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Jedinica</label>
-              <select
-                className="select"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as PartUnit)}
-              >
-                <option value="KOM">kom</option>
-                <option value="KG">kg</option>
-                <option value="L">L</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Cijena (EUR)</label>
-              <input
-                className="input"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                value={defaultPrice}
-                onChange={(e) => setDefaultPrice(e.target.value)}
-                placeholder="npr. 26.60"
-              />
-            </div>
-            <div className="sm:col-span-2 flex items-end">
-              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={common}
-                  onChange={(e) => setCommon(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm">Uobičajen</span>
-              </label>
-            </div>
-          </div>
-
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <label className="label">Za koje tipove aparata? (opcionalno)</label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-outline h-7 px-3 text-xs"
-                  onClick={selectAll}
-                >
-                  Označi sve
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline h-7 px-3 text-xs"
-                  onClick={clearAll}
-                >
-                  Očisti
-                </button>
-              </div>
-            </div>
-            {props.availableTypes.length === 0 ? (
-              <div className="text-sm text-slate-500 mt-2">
-                Ovaj proizvođač još nema dodanih tipova aparata. Prvo dodaj tipove.
-              </div>
-            ) : (
-              <div className="mt-2 space-y-4">
-                {groupOrder.map((g) => {
-                  const group = groupsMap.get(g.key)!;
-                  return (
-                    <div key={g.key}>
-                      <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                          {group.label}
-                          <span className="ml-2 text-slate-400 normal-case font-normal">
-                            ({group.types.length})
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className="text-xs text-slate-500 hover:text-slate-700 underline-offset-2 hover:underline"
-                          onClick={() => selectGroup(group.types)}
-                        >
-                          Označi sve u grupi
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                        {group.types.map((t) => {
-                          const checked = typeIds.includes(t.id);
-                          return (
-                            <label
-                              key={t.id}
-                              className={[
-                                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition",
-                                checked
-                                  ? "border-slate-900 bg-slate-900/5"
-                                  : "border-slate-200 hover:bg-slate-50",
-                              ].join(" ")}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleType(t.id)}
-                                className="h-4 w-4"
-                              />
-                              <span className="font-mono text-xs">{t.code}</span>
-                              <span className="text-slate-500 truncate">
-                                {t.agent?.label ?? ""}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <h3 className="text-base font-semibold">Dijelovi</h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {props.parts.length} u katalogu · uređivanje u modalu
+            </p>
           </div>
+          <button
+            type="button"
+            className="btn btn-primary px-4"
+            onClick={openCreate}
+            disabled={busy}
+          >
+            + Dodaj dio
+          </button>
+        </div>
 
-          <div className="flex gap-2 pt-2">
-            <button className="btn btn-primary px-4" type="submit" disabled={busy}>
-              {editingId ? "Spremi promjene" : "Dodaj dio"}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                className="btn btn-outline px-4"
-                onClick={resetForm}
-                disabled={busy}
-              >
-                Odustani
-              </button>
-            )}
-          </div>
-          {error && <div className="text-sm text-red-600">{error}</div>}
-        </form>
+        <div className="mt-4">
+          <input
+            type="search"
+            className="input max-w-md"
+            placeholder="Pretraži šifru ili naziv…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+        </div>
       </section>
 
       <section className="surface">
@@ -342,11 +298,8 @@ export default function ManufacturerPartsTab(props: {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {props.parts.map((p) => {
-                const typeLabels = p.typeIds
-                  .map((id) => props.availableTypes.find((t) => t.id === id)?.code)
-                  .filter(Boolean)
-                  .join(", ");
+              {visibleParts.map((p) => {
+                const summary = summarizeTypes(p.typeIds, props.availableTypes);
                 return (
                   <tr key={p.id} className="hover:bg-slate-50">
                     <td className="p-3 font-mono text-xs">{p.code}</td>
@@ -364,7 +317,9 @@ export default function ManufacturerPartsTab(props: {
                         <span className="text-slate-400 text-xs">—</span>
                       )}
                     </td>
-                    <td className="p-3 text-xs text-slate-600">{typeLabels || "—"}</td>
+                    <td className="p-3 text-xs text-slate-600" title={summary.title}>
+                      {summary.label}
+                    </td>
                     <td className="p-3">
                       {p.active ? (
                         <span className="badge badge-success">Aktivno</span>
@@ -377,7 +332,7 @@ export default function ManufacturerPartsTab(props: {
                         <button
                           type="button"
                           className="btn btn-outline h-8 px-3 text-xs"
-                          onClick={() => startEdit(p)}
+                          onClick={() => openEdit(p)}
                           disabled={busy}
                         >
                           Uredi
@@ -403,10 +358,12 @@ export default function ManufacturerPartsTab(props: {
                   </tr>
                 );
               })}
-              {props.parts.length === 0 && (
+              {visibleParts.length === 0 && (
                 <tr>
                   <td className="p-6 text-slate-500 text-center" colSpan={8}>
-                    Nema dijelova.
+                    {props.parts.length === 0
+                      ? "Nema dijelova."
+                      : "Nema dijelova koji odgovaraju pretrazi."}
                   </td>
                 </tr>
               )}
@@ -414,6 +371,234 @@ export default function ManufacturerPartsTab(props: {
           </table>
         </div>
       </section>
+
+      <Modal
+        open={modalOpen}
+        onClose={closeModal}
+        title={draft.id ? "Uredi dio" : "Dodaj novi dio"}
+        size="lg"
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn-outline px-4"
+              onClick={closeModal}
+              disabled={busy}
+            >
+              Odustani
+            </button>
+            <button
+              type="submit"
+              form="platform-part-form"
+              className="btn btn-primary px-4"
+              disabled={busy}
+            >
+              {busy ? "Spremam…" : draft.id ? "Spremi" : "Dodaj dio"}
+            </button>
+          </>
+        }
+      >
+        <form id="platform-part-form" onSubmit={submit} className="space-y-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
+            <div className="sm:col-span-2">
+              <label className="label">Šifra</label>
+              <input
+                className="input font-mono"
+                value={draft.code}
+                onChange={(e) => setDraft((d) => ({ ...d, code: e.target.value }))}
+                placeholder="BRT-01"
+                required
+              />
+            </div>
+            <div className="sm:col-span-4">
+              <label className="label">Naziv</label>
+              <input
+                className="input"
+                value={draft.name}
+                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                placeholder="Brtva ventila"
+                required
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Jedinica</label>
+              <select
+                className="select"
+                value={draft.unit}
+                onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value as PartUnit }))}
+              >
+                <option value="KOM">kom</option>
+                <option value="KG">kg</option>
+                <option value="L">L</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Cijena (EUR)</label>
+              <input
+                className="input"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={draft.defaultPrice}
+                onChange={(e) => setDraft((d) => ({ ...d, defaultPrice: e.target.value }))}
+                placeholder="npr. 26.60"
+              />
+            </div>
+            <div className="sm:col-span-2 flex items-end pb-1">
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={draft.common}
+                  onChange={(e) => setDraft((d) => ({ ...d, common: e.target.checked }))}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">Uobičajen (brzi izbornik)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Tipovi aparata</div>
+                <div className="text-xs text-slate-500">
+                  Odabrano {selectedCount}
+                  {totalTypes > 0 ? ` / ${totalTypes}` : ""}
+                  {selectedCount === totalTypes && totalTypes > 0 ? " · svi tipovi" : ""}
+                  {" · opcionalno"}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline h-7 px-3 text-xs"
+                  onClick={selectAllTypes}
+                  disabled={totalTypes === 0}
+                >
+                  Svi tipovi
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline h-7 px-3 text-xs"
+                  onClick={clearTypes}
+                  disabled={selectedCount === 0}
+                >
+                  Nijedan
+                </button>
+              </div>
+            </div>
+
+            {totalTypes === 0 ? (
+              <p className="mt-3 text-sm text-slate-500">
+                Ovaj proizvođač još nema tipova aparata. Prvo ih dodaj u tabu Aparati.
+              </p>
+            ) : (
+              <>
+                <input
+                  type="search"
+                  className="input mt-3 bg-white"
+                  placeholder="Filtriraj tipove (npr. P6, prah)…"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                />
+
+                <div className="mt-3 max-h-[40vh] space-y-2 overflow-y-auto pr-1">
+                  {typeGroups.order.map((g) => {
+                    const group = typeGroups.map.get(g.key)!;
+                    const filteredTypes = typeQ
+                      ? group.types.filter((t) =>
+                          `${t.code} ${t.name} ${t.agent?.label ?? ""}`
+                            .toLowerCase()
+                            .includes(typeQ),
+                        )
+                      : group.types;
+                    if (filteredTypes.length === 0) return null;
+
+                    const groupSelected = filteredTypes.filter((t) =>
+                      draft.typeIds.includes(t.id),
+                    ).length;
+                    const collapsed = !!collapsedGroups[g.key] && !typeQ;
+
+                    return (
+                      <div
+                        key={g.key}
+                        className="rounded-md border border-slate-200 bg-white"
+                      >
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <button
+                            type="button"
+                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            onClick={() => toggleGroupCollapse(g.key)}
+                          >
+                            <span className="text-slate-400 text-xs w-3">
+                              {collapsed ? "▸" : "▾"}
+                            </span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                              {group.label}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {groupSelected}/{filteredTypes.length}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="text-xs text-slate-500 hover:text-slate-800 underline-offset-2 hover:underline"
+                            onClick={() => selectGroup(filteredTypes)}
+                          >
+                            Sve
+                          </button>
+                          <button
+                            type="button"
+                            className="text-xs text-slate-500 hover:text-slate-800 underline-offset-2 hover:underline"
+                            onClick={() => clearGroup(filteredTypes)}
+                          >
+                            Ništa
+                          </button>
+                        </div>
+                        {!collapsed && (
+                          <div className="flex flex-wrap gap-1.5 border-t border-slate-100 px-3 py-2.5">
+                            {filteredTypes.map((t) => {
+                              const checked = draft.typeIds.includes(t.id);
+                              return (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  onClick={() => toggleType(t.id)}
+                                  title={t.name}
+                                  className={[
+                                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition",
+                                    checked
+                                      ? "border-slate-900 bg-slate-900 text-white"
+                                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-400",
+                                  ].join(" ")}
+                                >
+                                  <span className="font-mono font-medium">{t.code}</span>
+                                  {t.agent?.label ? (
+                                    <span
+                                      className={
+                                        checked ? "text-slate-300" : "text-slate-400"
+                                      }
+                                    >
+                                      {t.agent.label.toLowerCase()}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          {error && <div className="text-sm text-red-600">{error}</div>}
+        </form>
+      </Modal>
     </div>
   );
 }
