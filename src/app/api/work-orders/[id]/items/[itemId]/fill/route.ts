@@ -12,6 +12,10 @@ export async function POST(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Niste prijavljeni." }, { status: 401 });
 
+  // Drawer šalje fetch-om i očekuje JSON; klasična forma i dalje dobiva redirect.
+  const wantsJson = (req.headers.get("accept") ?? "").includes("application/json");
+  const done = () => (wantsJson ? NextResponse.json({ ok: true }) : redirectRelative(`/work-orders/${id}`, 307));
+
   const form = await req.formData();
 
   const internalCode = String(form.get("internalCode") || "").trim();
@@ -69,7 +73,7 @@ export async function POST(
       },
     });
 
-    return redirectRelative(`/work-orders/${id}`, 307);
+    return done();
   }
 
   // Ručni unos (bez internog broja)
@@ -186,5 +190,5 @@ export async function POST(
     },
   });
 
-  return redirectRelative(`/work-orders/${id}`, 307);
+  return done();
 }

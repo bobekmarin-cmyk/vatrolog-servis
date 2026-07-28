@@ -11,6 +11,9 @@ export async function POST(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Niste prijavljeni." }, { status: 401 });
 
+  // Drawer šalje fetch-om i očekuje JSON; klasična forma i dalje dobiva redirect.
+  const wantsJson = (req.headers.get("accept") ?? "").includes("application/json");
+
   const form = await req.formData();
   const manufacturerId = String(form.get("manufacturerId") || "").trim();
   const extinguisherTypeId = String(form.get("extinguisherTypeId") || "").trim();
@@ -67,5 +70,6 @@ export async function POST(
     data: { serviceLocationText: serviceLocationText || null },
   });
 
+  if (wantsJson) return NextResponse.json({ ok: true });
   return redirectRelative(`/work-orders/${id}`, 307);
 }

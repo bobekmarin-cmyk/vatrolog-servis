@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import ExtinguisherTypeCombobox from "@/components/ExtinguisherTypeCombobox";
-import PendingSubmitForm from "@/components/PendingSubmitForm";
+import LoadingOverlay from "@/components/LoadingOverlay";
 import QRCode from "qrcode";
 
 type Manufacturer = {
@@ -41,12 +42,36 @@ type LookupResult =
 export default function AddExtinguisherForm(props: {
   orderId: string;
   itemId: string;
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
   manufacturers: Manufacturer[];
   types: ExtinguisherType[];
+  /** Bez okvira i vlastitih gumba — koristi se unutar drawera. */
+  embedded?: boolean;
+  formId?: string;
+  focusRef?: RefObject<HTMLElement | null>;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  onCanSubmitChange?: (canSubmit: boolean) => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 }) {
-  const { orderId, itemId, title, subtitle, manufacturers, types } = props;
+  const {
+    orderId,
+    itemId,
+    title,
+    subtitle,
+    manufacturers,
+    types,
+    embedded = false,
+    formId,
+    focusRef,
+    onSuccess,
+    onCancel,
+    onCanSubmitChange,
+    onSubmittingChange,
+  } = props;
+
+  const router = useRouter();
 
   const [internalCode, setInternalCode] = useState<string>("");
   const [lookup, setLookup] = useState<LookupResult>({ status: "idle" });
@@ -57,6 +82,9 @@ export default function AddExtinguisherForm(props: {
   const [productionYear, setProductionYear] = useState<string>("");
   const [typeDescription, setTypeDescription] = useState<string>("");
   const [serviceLocationText, setServiceLocationText] = useState<string>("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // ✅ preview internog broja (kad je internalCode prazno)
   const [previewCode, setPreviewCode] = useState<string>("");
@@ -79,6 +107,14 @@ export default function AddExtinguisherForm(props: {
       productionYear.trim().length > 0
     );
   }, [internalCode, lookup.status, manufacturerId, extinguisherTypeId, serialNumber, productionYear]);
+
+  useEffect(() => {
+    onCanSubmitChange?.(canSubmit && !submitting);
+  }, [canSubmit, submitting, onCanSubmitChange]);
+
+  useEffect(() => {
+    onSubmittingChange?.(submitting);
+  }, [submitting, onSubmittingChange]);
 
   const qrCodeValue = useMemo(() => {
     if (lookup.status === "found") return lookup.extinguisher.internalCode;
@@ -193,18 +229,59 @@ export default function AddExtinguisherForm(props: {
     };
   }, [extinguisherTypeId, internalCode, lookup.status]);
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (submitting || !canSubmit) return;
+
+    const fd = new FormData(e.currentTarget);
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/work-orders/${orderId}/items/${itemId}/fill`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: fd,
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Spremanje aparata nije uspjelo.");
+        return;
+      }
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/work-orders/${orderId}`);
+        router.refresh();
+      }
+    } catch {
+      setError("Greška mreže — aparat nije spremljen.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <PendingSubmitForm
-      className="surface space-y-5 p-5 sm:p-6"
-      action={`/api/work-orders/${orderId}/items/${itemId}/fill`}
-      method="post"
-      pendingTitle="Spremam aparat..."
-      pendingMessage="Molimo pričekajte, otvara se servisni nalog."
-    >
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-      </div>
+    <>
+      {submitting && !embedded ? (
+        <LoadingOverlay title="Spremam aparat..." message="Molimo pričekajte, otvara se servisni nalog." />
+      ) : null}
+      <form
+        id={formId}
+        className={embedded ? "space-y-5" : "surface space-y-5 p-5 sm:p-6"}
+        onSubmit={handleSubmit}
+      >
+      {title ? (
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
+          {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900">
+          {error}
+        </div>
+      ) : null}
 
       {/* Interni broj */}
       <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 ring-1 ring-black/[0.03]">
@@ -290,8 +367,12 @@ export default function AddExtinguisherForm(props: {
 
       <div className="space-y-4">
         <div>
-          <label className="label">Proizvođač</label>
+          <label className="label" htmlFor="add-ext-manufacturer">
+            Proizvođač
+          </label>
           <select
+            id="add-ext-manufacturer"
+            ref={focusRef as RefObject<HTMLSelectElement | null> | undefined}
             name="manufacturerId"
             className="select"
             required={internalCode.trim().length === 0}
@@ -312,7 +393,7 @@ export default function AddExtinguisherForm(props: {
           </select>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className={embedded ? "space-y-4" : "grid grid-cols-1 gap-4 md:grid-cols-2"}>
           <div>
             <label className="label">Tip aparata</label>
             {(() => {
@@ -404,22 +485,31 @@ export default function AddExtinguisherForm(props: {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-        <button
-          className={[
-            "btn px-5",
-            canSubmit ? "btn-primary" : "cursor-not-allowed bg-slate-200 text-slate-500",
-          ].join(" ")}
-          type="submit"
-          disabled={!canSubmit}
-        >
-          Spremi
-        </button>
+      {embedded ? null : (
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+          <button
+            className={[
+              "btn px-5",
+              canSubmit && !submitting ? "btn-primary" : "cursor-not-allowed bg-slate-200 text-slate-500",
+            ].join(" ")}
+            type="submit"
+            disabled={!canSubmit || submitting}
+          >
+            {submitting ? "Spremam…" : "Spremi"}
+          </button>
 
-        <Link className="btn btn-outline px-5" href={`/work-orders/${orderId}`}>
-          Odustani
-        </Link>
-      </div>
-    </PendingSubmitForm>
+          {onCancel ? (
+            <button type="button" className="btn btn-outline px-5" onClick={onCancel}>
+              Odustani
+            </button>
+          ) : (
+            <Link className="btn btn-outline px-5" href={`/work-orders/${orderId}`}>
+              Odustani
+            </Link>
+          )}
+        </div>
+      )}
+      </form>
+    </>
   );
 }

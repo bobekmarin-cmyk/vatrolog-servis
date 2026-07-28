@@ -104,7 +104,21 @@ export default function ExtinguisherTypeCombobox(props: {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Escape") setOpen(false);
+                if (e.key === "Escape") {
+                  e.stopPropagation();
+                  setOpen(false);
+                  return;
+                }
+                // Enter u pretrazi bira prvi rezultat umjesto da pošalje formu.
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const first = filtered[0];
+                  if (first) {
+                    onChange(first.id);
+                    setOpen(false);
+                    setQuery("");
+                  }
+                }
               }}
             />
           </div>
