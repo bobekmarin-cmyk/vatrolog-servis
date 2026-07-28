@@ -15,6 +15,8 @@
     "seed:mfr": "node scripts/seed-manufacturers.js",
     "seed:pastor-types": "ts-node -P tsconfig.seed.json scripts/import-manufacturer-types.ts",
     "seed:pastor-parts": "ts-node -P tsconfig.seed.json scripts/import-manufacturer-parts.ts",
+    "seed:common-types": "ts-node -P tsconfig.seed.json scripts/import-common-types-all-manufacturers.ts",
+    "seed:pastor-parts-all-types": "ts-node -P tsconfig.seed.json scripts/link-pastor-parts-all-types.ts",
     "seed:pucz-mfr": "ts-node -P tsconfig.seed.json prisma/seed-pucz-manufacturers.ts",
     "seed:orders": "ts-node -P tsconfig.seed.json prisma/seed-sim-orders.ts",
     "seed:5x30": "ts-node -P tsconfig.seed.json prisma/seed-sim-5x30.ts",
