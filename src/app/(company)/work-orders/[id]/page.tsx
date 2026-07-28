@@ -11,6 +11,7 @@ import WorkOrderStatusBadge from "@/components/WorkOrderStatusBadge";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
 import WorkOrderDateForm from "@/components/WorkOrderDateForm";
+import EditWorkOrderCustomerButton from "@/components/EditWorkOrderCustomerButton";
 import PlaceholderAddForm from "@/components/PlaceholderAddForm";
 import ScanExtinguisherModal from "@/components/ScanExtinguisherModal";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
@@ -126,7 +127,7 @@ export default async function ServiceViewPage({
     where: { id, companyId: session.companyId },
     include: {
       customer: true,
-      department: { select: { name: true } },
+      department: { select: { id: true, name: true } },
       serviceLocation: { select: { kind: true, label: true } },
       createdByAccountUser: { select: { username: true } },
       items: {
@@ -396,12 +397,37 @@ export default async function ServiceViewPage({
       {/* INFO BLOKOVI */}
       <div className="grid gap-3 xl:grid-cols-4">
         <div className="rounded-xl border border-black/10 bg-slate-50 p-3 text-sm">
-          <div className="text-base font-bold text-slate-900 clamp-2">{customerDisplayName(order.customer)}</div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-base font-bold text-slate-900 clamp-2">
+              {customerDisplayName(order.customer)}
+            </div>
+            {!isLocked ? (
+              <EditWorkOrderCustomerButton
+                orderId={order.id}
+                customer={{
+                  id: order.customer.id,
+                  name: order.customer.name,
+                  shortName: order.customer.shortName,
+                  oib: order.customer.oib,
+                  address: order.customer.address,
+                  contactPerson: order.customer.contactPerson,
+                  phone: order.customer.phone,
+                }}
+                departmentId={order.department?.id ?? ""}
+                note={order.note ?? ""}
+              />
+            ) : null}
+          </div>
           <div className="mt-1 space-y-0.5 text-xs text-slate-600">
             {order.customer.address ? <div>{order.customer.address}</div> : null}
             {order.customer.email ? <div>{order.customer.email}</div> : null}
             {order.customer.phone ? <div>{order.customer.phone}</div> : null}
             {order.department?.name ? <div className="text-slate-500">{order.department.name}</div> : null}
+            {order.note ? (
+              <div className="mt-1 border-t border-black/5 pt-1 text-slate-500">
+                <span className="font-medium text-slate-600">Napomena:</span> {order.note}
+              </div>
+            ) : null}
           </div>
         </div>
 
