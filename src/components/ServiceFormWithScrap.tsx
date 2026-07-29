@@ -12,10 +12,10 @@ export default function ServiceFormWithScrap(props: {
   workOrderId: string;
   /** Serija/godina, proizvođač i tip aparata. */
   extinguisherSummaryLeft?: ReactNode;
-  /** Broj naljepnice — zasivi se u načinu rashoda. */
+  /** Broj naljepnice — zasivi se u načinu rashoda. U draweru može sadržavati i serviser/lokaciju. */
   labelLeft: ReactNode;
-  /** Serviser i lokacija — ostaju aktivni i u načinu rashoda. */
-  servicerLocationLeft: ReactNode;
+  /** Serviser i lokacija — ostaju aktivni i u načinu rashoda. U draweru opcionalno (već u labelLeft). */
+  servicerLocationLeft?: ReactNode;
   /** Unutarnji pregled — zasivi se u načinu rashoda. */
   internalInspectionLeft?: ReactNode;
   rightContent: ReactNode;
@@ -213,7 +213,7 @@ export default function ServiceFormWithScrap(props: {
       <form
         ref={formRef}
         id={formId}
-        className={embedded ? "grid gap-4" : "grid gap-4 xl:grid-cols-3"}
+        className={embedded ? "grid gap-3" : "grid gap-4 xl:grid-cols-3"}
         action={action}
         method="post"
         onSubmit={handleSubmit}
@@ -277,7 +277,7 @@ export default function ServiceFormWithScrap(props: {
               </section>
             ) : null}
 
-            <section className={`surface flex flex-col p-4 ${embedded ? "gap-5" : "gap-8"}`}>
+            <section className={`surface flex flex-col p-4 ${embedded ? "gap-3" : "gap-8"}`}>
               <fieldset
                 className="min-w-0 border-0 p-0 m-0 disabled:opacity-55"
                 disabled={scrap}
@@ -285,11 +285,13 @@ export default function ServiceFormWithScrap(props: {
                 {labelLeft}
               </fieldset>
 
-              <fieldset
-                className={`flex min-w-0 flex-col border-0 p-0 m-0 ${embedded ? "gap-5" : "gap-8"}`}
-              >
-                {servicerLocationLeft}
-              </fieldset>
+              {servicerLocationLeft ? (
+                <fieldset
+                  className={`flex min-w-0 flex-col border-0 p-0 m-0 ${embedded ? "gap-3" : "gap-8"}`}
+                >
+                  {servicerLocationLeft}
+                </fieldset>
+              ) : null}
             </section>
 
             {internalInspectionLeft ? (

@@ -17,6 +17,8 @@ type Props = {
   initialServicerId: string;
   /** Poruka kad je na stavci bio serviser koji danas nije prijavljen. */
   staleServicerHint?: string | null;
+  /** Uži gumbi u draweru (2 stupca umjesto 3). */
+  compact?: boolean;
 };
 
 const INACTIVE_TITLE =
@@ -27,6 +29,7 @@ export default function ServicerPickerGrid({
   servicers,
   initialServicerId,
   staleServicerHint,
+  compact = false,
 }: Props) {
   const initialOk =
     initialServicerId &&
@@ -45,7 +48,7 @@ export default function ServicerPickerGrid({
     <div className="space-y-2">
       <input type="hidden" name={name} value={selectedId} aria-hidden="true" />
       <div
-        className="grid grid-cols-3 gap-2"
+        className={compact ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-3 gap-2"}
         role="group"
         aria-label="Odabir servisera"
       >
@@ -61,7 +64,9 @@ export default function ServicerPickerGrid({
                 setSelectedId(s.id);
               }}
               className={[
-                "min-h-[2.5rem] w-full rounded-lg border px-2 py-2 text-center text-sm font-medium transition-colors",
+                compact
+                  ? "min-h-[2.25rem] w-full rounded-lg border px-1.5 py-1.5 text-center text-xs font-medium transition-colors"
+                  : "min-h-[2.5rem] w-full rounded-lg border px-2 py-2 text-center text-sm font-medium transition-colors",
                 !clickable
                   ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                   : selected

@@ -22,8 +22,8 @@ function InfoDot({ text }: { text: string }) {
 }
 
 /**
- * Forma „Servisiraj aparat” unutar drawera naloga — isti sadržaj kao nekadašnja
- * zasebna stranica, ali u jednom stupcu i bez navigacije.
+ * Forma „Servisiraj aparat” unutar drawera naloga — kompaktan layout
+ * (naljepnica / serviser / lokacija u jednom redu) da se manje skrola.
  */
 export default function ServiceDrawerForm({
   data,
@@ -57,7 +57,7 @@ export default function ServiceDrawerForm({
       extinguisherSummaryLeft={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="font-mono text-2xl font-bold tracking-tight text-slate-900">
+            <div className="font-mono text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               {data.serialNumber}/{data.productionYear}
             </div>
             <div className="mt-0.5 text-sm text-slate-700">
@@ -77,25 +77,25 @@ export default function ServiceDrawerForm({
         </div>
       }
       labelLeft={
-        <div className="space-y-3">
-          <label className="label flex flex-wrap items-center gap-2" htmlFor="labelNumber">
-            <span>Broj naljepnice (unikatan)</span>
-            <InfoDot text="Naljepnica mora biti jedinstvena kroz cijelu bazu." />
-          </label>
-          <input
-            id="labelNumber"
-            name="labelNumber"
-            ref={focusRef}
-            className="input"
-            defaultValue={data.labelNumber}
-            required
-          />
-        </div>
-      }
-      servicerLocationLeft={
-        <>
-          <div className="space-y-3">
-            <label className="label flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-start">
+          <div className="min-w-0 lg:col-span-3">
+            <label className="label flex flex-wrap items-center gap-1.5" htmlFor="labelNumber">
+              <span>Broj naljepnice</span>
+              <InfoDot text="Naljepnica mora biti jedinstvena kroz cijelu bazu." />
+            </label>
+            <input
+              id="labelNumber"
+              name="labelNumber"
+              ref={focusRef}
+              className="input font-mono"
+              defaultValue={data.labelNumber}
+              required
+              autoComplete="off"
+            />
+          </div>
+
+          <div className="min-w-0 lg:col-span-5">
+            <label className="label flex flex-wrap items-center gap-1.5">
               <span>Serviser</span>
               <InfoDot text="Odaberi servisera koji je prijavljen za današnji dan. Neaktivni serviseri su zasivljeni." />
             </label>
@@ -103,11 +103,12 @@ export default function ServiceDrawerForm({
               servicers={data.servicers}
               initialServicerId={data.initialServicerId}
               staleServicerHint={data.staleServicerHint}
+              compact
             />
           </div>
 
-          <div className="space-y-3">
-            <label className="label flex flex-wrap items-center gap-2">
+          <div className="min-w-0 lg:col-span-4">
+            <label className="label flex flex-wrap items-center gap-1.5">
               <span>Lokacija</span>
               <InfoDot text="Opcionalna lokacija ili napomena koja se zapisuje na upisniku." />
             </label>
@@ -115,12 +116,14 @@ export default function ServiceDrawerForm({
               name="serviceLocationText"
               className="input"
               defaultValue={data.serviceLocationText}
+              autoComplete="off"
             />
           </div>
-        </>
+        </div>
       }
       internalInspectionLeft={
         <InternalInspectionSection
+          compact
           agentCode={data.internalInspection.agentCode}
           manufacturerName={data.internalInspection.manufacturerName}
           productionYear={data.internalInspection.productionYear}

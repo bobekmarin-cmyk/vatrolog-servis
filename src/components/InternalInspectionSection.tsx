@@ -13,6 +13,8 @@ type Props = {
   ruleLabel: string;
   computedFirstUpYear: number;
   computedNextIfDone: number;
+  /** U draweru: info box i unos jedan kraj drugog (manje skrola). */
+  compact?: boolean;
 };
 
 export default function InternalInspectionSection(props: Props) {
@@ -51,7 +53,7 @@ type LockedSummaryProps = {
 
 function LockedSummary({ internalDone, year, onEdit }: LockedSummaryProps) {
   return (
-    <div className="mt-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2">
+    <div className="flex h-full items-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2">
       <div className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm">
         <div className="flex items-center gap-2">
           <span className="text-xs uppercase tracking-wide text-slate-500">
@@ -95,13 +97,20 @@ type EditRowProps = {
   onConfirm: () => void;
   canConfirm: boolean;
   confirmLabel: string;
+  compact?: boolean;
 };
 
 function EditRow(p: EditRowProps) {
   const yearInputDisabled = p.internalDone === true;
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="flex items-center gap-2">
+    <div
+      className={
+        p.compact
+          ? "flex flex-col gap-2.5"
+          : "flex flex-wrap items-center gap-3"
+      }
+    >
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs uppercase tracking-wide text-slate-600">UP u ovom servisu:</span>
         <div className="inline-flex rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
           <button
@@ -131,7 +140,7 @@ function EditRow(p: EditRowProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs uppercase tracking-wide text-slate-600">Idući UP (god.):</label>
         <input
           inputMode="numeric"
@@ -155,7 +164,8 @@ function EditRow(p: EditRowProps) {
         onClick={p.onConfirm}
         disabled={!p.canConfirm}
         className={
-          "ml-auto inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition " +
+          (p.compact ? "w-full " : "ml-auto ") +
+          "inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition " +
           (p.canConfirm
             ? "bg-indigo-600 text-white hover:bg-indigo-700"
             : "bg-slate-200 text-slate-500 cursor-not-allowed")
@@ -223,80 +233,92 @@ function KnownUpPanel(props: Props) {
       ? props.computedNextIfDone
       : (props.existingNextInternalYear ?? props.computedFirstUpYear);
 
+  const statusBox = internalDone ? (
+    <div className="rounded-xl border border-indigo-200 bg-white px-3 py-2.5 h-full">
+      <div className="flex items-start gap-2 text-sm text-indigo-950">
+        <span aria-hidden className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs text-white">
+          ✓
+        </span>
+        <div>
+          <div className="font-semibold">UP unos potvrđen</div>
+        </div>
+      </div>
+    </div>
+  ) : props.serviceYear >= submittedYear ? (
+    <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 h-full">
+      <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+        <span aria-hidden className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-xs text-white">
+          !
+        </span>
+        Treba raditi UP ove godine
+      </div>
+      <div className="mt-1 text-xs text-amber-900">
+        Rok: <span className="font-semibold tabular-nums">{submittedYear}.</span> Ovim servisom UP će biti evidentiran; idući UP:{" "}
+        <span className="font-semibold tabular-nums">{props.computedNextIfDone}.</span>
+      </div>
+    </div>
+  ) : (
+    <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5 h-full">
+      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-900">
+        <span aria-hidden className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs text-white">
+          ✓
+        </span>
+        UP ne treba ove godine
+      </div>
+      <div className="mt-1 text-xs text-emerald-900">
+        Idući UP: <span className="font-semibold tabular-nums">{submittedYear}.</span>
+      </div>
+    </div>
+  );
+
+  const actionBox = editing ? (
+    <div className="rounded-xl border border-amber-300 bg-amber-50/40 px-3 py-2.5 h-full">
+      <EditRow
+        internalDone={internalDone}
+        yearValue={yearValue}
+        minYear={minYear}
+        onPickDone={pickDone}
+        onYearChange={setYearValue}
+        onYearBlur={onYearBlur}
+        onConfirm={() => {
+          if (canConfirm) setEditing(false);
+        }}
+        canConfirm={canConfirm}
+        confirmLabel="Potvrdi"
+        compact={props.compact}
+      />
+      {!yearValid && yearValue.trim().length > 0 ? (
+        <p className="mt-2 text-[11px] font-medium text-amber-900">
+          Godina mora biti &gt; {props.serviceYear}.
+        </p>
+      ) : null}
+    </div>
+  ) : (
+    <LockedSummary
+      internalDone={internalDone}
+      year={submittedYear}
+      onEdit={() => setEditing(true)}
+    />
+  );
+
   return (
     <section className="surface p-4">
       <Header ruleLabel={props.ruleLabel} />
-
-      {internalDone ? (
-        <div className="mt-3 rounded-xl border border-indigo-200 bg-white px-3 py-2.5">
-          <div className="flex items-start gap-2 text-sm text-indigo-950">
-            <span aria-hidden className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs text-white">
-              ✓
-            </span>
-            <div>
-              <div className="font-semibold">UP unos potvrđen</div>
-            </div>
-          </div>
-        </div>
-      ) : props.serviceYear >= submittedYear ? (
-        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-            <span aria-hidden className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white text-xs">
-              !
-            </span>
-            Treba raditi UP ove godine
-          </div>
-          <div className="mt-1 text-xs text-amber-900">
-            Rok: <span className="font-semibold tabular-nums">{submittedYear}.</span> Ovim servisom UP će biti evidentiran; idući UP:{" "}
-            <span className="font-semibold tabular-nums">{props.computedNextIfDone}.</span>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-900">
-            <span aria-hidden className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs">
-              ✓
-            </span>
-            UP ne treba ove godine
-          </div>
-          <div className="mt-1 text-xs text-emerald-900">
-            Idući UP: <span className="font-semibold tabular-nums">{submittedYear}.</span>
-          </div>
-        </div>
-      )}
 
       {/* Skriveni inputi koje backend čita */}
       {internalDone ? <input type="hidden" name="internalDone" value="on" /> : null}
       <input type="hidden" name="nextInternalYear" value={String(submittedYear)} />
 
-      {editing ? (
-        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/40 px-3 py-2.5">
-          <EditRow
-            internalDone={internalDone}
-            yearValue={yearValue}
-            minYear={minYear}
-            onPickDone={pickDone}
-            onYearChange={setYearValue}
-            onYearBlur={onYearBlur}
-            onConfirm={() => {
-              if (canConfirm) setEditing(false);
-            }}
-            canConfirm={canConfirm}
-            confirmLabel="Potvrdi"
-          />
-          {!yearValid && yearValue.trim().length > 0 ? (
-            <p className="mt-2 text-[11px] font-medium text-amber-900">
-              Godina mora biti &gt; {props.serviceYear}.
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        <LockedSummary
-          internalDone={internalDone}
-          year={submittedYear}
-          onEdit={() => setEditing(true)}
-        />
-      )}
+      <div
+        className={
+          props.compact
+            ? "mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 md:items-stretch"
+            : "mt-3 space-y-3"
+        }
+      >
+        {statusBox}
+        {actionBox}
+      </div>
     </section>
   );
 }
@@ -354,40 +376,100 @@ function FirstEntryPanel(props: Props) {
     : "";
   const hiddenYearValue = confirmed ? String(yearNum) : "";
 
+  const statusBox = confirmed ? (
+    <div className="rounded-xl border border-indigo-200 bg-white px-3 py-2.5">
+      <div className="flex items-start gap-2 text-sm text-indigo-950">
+        <span
+          aria-hidden
+          className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs text-white"
+        >
+          ✓
+        </span>
+        <div>
+          <div className="font-semibold">UP unos potvrđen</div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 h-full">
+      <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+        <span
+          aria-hidden
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-xs text-white"
+        >
+          !
+        </span>
+        UP još nije zabilježen u sustavu
+      </div>
+      <div className="mt-1 text-xs leading-snug text-amber-900">
+        Unesi godinu idućeg UP-a i označi radi li se ovim servisom, zatim klikni „Potvrdi unos UP-a”.
+      </div>
+    </div>
+  );
+
+  const actionBox = confirmed ? (
+    <LockedSummary
+      internalDone={internalDone === true}
+      year={yearNum}
+      onEdit={() => setConfirmed(false)}
+    />
+  ) : (
+    <div className="rounded-xl border border-amber-300 bg-amber-50/40 px-3 py-2.5 h-full">
+      <EditRow
+        internalDone={internalDone}
+        yearValue={yearValue}
+        minYear={minYear}
+        onPickDone={pickDone}
+        onYearChange={(v) => {
+          setYearValue(v);
+          setTouched(true);
+        }}
+        onYearBlur={onYearBlur}
+        onConfirm={() => {
+          setTouched(true);
+          if (canConfirm) setConfirmed(true);
+        }}
+        canConfirm={canConfirm}
+        confirmLabel="Potvrdi unos UP-a"
+        compact={props.compact}
+      />
+
+      {/*
+        Required sentinel: dok korisnik ne klikne „Potvrdi unos UP-a",
+        vrijednost je prazna pa native form validation blokira submit.
+      */}
+      <input
+        aria-hidden
+        tabIndex={-1}
+        required
+        name="internalDoneChoiceMade"
+        value={hiddenSentinelValue}
+        onChange={() => {}}
+        onInvalid={() => setTouched(true)}
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          border: 0,
+          opacity: 0,
+        }}
+      />
+
+      {showError ? (
+        <p className="mt-2 text-[11px] font-medium text-amber-900">
+          Označi DA ili NE i upiši godinu &gt; {props.serviceYear}.
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <section className="surface p-4">
       <Header ruleLabel={props.ruleLabel} />
-
-      {confirmed ? (
-        <div className="mt-3 rounded-xl border border-indigo-200 bg-white px-3 py-2.5">
-          <div className="flex items-start gap-2 text-sm text-indigo-950">
-            <span
-              aria-hidden
-              className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs text-white"
-            >
-              ✓
-            </span>
-            <div>
-              <div className="font-semibold">UP unos potvrđen</div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-            <span
-              aria-hidden
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white text-xs"
-            >
-              !
-            </span>
-            UP još nije zabilježen u sustavu
-          </div>
-          <div className="mt-1 text-xs text-amber-900">
-            Unesi godinu idućeg UP-a i označi radi li se ovim servisom, zatim klikni „Potvrdi unos UP-a”.
-          </div>
-        </div>
-      )}
 
       {/* Hidden inputi koje backend čita — aktivni tek nakon potvrde */}
       {confirmed && internalDone === true ? (
@@ -395,64 +477,25 @@ function FirstEntryPanel(props: Props) {
       ) : null}
       <input type="hidden" name="nextInternalYear" value={hiddenYearValue} />
 
-      {confirmed ? (
-        <LockedSummary
-          internalDone={internalDone === true}
-          year={yearNum}
-          onEdit={() => setConfirmed(false)}
-        />
-      ) : (
-        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/40 px-3 py-2.5">
-          <EditRow
-            internalDone={internalDone}
-            yearValue={yearValue}
-            minYear={minYear}
-            onPickDone={pickDone}
-            onYearChange={(v) => {
-              setYearValue(v);
-              setTouched(true);
-            }}
-            onYearBlur={onYearBlur}
-            onConfirm={() => {
-              setTouched(true);
-              if (canConfirm) setConfirmed(true);
-            }}
-            canConfirm={canConfirm}
-            confirmLabel="Potvrdi unos UP-a"
-          />
-
-          {/*
-            Required sentinel: dok korisnik ne klikne „Potvrdi unos UP-a",
-            vrijednost je prazna pa native form validation blokira submit.
-          */}
-          <input
-            aria-hidden
-            tabIndex={-1}
-            required
-            name="internalDoneChoiceMade"
-            value={hiddenSentinelValue}
-            onChange={() => {}}
-            onInvalid={() => setTouched(true)}
-            style={{
-              position: "absolute",
-              width: 1,
-              height: 1,
-              padding: 0,
-              margin: -1,
-              overflow: "hidden",
-              clip: "rect(0,0,0,0)",
-              border: 0,
-              opacity: 0,
-            }}
-          />
-
-          {showError ? (
-            <p className="mt-2 text-[11px] font-medium text-amber-900">
-              Označi DA ili NE i upiši godinu &gt; {props.serviceYear}.
-            </p>
-          ) : null}
-        </div>
-      )}
+      <div
+        className={
+          props.compact
+            ? "mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 md:items-stretch"
+            : "mt-3 space-y-3"
+        }
+      >
+        {props.compact ? (
+          <>
+            {statusBox}
+            {actionBox}
+          </>
+        ) : (
+          <>
+            <div className="mt-0">{statusBox}</div>
+            {actionBox}
+          </>
+        )}
+      </div>
     </section>
   );
 }
