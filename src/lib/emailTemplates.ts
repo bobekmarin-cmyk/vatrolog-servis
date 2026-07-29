@@ -156,25 +156,21 @@ export interface RenderVars {
   nalog?: string;
 }
 
-/** Mapping tipa predloška → naslov i labela koji se prikazuju u headeru maila. */
-const TEMPLATE_HEADER: Record<string, { heading: string; label: string }> = {
+/** Mapping tipa predloška → H1 naslov u tijelu maila (bez document-type labele u headeru). */
+const TEMPLATE_HEADER: Record<string, { heading: string }> = {
   REGISTER: {
     heading: "Upisnik servisiranih vatrogasnih aparata",
-    label: "Upisnik",
   },
   RECEIPT: {
     heading: "Primka vatrogasnih aparata",
-    label: "Primka",
   },
   DELIVERY_NOTE: {
     heading: "Otpremnica vatrogasnih aparata",
-    label: "Otpremnica",
   },
 };
 
 const DEFAULT_HEADER = {
   heading: "Obavijest o servisu vatrogasnih aparata",
-  label: "Obavijest",
 };
 
 /**
@@ -185,8 +181,8 @@ const DEFAULT_HEADER = {
  *
  * `vars.tvrtka` se koristi kao `branding.fromName` u headeru. Brand boja je
  * fiksno crvena za sve obavijesti (jednako kao u PDF-u). PDF predlošci
- * (REGISTER/RECEIPT/DELIVERY_NOTE) koriste vlastiti heading + documentLabel
- * preko `TEMPLATE_HEADER` mape.
+ * (REGISTER/RECEIPT/DELIVERY_NOTE) koriste vlastiti H1 heading preko
+ * `TEMPLATE_HEADER` mape.
  */
 export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): string {
   const greeting = replacePlaceholders(template.greeting, vars);
@@ -215,7 +211,6 @@ export function renderTemplateHtml(template: TemplateFields, vars: RenderVars): 
       footerNote: footer,
     },
     branding,
-    documentLabel: header.label,
   });
 
   return html;

@@ -18,8 +18,8 @@ const styles = StyleSheet.create({
   docBlock: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   docText: { flexDirection: "column", alignItems: "flex-end", minWidth: 150 },
   logoRow: { flexDirection: "row", alignItems: "baseline" },
-  logoVatro: { fontSize: 20, fontWeight: 700, color: "#0f172a", letterSpacing: -0.3 },
-  logoLog: { fontSize: 20, fontWeight: 700, color: "#dc2626", letterSpacing: -0.3 },
+  logoVatro: { fontSize: 18, fontWeight: 700, color: "#0f172a", letterSpacing: -0.4 },
+  logoLog: { fontSize: 18, fontWeight: 700, color: "#dc2626", letterSpacing: -0.4 },
   docTitle: {
     marginTop: 4,
     fontSize: 8,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   footerVatro: { fontSize: 8, fontWeight: 700, color: "#0f172a" },
   footerLog: { fontSize: 8, fontWeight: 700, color: "#dc2626" },
-  footerVer: { fontSize: 7, color: "#94a3b8", marginLeft: 4 },
+  footerCopyright: { fontSize: 7, color: "#94a3b8", marginLeft: 4 },
   footerPage: { fontSize: 7, color: "#94a3b8", flex: 1, textAlign: "right" as const },
 
   watermark: {
@@ -135,6 +135,7 @@ export function PdfDocumentFooter({
   boldNote?: string;
 }) {
   const noteParts = [metaLine, note, boldNote].filter((v): v is string => !!v);
+  const year = new Date().getFullYear();
 
   return (
     <View style={styles.footer} fixed>
@@ -142,11 +143,12 @@ export function PdfDocumentFooter({
       <View style={styles.footerRow}>
         <Text style={styles.footerLeft}>
           {docId}  ·  Generirano: {generatedAtLabel}
+          {appVersion ? `  ·  v${appVersion}` : ""}
         </Text>
         <View style={styles.footerCenter}>
           <Text style={styles.footerVatro}>Vatro</Text>
           <Text style={styles.footerLog}>Log</Text>
-          <Text style={styles.footerVer}>v{appVersion}</Text>
+          <Text style={styles.footerCopyright}>© {year}</Text>
         </View>
         <Text
           style={styles.footerPage}

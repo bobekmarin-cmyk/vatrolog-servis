@@ -9,7 +9,14 @@
  * standardne 6-poljne predloške dovoljno je proslijediti `fields`.
  */
 
-import { EMAIL_COLORS, EMAIL_FONTS, EMAIL_MAX_WIDTH, VATROLOG_SITE_URL } from "./design";
+import {
+  EMAIL_COLORS,
+  EMAIL_FONTS,
+  EMAIL_MAX_WIDTH,
+  VATROLOG_SITE_URL,
+  VATROLOG_TAGLINE,
+  vatrologCopyrightLine,
+} from "./design";
 import {
   emailCallout,
   emailFooter,
@@ -98,6 +105,7 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
     `<table role="presentation" width="${EMAIL_MAX_WIDTH}" cellpadding="0" cellspacing="0" border="0" ` +
     `style="max-width:${EMAIL_MAX_WIDTH}px;width:100%;background:${EMAIL_COLORS.surface};border:1px solid ${EMAIL_COLORS.border};border-radius:8px;">` +
     `<tr><td style="padding:28px 32px 24px 32px;">` +
+    // documentLabel se više ne prikazuje u headeru (tip je u H1); zadržano u API-ju radi kompatibilnosti.
     emailHeader(branding, documentLabel) +
     emailHeading(escapeHtml(subject)) +
     innerContent +
@@ -114,7 +122,7 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
       fields.calloutText,
       fields.closingText,
       fields.footerNote ? `\n--\n${fields.footerNote}` : "",
-      `\n--\nPoslano iz programa VatroLog\n${VATROLOG_SITE_URL}\nSoftver za upravljanje servisom vatrogasnih aparata`,
+      `\n--\nPoslano iz programa VatroLog\n${VATROLOG_SITE_URL}\n${VATROLOG_TAGLINE}\n${vatrologCopyrightLine()}`,
     ]
       .filter((s): s is string => Boolean(s?.trim()))
       .join("\n\n");

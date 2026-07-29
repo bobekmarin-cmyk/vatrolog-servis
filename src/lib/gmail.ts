@@ -282,8 +282,11 @@ export function buildNotificationHtml(
   <p style="margin-top: 32px;">S poštovanjem,<br><strong>${companyName}</strong></p>
 
   <hr style="border: none; border-top: 1px solid #eee; margin-top: 32px;">
-  <p style="font-size: 11px; color: #999;">
-    Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.
+  <p style="font-size: 11px; color: #999; line-height: 1.5;">
+    Poslano iz programa <strong>VatroLog</strong> ·
+    <a href="https://vatrolog.com" style="color:#dc2626;text-decoration:none;">vatrolog.com</a><br>
+    Softver za upravljanje servisom vatrogasnih aparata<br>
+    &copy; ${new Date().getFullYear()} VatroLog. Automatski generirano.
   </p>
 </body>
 </html>`;

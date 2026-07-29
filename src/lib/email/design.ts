@@ -61,6 +61,13 @@ export const EMAIL_MAX_WIDTH = 600;
 /** Javni URL proizvoda — footer i header link u svim mailovima. */
 export const VATROLOG_SITE_URL = "https://vatrolog.com";
 export const VATROLOG_PRODUCT_NAME = "VatroLog";
+export const VATROLOG_SITE_HOST = "vatrolog.com";
+export const VATROLOG_TAGLINE = "Softver za upravljanje servisom vatrogasnih aparata";
+
+/** Copyright proizvoda — uvijek VatroLog (ne tenant tvrtka). */
+export function vatrologCopyrightLine(year: number = new Date().getFullYear()): string {
+  return `© ${year} ${VATROLOG_PRODUCT_NAME}`;
+}
 
 /** Dimenzije akcentne crtice (32×2) — istovjetno kao `introAccent` u PDF-u. */
 export const EMAIL_ACCENT_BAR = { width: 32, height: 2 } as const;

@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       bodyText,
       calloutText,
       closingText,
-      footerNote: "Ova poruka je automatski generirana iz sustava za upravljanje servisom vatrogasnih aparata.",
+      footerNote: null,
     };
     html = renderTemplateHtml(tplFields, vars);
   } else if (legacyBody) {
