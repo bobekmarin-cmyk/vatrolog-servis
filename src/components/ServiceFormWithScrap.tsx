@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDialog } from "@/components/ui/useDialog";
 import Modal from "@/components/ui/Modal";
 import { ServiceScrapModeContext } from "@/components/ServiceScrapModeContext";
@@ -21,6 +21,14 @@ export default function ServiceFormWithScrap(props: {
   rightContent: ReactNode;
   resetAction?: string;
   canReset?: boolean;
+  /** Forma živi u draweru: jedan stupac, bez navigacije, glavni gumbi su u footeru drawera. */
+  embedded?: boolean;
+  /** Id forme da je submit gumb iz footera drawera može poslati. */
+  formId?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
+  onScrapModeChange?: (scrap: boolean) => void;
 }) {
   const {
     action,
@@ -32,6 +40,12 @@ export default function ServiceFormWithScrap(props: {
     rightContent,
     resetAction,
     canReset,
+    embedded = false,
+    formId,
+    onSuccess,
+    onCancel,
+    onSubmittingChange,
+    onScrapModeChange,
   } = props;
   const dialog = useDialog();
   const [scrap, setScrap] = useState(false);
@@ -39,9 +53,25 @@ export default function ServiceFormWithScrap(props: {
   const [scrapModalOpen, setScrapModalOpen] = useState(false);
   const [modalDraftReason, setModalDraftReason] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const submittingRef = useRef(false);
-  const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    onScrapModeChange?.(scrap);
+  }, [scrap, onScrapModeChange]);
+
+  useEffect(() => {
+    onSubmittingChange?.(submitting || resetting);
+  }, [submitting, resetting, onSubmittingChange]);
+
+  function finish() {
+    if (embedded) {
+      onSuccess?.();
+      return;
+    }
+    window.location.href = `/work-orders/${workOrderId}`;
+  }
 
   function openScrapModal() {
     setModalDraftReason("");
@@ -87,7 +117,7 @@ export default function ServiceFormWithScrap(props: {
     try {
       const res = await fetch(resetAction, { method: "POST" });
       if (res.ok) {
-        window.location.href = `/work-orders/${workOrderId}`;
+        finish();
         return;
       }
       const data = (await res.json().catch(() => null)) as null | { error?: string };
@@ -140,14 +170,13 @@ export default function ServiceFormWithScrap(props: {
     }
 
     submittingRef.current = true;
-    if (submitButtonRef.current) {
-      submitButtonRef.current.disabled = true;
-      submitButtonRef.current.textContent = scrap ? "Rashodujem..." : "Spremam i otvaram nalog...";
-    }
-    const removePendingOverlay = showLoadingOverlay({
-      title: scrap ? "Rashodujem aparat..." : "Spremam servis...",
-      message: "Molimo pričekajte, otvara se servisni nalog.",
-    });
+    setSubmitting(true);
+    const removePendingOverlay = embedded
+      ? () => {}
+      : showLoadingOverlay({
+          title: scrap ? "Rashodujem aparat..." : "Spremam servis...",
+          message: "Molimo pričekajte, otvara se servisni nalog.",
+        });
     try {
       const res = await fetch(action, {
         method: "POST",
@@ -156,7 +185,7 @@ export default function ServiceFormWithScrap(props: {
       });
 
       if (res.type === "opaqueredirect" || res.ok) {
-        window.location.href = `/work-orders/${workOrderId}`;
+        finish();
         return;
       }
 
@@ -174,11 +203,8 @@ export default function ServiceFormWithScrap(props: {
       });
     } finally {
       submittingRef.current = false;
+      setSubmitting(false);
       removePendingOverlay();
-      if (submitButtonRef.current) {
-        submitButtonRef.current.disabled = false;
-        submitButtonRef.current.textContent = scrap ? "Rashoduj aparat" : "Spremi servis";
-      }
     }
   }
 
@@ -186,7 +212,8 @@ export default function ServiceFormWithScrap(props: {
     <ServiceScrapModeContext.Provider value={scrap}>
       <form
         ref={formRef}
-        className="grid gap-4 xl:grid-cols-3"
+        id={formId}
+        className={embedded ? "grid gap-4" : "grid gap-4 xl:grid-cols-3"}
         action={action}
         method="post"
         onSubmit={handleSubmit}
@@ -242,15 +269,15 @@ export default function ServiceFormWithScrap(props: {
           </div>
         </Modal>
 
-        <div className="xl:col-span-3 grid gap-4 xl:grid-cols-3">
-          <div className="flex flex-col gap-6 xl:col-span-1">
+        <div className={embedded ? "grid gap-4" : "xl:col-span-3 grid gap-4 xl:grid-cols-3"}>
+          <div className={embedded ? "flex flex-col gap-4" : "flex flex-col gap-6 xl:col-span-1"}>
             {extinguisherSummaryLeft ? (
               <section className="surface p-4">
                 {extinguisherSummaryLeft}
               </section>
             ) : null}
 
-            <section className="surface flex flex-col gap-8 p-4">
+            <section className={`surface flex flex-col p-4 ${embedded ? "gap-5" : "gap-8"}`}>
               <fieldset
                 className="min-w-0 border-0 p-0 m-0 disabled:opacity-55"
                 disabled={scrap}
@@ -258,7 +285,9 @@ export default function ServiceFormWithScrap(props: {
                 {labelLeft}
               </fieldset>
 
-              <fieldset className="flex min-w-0 flex-col gap-8 border-0 p-0 m-0">
+              <fieldset
+                className={`flex min-w-0 flex-col border-0 p-0 m-0 ${embedded ? "gap-5" : "gap-8"}`}
+              >
                 {servicerLocationLeft}
               </fieldset>
             </section>
@@ -274,29 +303,46 @@ export default function ServiceFormWithScrap(props: {
           </div>
 
           <fieldset
-            className="xl:col-span-2 min-w-0 border-0 p-0 m-0 disabled:opacity-55"
+            className={`min-w-0 border-0 p-0 m-0 disabled:opacity-55 ${embedded ? "" : "xl:col-span-2"}`}
             disabled={scrap}
           >
-            <div className="space-y-6">{rightContent}</div>
+            <div className={embedded ? "space-y-4" : "space-y-6"}>{rightContent}</div>
           </fieldset>
         </div>
 
-        <div className="flex flex-wrap items-start gap-2 pt-2 xl:col-span-3">
-          <button
-            ref={submitButtonRef}
-            type="submit"
-            disabled={resetting}
-            className={
-              scrap
-                ? "btn bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
-                : "btn btn-primary px-4 disabled:opacity-60"
-            }
-          >
-            {scrap ? "Rashoduj aparat" : "Spremi servis"}
-          </button>
-          <Link className="btn btn-outline px-4" href={`/work-orders/${workOrderId}`}>
-            Odustani
-          </Link>
+        <div
+          className={`flex flex-wrap items-start gap-2 pt-2 ${embedded ? "" : "xl:col-span-3"}`}
+        >
+          {embedded ? null : (
+            <>
+              <button
+                type="submit"
+                disabled={resetting || submitting}
+                className={
+                  scrap
+                    ? "btn bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
+                    : "btn btn-primary px-4 disabled:opacity-60"
+                }
+              >
+                {submitting
+                  ? scrap
+                    ? "Rashodujem..."
+                    : "Spremam..."
+                  : scrap
+                    ? "Rashoduj aparat"
+                    : "Spremi servis"}
+              </button>
+              {onCancel ? (
+                <button type="button" className="btn btn-outline px-4" onClick={onCancel}>
+                  Odustani
+                </button>
+              ) : (
+                <Link className="btn btn-outline px-4" href={`/work-orders/${workOrderId}`}>
+                  Odustani
+                </Link>
+              )}
+            </>
+          )}
           <div className="ml-auto flex flex-wrap justify-end gap-2">
             {scrap ? (
               <div className="max-w-md rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm">
@@ -317,7 +363,7 @@ export default function ServiceFormWithScrap(props: {
               <button
                 type="button"
                 onClick={openScrapModal}
-                disabled={resetting}
+                disabled={resetting || submitting}
                 className="btn border-rose-300 bg-white text-rose-900 hover:bg-rose-50 disabled:opacity-60"
               >
                 Rashod vatrogasnog aparata…
@@ -327,7 +373,7 @@ export default function ServiceFormWithScrap(props: {
             <button
               type="button"
               onClick={handleReset}
-              disabled={resetting || scrap}
+              disabled={resetting || submitting || scrap}
               className="btn border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-60"
               title="Vraća aparat u stanje prije servisa"
             >

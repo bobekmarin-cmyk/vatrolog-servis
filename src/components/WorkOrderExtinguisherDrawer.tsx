@@ -14,22 +14,26 @@ import { useRouter } from "next/navigation";
 import Drawer from "@/components/ui/Drawer";
 import AddExtinguisherForm from "@/components/AddExtinguisherForm";
 import EditExtinguisherForm from "@/components/EditExtinguisherForm";
+import { useContentDrawerPresence } from "@/components/ShellLayoutContext";
+import { useWorkOrderRowHighlight } from "@/components/WorkOrderRowHighlight";
+import { useWorkOrderServicePrefetch } from "@/components/WorkOrderServiceDrawer";
+import { syncWorkOrderDrawerUrl } from "@/lib/workOrderDrawerUrl";
 import type {
   ExtinguisherEditInitial,
   ExtinguisherFormCatalog,
 } from "@/lib/extinguisherFormCatalog";
 
+export { WorkOrderItemRow } from "@/components/WorkOrderRowHighlight";
+
 export type ExtinguisherDrawerMode = "fill" | "edit";
 
 type Ctx = {
   openDrawer: (itemId: string, mode: ExtinguisherDrawerMode) => void;
-  highlightItemId: string | null;
 };
 
 const DrawerCtx = createContext<Ctx | null>(null);
 
 const FORM_ID = "wo-extinguisher-drawer-form";
-const HIGHLIGHT_MS = 2000;
 
 function useDrawerCtx(): Ctx {
   const ctx = useContext(DrawerCtx);
@@ -40,16 +44,7 @@ function useDrawerCtx(): Ctx {
 }
 
 function syncUrl(itemId: string | null, mode: ExtinguisherDrawerMode | null) {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  if (itemId && mode) {
-    url.searchParams.set("item", itemId);
-    url.searchParams.set("mode", mode);
-  } else {
-    url.searchParams.delete("item");
-    url.searchParams.delete("mode");
-  }
-  window.history.replaceState(window.history.state, "", url.toString());
+  syncWorkOrderDrawerUrl(itemId, mode);
 }
 
 export function WorkOrderExtinguisherDrawerProvider({
@@ -75,6 +70,8 @@ export function WorkOrderExtinguisherDrawerProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const { highlightItem } = useWorkOrderRowHighlight();
+  const prefetchServiceForm = useWorkOrderServicePrefetch();
 
   const [itemId, setItemId] = useState<string | null>(
     !locked && initialItemId ? initialItemId : null,
@@ -84,10 +81,11 @@ export function WorkOrderExtinguisherDrawerProvider({
 
   const [canSubmit, setCanSubmit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [highlightItemId, setHighlightItemId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const focusRef = useRef<HTMLElement | null>(null);
+
+  useContentDrawerPresence(open);
 
   const openDrawer = useCallback(
     (nextItemId: string, nextMode: ExtinguisherDrawerMode) => {
@@ -125,18 +123,15 @@ export function WorkOrderExtinguisherDrawerProvider({
     return () => clearTimeout(timer);
   }, [open, catalog, itemId, mode, editInitialByItemId]);
 
-  useEffect(() => {
-    if (!highlightItemId) return;
-    const timer = setTimeout(() => setHighlightItemId(null), HIGHLIGHT_MS);
-    return () => clearTimeout(timer);
-  }, [highlightItemId]);
-
   const handleSuccess = useCallback(() => {
-    setHighlightItemId(itemId);
+    highlightItem(itemId);
     setOpen(false);
-    syncUrl(null, null);
+    // `replace` (a ne samo history API) jer bi refresh vratio ?item=&mode= u adresu.
+    router.replace(window.location.pathname, { scroll: false });
     router.refresh();
-  }, [itemId, router]);
+    // Sljedeći korak nakon popune je gotovo uvijek servis — zagrij podatke forme.
+    if (itemId) prefetchServiceForm(itemId);
+  }, [itemId, router, highlightItem, prefetchServiceForm]);
 
   const handleCanSubmitChange = useCallback((value: boolean) => setCanSubmit(value), []);
   const handleSubmittingChange = useCallback((value: boolean) => setSubmitting(value), []);
@@ -155,7 +150,7 @@ export function WorkOrderExtinguisherDrawerProvider({
   }, [catalog, mode]);
 
   return (
-    <DrawerCtx.Provider value={{ openDrawer, highlightItemId }}>
+    <DrawerCtx.Provider value={{ openDrawer }}>
       {children}
 
       <Drawer
@@ -244,6 +239,7 @@ export function WorkOrderExtinguisherDrawerButton({
   mode: ExtinguisherDrawerMode;
 }) {
   const { openDrawer } = useDrawerCtx();
+  const prefetchServiceForm = useWorkOrderServicePrefetch();
   const label = mode === "fill" ? "Popuni" : "Uredi podatke aparata";
 
   return (
@@ -251,6 +247,8 @@ export function WorkOrderExtinguisherDrawerButton({
       type="button"
       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:bg-blue-50"
       onClick={() => openDrawer(itemId, mode)}
+      onMouseEnter={mode === "edit" ? () => prefetchServiceForm(itemId) : undefined}
+      onFocus={mode === "edit" ? () => prefetchServiceForm(itemId) : undefined}
       title={label}
       aria-label={label}
     >
@@ -269,29 +267,5 @@ export function WorkOrderExtinguisherDrawerButton({
         <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
       </svg>
     </button>
-  );
-}
-
-export function WorkOrderItemRow({
-  itemId,
-  children,
-}: {
-  itemId: string;
-  children: ReactNode;
-}) {
-  const { highlightItemId } = useDrawerCtx();
-  const highlighted = highlightItemId === itemId;
-
-  return (
-    <tr
-      className={[
-        "transition-colors duration-500",
-        highlighted
-          ? "bg-emerald-50 ring-2 ring-inset ring-emerald-300"
-          : "hover:bg-gray-50",
-      ].join(" ")}
-    >
-      {children}
-    </tr>
   );
 }

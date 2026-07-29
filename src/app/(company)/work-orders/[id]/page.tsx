@@ -2,7 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import DeleteItemForm from "@/components/DeleteItemForm";
-import ConfirmLinkButton from "@/components/ConfirmLinkButton";
 import { calcValidUntil, isStillValid } from "@/lib/validity";
 import { formatExtinguisherTypeParts } from "@/lib/formatExtinguisherType";
 import { getSession } from "@/lib/auth";
@@ -17,8 +16,15 @@ import ScanExtinguisherModal from "@/components/ScanExtinguisherModal";
 import {
   WorkOrderExtinguisherDrawerButton,
   WorkOrderExtinguisherDrawerProvider,
-  WorkOrderItemRow,
 } from "@/components/WorkOrderExtinguisherDrawer";
+import {
+  WorkOrderItemRow,
+  WorkOrderRowHighlightProvider,
+} from "@/components/WorkOrderRowHighlight";
+import {
+  WorkOrderServiceDrawerButton,
+  WorkOrderServiceDrawerProvider,
+} from "@/components/WorkOrderServiceDrawer";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 import WorkOrderDocumentsMenu from "@/components/WorkOrderDocumentsMenu";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
@@ -132,6 +138,7 @@ export default async function ServiceViewPage({
   const dnFlash = sp?.dn;
   const invFlash = sp?.inv;
   const drawerItemId = sp?.item;
+  const serviceDrawerRequested = sp?.mode === "service";
   const drawerMode = sp?.mode === "edit" ? "edit" : "fill";
 
   const order = await prisma.workOrder.findFirst({
@@ -210,6 +217,14 @@ export default async function ServiceViewPage({
       };
     }
   }
+
+  // Prvi aparat koji čeka servis — drawer mu podatke povuče u pozadini nakon učitavanja.
+  const idleServicePrefetchIds = isLocked
+    ? []
+    : order.items
+        .filter((i) => !i.isPlaceholder && !!i.extinguisher && !i.servicedAt)
+        .slice(0, 1)
+        .map((i) => i.id);
 
   const issuedDeliveryNotes = order.deliveryNotes.filter((n) => n.pdfStoragePath);
   const activeDeliveryNote = issuedDeliveryNotes.find((n) => !n.supersededAt) ?? null;
@@ -526,6 +541,15 @@ export default async function ServiceViewPage({
       </div>
 
       {/* TABLICA */}
+      <WorkOrderRowHighlightProvider>
+      <WorkOrderServiceDrawerProvider
+        orderId={order.id}
+        orderNumber={order.orderNumber}
+        customerName={customerDisplayName(order.customer)}
+        locked={isLocked}
+        initialItemId={serviceDrawerRequested ? drawerItemId : undefined}
+        idlePrefetchItemIds={idleServicePrefetchIds}
+      >
       <WorkOrderExtinguisherDrawerProvider
         orderId={order.id}
         orderNumber={order.orderNumber}
@@ -533,7 +557,7 @@ export default async function ServiceViewPage({
         locked={isLocked}
         catalog={extinguisherCatalog}
         editInitialByItemId={editInitialByItemId}
-        initialItemId={drawerItemId}
+        initialItemId={serviceDrawerRequested ? undefined : drawerItemId}
         initialMode={drawerMode}
       >
         <section className="surface">
@@ -642,49 +666,7 @@ export default async function ServiceViewPage({
                           ) : (
                             <>
                               <WorkOrderExtinguisherDrawerButton itemId={item.id} mode="edit" />
-                              {isServiced ? (
-                                <ConfirmLinkButton
-                                  href={`/work-orders/${order.id}/items/${item.id}/service`}
-                                  title="Otvori servis"
-                                  ariaLabel="Otvori servis"
-                                  confirmText="Aparat je već servisiran. Želiš li otvoriti servisni unos?"
-                                >
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    width="18"
-                                    height="18"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden="true"
-                                  >
-                                    <path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L3 18l3 3 6.1-6.1a4 4 0 0 0 5.6-5.6l-2.2 2.2-2.8-2.8 2.0-2.5z" />
-                                  </svg>
-                                </ConfirmLinkButton>
-                              ) : (
-                                <Link
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-green-700 hover:bg-green-50"
-                                  href={`/work-orders/${order.id}/items/${item.id}/service`}
-                                  title="Servisiraj"
-                                  aria-label="Servisiraj"
-                                >
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    width="18"
-                                    height="18"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden="true"
-                                  >
-                                    <path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L3 18l3 3 6.1-6.1a4 4 0 0 0 5.6-5.6l-2.2 2.2-2.8-2.8 2.0-2.5z" />
-                                  </svg>
-                                </Link>
-                              )}
+                              <WorkOrderServiceDrawerButton itemId={item.id} serviced={isServiced} />
                             </>
                           )}
 
@@ -720,6 +702,8 @@ export default async function ServiceViewPage({
           </div>
         </section>
       </WorkOrderExtinguisherDrawerProvider>
+      </WorkOrderServiceDrawerProvider>
+      </WorkOrderRowHighlightProvider>
 
       <p className="mt-4 text-xs text-gray-500">
         Pravilo PP roka: datum radnog naloga 10.01.2026. → vrijedi do 01/2027 (kraj mjeseca + 1 godina).
