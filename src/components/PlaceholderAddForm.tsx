@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useDialog } from "@/components/ui/useDialog";
 
@@ -13,6 +13,9 @@ export default function PlaceholderAddForm({
   const dialog = useDialog();
   const [count, setCount] = useState(1);
   const [saving, setSaving] = useState(false);
+  // Refresh tablice traje i nakon POST-a — gumb ostaje u „Dodajem…” do kraja.
+  const [refreshing, startRefresh] = useTransition();
+  const busy = saving || refreshing;
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -37,7 +40,7 @@ export default function PlaceholderAddForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (saving || count < 1) return;
+    if (busy || count < 1) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/work-orders/${orderId}/items/add-placeholders`, {
@@ -55,7 +58,7 @@ export default function PlaceholderAddForm({
         });
         return;
       }
-      router.refresh();
+      startRefresh(() => router.refresh());
       setCount(1);
     } catch {
       await dialog.alert({
@@ -103,8 +106,8 @@ export default function PlaceholderAddForm({
         >
           +
         </button>
-        <button className="btn btn-primary h-9 px-4 ml-1" type="submit" disabled={saving}>
-          {saving ? "Dodajem..." : "Dodaj"}
+        <button className="btn btn-primary h-9 px-4 ml-1" type="submit" disabled={busy}>
+          {busy ? "Dodajem..." : "Dodaj"}
         </button>
       </div>
     </form>

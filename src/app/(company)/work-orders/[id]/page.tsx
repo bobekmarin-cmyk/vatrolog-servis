@@ -191,23 +191,26 @@ export default async function ServiceViewPage({
     ? receiptFloorMessage(order.receivedQty)
     : undefined;
 
-  const plan = await getCompanyPlan(session.companyId);
-  const eracuniSettings = await prisma.companyERacuniSettings.findUnique({
-    where: { companyId: session.companyId },
-    select: { enabled: true },
-  });
+  // Sporedni upiti ne ovise jedan o drugom — paralelno da refresh nakon
+  // spremanja u draweru bude što kraći.
+  const [plan, eracuniSettings, mailStatus, extinguisherCatalog] = await Promise.all([
+    getCompanyPlan(session.companyId),
+    prisma.companyERacuniSettings.findUnique({
+      where: { companyId: session.companyId },
+      select: { enabled: true },
+    }),
+    getTenantMailStatus(session.companyId),
+    // Katalog unaprijed — drawer se otvara odmah bez API čekanja.
+    isLocked ? Promise.resolve(null) : loadExtinguisherFormCatalog(session.companyId),
+  ]);
+
   const eracuniEnabled = !!eracuniSettings?.enabled && planAllows(plan, "INVOICING_INTEGRATIONS");
   const invoice = order.eracuniInvoice;
   const unlockBlocked = !!invoice && invoice.status !== "ERROR";
 
-  const mailStatus = await getTenantMailStatus(session.companyId);
   const mailPlanAllowed = planAllows(plan, "MAIL_SENDING");
   const mailConnected = mailPlanAllowed && !!mailStatus.activeProvider;
 
-  // Katalog unaprijed — drawer se otvara odmah bez API čekanja.
-  const extinguisherCatalog = isLocked
-    ? null
-    : await loadExtinguisherFormCatalog(session.companyId);
   const editInitialByItemId: Record<string, ExtinguisherEditInitial> = {};
   if (!isLocked) {
     for (const item of order.items) {
