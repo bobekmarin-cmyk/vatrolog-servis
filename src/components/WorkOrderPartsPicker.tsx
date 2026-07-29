@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import { useServiceScrapMode } from "@/components/ServiceScrapModeContext";
 import { formatPartUnit } from "@/lib/partsCatalog";
@@ -29,6 +29,17 @@ function comparePartsByName(a: PickerPart, b: PickerPart): number {
   return a.name.localeCompare(b.name, "hr") || a.code.localeCompare(b.code, "hr");
 }
 
+function mergePartsById(
+  seedParts: PickerPart[],
+  catalogParts: PickerPart[] | null,
+): PickerPart[] {
+  if (!catalogParts) return seedParts;
+  const byId = new Map<string, PickerPart>();
+  for (const p of catalogParts) byId.set(p.id, p);
+  for (const p of seedParts) if (!byId.has(p.id)) byId.set(p.id, p);
+  return Array.from(byId.values());
+}
+
 function filterParts(source: PickerPart[], term: string): PickerPart[] {
   const q = term.trim().toLocaleLowerCase("hr");
   if (!q) return source;
@@ -40,12 +51,39 @@ function filterParts(source: PickerPart[], term: string): PickerPart[] {
 
 export default function WorkOrderPartsPicker(props: {
   kind: string;
-  parts: PickerPart[];
+  /** Već odabrani dijelovi — dovoljni za prikaz tablice bez punog kataloga. */
+  seedParts: PickerPart[];
   initialSelected: Array<{ id: string; quantity: number }>;
+  /** Puni katalog; dohvaća se tek kad se otvori „Dodaj dio”. */
+  loadCatalog?: () => Promise<PickerPart[]>;
 }) {
-  const { parts } = props;
+  const { seedParts, loadCatalog } = props;
   const scrapMode = useServiceScrapMode();
   const selectionBackupRef = useRef<Map<string, number> | null>(null);
+
+  const [catalogParts, setCatalogParts] = useState<PickerPart[] | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const catalogRequestedRef = useRef(false);
+
+  const parts = useMemo(
+    () => mergePartsById(seedParts, catalogParts),
+    [seedParts, catalogParts],
+  );
+
+  const ensureCatalog = useCallback(() => {
+    if (!loadCatalog || catalogRequestedRef.current) return;
+    catalogRequestedRef.current = true;
+    setCatalogLoading(true);
+    setCatalogError(null);
+    loadCatalog()
+      .then((list) => setCatalogParts(list))
+      .catch(() => {
+        catalogRequestedRef.current = false;
+        setCatalogError("Katalog dijelova nije dostupan. Pokušajte ponovno.");
+      })
+      .finally(() => setCatalogLoading(false));
+  }, [loadCatalog]);
 
   const partsById = useMemo(() => {
     const m = new Map<string, PickerPart>();
@@ -144,7 +182,12 @@ export default function WorkOrderPartsPicker(props: {
           <button
             type="button"
             className="btn btn-primary px-4"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => {
+              ensureCatalog();
+              setPickerOpen(true);
+            }}
+            onMouseEnter={ensureCatalog}
+            onFocus={ensureCatalog}
           >
             Dodaj dio
           </button>
@@ -215,6 +258,9 @@ export default function WorkOrderPartsPicker(props: {
         onClose={() => setPickerOpen(false)}
         parts={parts}
         commonParts={commonParts}
+        loading={catalogLoading}
+        errorText={catalogError}
+        onRetry={ensureCatalog}
         initialSelected={selected}
         onSave={(next) => {
           setSelected(next);
@@ -238,10 +284,14 @@ function PartsSelectionModal(props: {
   onClose: () => void;
   parts: PickerPart[];
   commonParts: PickerPart[];
+  loading: boolean;
+  errorText: string | null;
+  onRetry: () => void;
   initialSelected: Map<string, number>;
   onSave: (next: Map<string, number>) => void;
 }) {
-  const { open, onClose, parts, commonParts, initialSelected, onSave } = props;
+  const { open, onClose, parts, commonParts, loading, errorText, onRetry, initialSelected, onSave } =
+    props;
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState<Map<string, number>>(() => new Map(initialSelected));
   const [quantities, setQuantities] = useState<Map<string, number>>(() => new Map(initialSelected));
@@ -412,6 +462,15 @@ function PartsSelectionModal(props: {
           autoFocus
         />
 
+        {errorText ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+            <span>{errorText}</span>
+            <button type="button" className="btn btn-outline h-8 px-3 text-xs" onClick={onRetry}>
+              Pokušaj ponovno
+            </button>
+          </div>
+        ) : null}
+
         <div>
           <div className="mb-2 text-sm font-semibold text-slate-900">
             Uobičajeni dijelovi
@@ -431,7 +490,9 @@ function PartsSelectionModal(props: {
               <tbody className="divide-y">
                 {renderRows(
                   filteredCommon,
-                  "Nema uobičajenih dijelova za ovaj aparat. Označite ih zvjezdicom u Postavke → Rezervni dijelovi.",
+                  loading
+                    ? "Učitavam katalog dijelova…"
+                    : "Nema uobičajenih dijelova za ovaj aparat. Označite ih zvjezdicom u Postavke → Rezervni dijelovi.",
                 )}
               </tbody>
             </table>
@@ -453,7 +514,7 @@ function PartsSelectionModal(props: {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {renderRows(filteredOther, "Nema rezultata.")}
+              {renderRows(filteredOther, loading ? "Učitavam katalog dijelova…" : "Nema rezultata.")}
             </tbody>
           </table>
           </div>

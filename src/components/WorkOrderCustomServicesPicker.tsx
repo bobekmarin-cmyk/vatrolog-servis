@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import { useServiceScrapMode } from "@/components/ServiceScrapModeContext";
 
@@ -12,12 +12,42 @@ export type CustomServiceLite = {
 };
 
 export default function WorkOrderCustomServicesPicker(props: {
-  available: CustomServiceLite[];
+  /** Već odabrane usluge — dovoljne za prikaz tablice bez pune liste. */
+  seedServices: CustomServiceLite[];
   initialSelectedIds: string[];
+  /** Puna lista usluga; dohvaća se tek kad se otvori „Dodaj uslugu”. */
+  loadCatalog?: () => Promise<CustomServiceLite[]>;
 }) {
-  const { available } = props;
+  const { seedServices, loadCatalog } = props;
   const scrapMode = useServiceScrapMode();
   const selectionBackupRef = useRef<Set<string> | null>(null);
+
+  const [catalogServices, setCatalogServices] = useState<CustomServiceLite[] | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const catalogRequestedRef = useRef(false);
+
+  const available = useMemo(() => {
+    if (!catalogServices) return seedServices;
+    const byId = new Map<string, CustomServiceLite>();
+    for (const s of catalogServices) byId.set(s.id, s);
+    for (const s of seedServices) if (!byId.has(s.id)) byId.set(s.id, s);
+    return Array.from(byId.values());
+  }, [seedServices, catalogServices]);
+
+  const ensureCatalog = useCallback(() => {
+    if (!loadCatalog || catalogRequestedRef.current) return;
+    catalogRequestedRef.current = true;
+    setCatalogLoading(true);
+    setCatalogError(null);
+    loadCatalog()
+      .then((list) => setCatalogServices(list))
+      .catch(() => {
+        catalogRequestedRef.current = false;
+        setCatalogError("Popis usluga nije dostupan. Pokušajte ponovno.");
+      })
+      .finally(() => setCatalogLoading(false));
+  }, [loadCatalog]);
 
   const allById = useMemo(() => {
     const m = new Map<string, CustomServiceLite>();
@@ -86,7 +116,12 @@ export default function WorkOrderCustomServicesPicker(props: {
         <button
           type="button"
           className="btn btn-primary px-4"
-          onClick={() => setPickerOpen(true)}
+          onClick={() => {
+            ensureCatalog();
+            setPickerOpen(true);
+          }}
+          onMouseEnter={ensureCatalog}
+          onFocus={ensureCatalog}
         >
           Dodaj uslugu
         </button>
@@ -142,6 +177,9 @@ export default function WorkOrderCustomServicesPicker(props: {
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         available={available}
+        loading={catalogLoading}
+        errorText={catalogError}
+        onRetry={ensureCatalog}
         initialSelected={selectedIds}
         onSave={(next) => {
           setSelectedIds(next);
@@ -156,10 +194,13 @@ function ServicesSelectionModal(props: {
   open: boolean;
   onClose: () => void;
   available: CustomServiceLite[];
+  loading: boolean;
+  errorText: string | null;
+  onRetry: () => void;
   initialSelected: Set<string>;
   onSave: (next: Set<string>) => void;
 }) {
-  const { open, onClose, available, initialSelected, onSave } = props;
+  const { open, onClose, available, loading, errorText, onRetry, initialSelected, onSave } = props;
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState<Set<string>>(() => new Set(initialSelected));
 
@@ -230,6 +271,14 @@ function ServicesSelectionModal(props: {
           className="input w-full"
           autoFocus
         />
+        {errorText ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+            <span>{errorText}</span>
+            <button type="button" className="btn btn-outline h-8 px-3 text-xs" onClick={onRetry}>
+              Pokušaj ponovno
+            </button>
+          </div>
+        ) : null}
         <div className="max-h-[60vh] overflow-auto rounded-xl bg-white shadow-sm ring-1 ring-black/5">
           <table className="table">
             <thead className="table-head sticky top-0 bg-white">
@@ -284,7 +333,7 @@ function ServicesSelectionModal(props: {
               {filtered.length === 0 && (
                 <tr>
                   <td className="p-4 text-slate-500" colSpan={5}>
-                    Nema rezultata.
+                    {loading ? "Učitavam popis usluga…" : "Nema rezultata."}
                   </td>
                 </tr>
               )}

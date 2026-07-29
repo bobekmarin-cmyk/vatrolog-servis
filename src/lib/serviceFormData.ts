@@ -3,7 +3,13 @@ import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
 import { formatExtinguisherTypeName } from "@/lib/formatExtinguisherType";
 import { isActiveToday } from "@/lib/servicerStatus";
-import { listAvailablePartsForCompany } from "@/lib/partsCatalog";
+import {
+  getCompanyPartOverridesByPartIds,
+  listAvailablePartsForCompany,
+  partDisplayCode,
+  partEffectiveCommon,
+  partManufacturerCode,
+} from "@/lib/partsCatalog";
 import {
   computeFirstUpYear,
   computeNextUpYear,
@@ -28,9 +34,13 @@ export type ServiceFormPayload = {
   servicers: ServicerPickerEntry[];
   initialServicerId: string;
   staleServicerHint: string | null;
-  parts: PickerPart[];
+  /** Ključ za keširanje kataloga na klijentu — isti aparat/tip dijeli katalog. */
+  catalogKey: string;
+  /** Samo već odabrani dijelovi; puni katalog se dohvaća tek na „Dodaj dio”. */
+  seedParts: PickerPart[];
   initialSelectedParts: Array<{ id: string; quantity: number }>;
-  customServices: CustomServiceLite[];
+  /** Samo već odabrane usluge; puna lista se dohvaća tek na „Dodaj uslugu”. */
+  seedCustomServices: CustomServiceLite[];
   initialSelectedCustomServiceIds: string[];
   internalInspection: {
     agentCode: string | null;
@@ -48,6 +58,12 @@ export type ServiceFormPayload = {
   alreadyServiced: boolean;
 };
 
+/** Katalozi koji se dohvaćaju lijeno, tek kad korisnik otvori izbornik. */
+export type ServiceFormCatalogPayload = {
+  parts: PickerPart[];
+  customServices: CustomServiceLite[];
+};
+
 export type ServiceFormLoadError =
   | "NOT_FOUND"
   | "FORBIDDEN"
@@ -58,37 +74,40 @@ export type ServiceFormLoadResult =
   | { ok: true; data: ServiceFormPayload }
   | { ok: false; code: ServiceFormLoadError; status: number; error: string };
 
-/**
- * Svi podaci koje treba forma „Servisiraj aparat”. Dijeli se između drawera
- * (JSON preko API-ja, uz prefetch) i bilo kojeg server rendera iste forme.
- */
-export async function loadServiceFormData(args: {
-  companyId: string;
-  orderId: string;
-  itemId: string;
-}): Promise<ServiceFormLoadResult> {
-  const { companyId, orderId, itemId } = args;
+export type ServiceFormCatalogResult =
+  | { ok: true; data: ServiceFormCatalogPayload }
+  | { ok: false; code: ServiceFormLoadError; status: number; error: string };
 
-  const [order, item, servicers] = await Promise.all([
-    prisma.workOrder.findFirst({
-      where: { id: orderId, companyId },
-      include: { customer: true },
-    }),
-    prisma.workOrderItem.findUnique({
-      where: { id: itemId },
-      include: {
-        extinguisher: {
-          include: { manufacturer: true, type: { include: { agent: true, construction: true } } },
-        },
-        servicer: true,
+type ResolvedItem = NonNullable<Awaited<ReturnType<typeof findServiceItem>>>;
+
+function findServiceItem(itemId: string) {
+  return prisma.workOrderItem.findUnique({
+    where: { id: itemId },
+    include: {
+      extinguisher: {
+        include: { manufacturer: true, type: { include: { agent: true, construction: true } } },
       },
-    }),
-    prisma.user.findMany({
-      where: { companyId, active: true, role: "SERVISER" },
-      orderBy: { fullName: "asc" },
-      select: { id: true, fullName: true, activatedAt: true },
-    }),
-  ]);
+      servicer: true,
+    },
+  });
+}
+
+type GuardResult<TOrder> =
+  | {
+      ok: true;
+      order: TOrder;
+      item: ResolvedItem;
+      extinguisher: NonNullable<ResolvedItem["extinguisher"]>;
+    }
+  | { ok: false; code: ServiceFormLoadError; status: number; error: string };
+
+/** Zajedničke provjere (tenant, zaključan nalog, popunjen aparat). */
+function guardServiceItem<TOrder extends { id: string; status: string }>(args: {
+  companyId: string;
+  order: TOrder | null;
+  item: ResolvedItem | null;
+}): GuardResult<TOrder> {
+  const { companyId, order, item } = args;
 
   if (!order) {
     return { ok: false, code: "NOT_FOUND", status: 404, error: "Nalog nije pronađen." };
@@ -107,7 +126,6 @@ export async function loadServiceFormData(args: {
       error: "Nalog je zaključan — nije moguće mijenjati podatke.",
     };
   }
-
   const ex = item.extinguisher;
   if (!ex) {
     return {
@@ -117,10 +135,48 @@ export async function loadServiceFormData(args: {
       error: "Stavka nije popunjena. Prvo klikni „Popuni” da se unesu podaci aparata.",
     };
   }
+  return { ok: true, order, item, extinguisher: ex };
+}
+
+export function serviceCatalogKey(extinguisher: {
+  manufacturerId: string;
+  extinguisherTypeId: string | null;
+}): string {
+  return `${extinguisher.manufacturerId}:${extinguisher.extinguisherTypeId ?? ""}`;
+}
+
+/**
+ * Podaci koje forma „Servisiraj aparat” treba za prvi prikaz — bez punog
+ * kataloga dijelova i liste dodatnih usluga (oni se dohvaćaju lijeno preko
+ * `loadServiceFormCatalog` kad korisnik otvori izbornik).
+ */
+export async function loadServiceFormData(args: {
+  companyId: string;
+  orderId: string;
+  itemId: string;
+}): Promise<ServiceFormLoadResult> {
+  const { companyId, orderId, itemId } = args;
+
+  const [orderRow, itemRow, servicers] = await Promise.all([
+    prisma.workOrder.findFirst({
+      where: { id: orderId, companyId },
+      include: { customer: true },
+    }),
+    findServiceItem(itemId),
+    prisma.user.findMany({
+      where: { companyId, active: true, role: "SERVISER" },
+      orderBy: { fullName: "asc" },
+      select: { id: true, fullName: true, activatedAt: true },
+    }),
+  ]);
+
+  const guard = guardServiceItem({ companyId, order: orderRow, item: itemRow });
+  if (!guard.ok) return guard;
+  const { order, item, extinguisher: ex } = guard;
 
   const serviceYear = (order.receivedAt ?? new Date()).getFullYear();
 
-  const [selectedRows, customServicesDb, selectedCustomRows] = await Promise.all([
+  const [selectedRows, selectedCustomRows] = await Promise.all([
     prisma.workOrderItemPart.findMany({
       where: { workOrderItemId: item.id, companyId },
       include: {
@@ -139,11 +195,6 @@ export async function loadServiceFormData(args: {
           },
         },
       },
-    }),
-    prisma.companyCustomService.findMany({
-      where: { companyId, deletedAt: null, isActive: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, code: true, price: true },
     }),
     prisma.workOrderItemCustomService.findMany({
       where: { workOrderItemId: item.id, companyId },
@@ -164,63 +215,42 @@ export async function loadServiceFormData(args: {
 
   const initialSelectedIds = Array.from(new Set(selectedRows.map((r) => r.partId)));
 
-  // `isCommon` je efektivni favorit: platform Part.common ± tenant override.
-  const availableParts = await listAvailablePartsForCompany(prisma, {
+  // Prikaz već odabranih dijelova mora biti točan i bez punog kataloga —
+  // dovoljni su overrideovi za te dijelove.
+  const seedOverrides = await getCompanyPartOverridesByPartIds(prisma, {
     companyId,
-    manufacturerId: ex.manufacturerId,
-    extinguisherTypeId: ex.extinguisherTypeId,
-    seedPartIds: initialSelectedIds,
+    partIds: initialSelectedIds,
   });
 
-  const customServices: CustomServiceLite[] = customServicesDb.map((s) => ({
-    id: s.id,
-    name: s.name,
-    code: s.code ?? null,
-    price: s.price ? Number(s.price) : null,
-  }));
-  // Ako je već povezana usluga u međuvremenu deaktivirana ili soft-deletana,
-  // uključi je ipak u dropdown (read-only seed) kako se ne bi izgubila iz selekcije.
-  for (const r of selectedCustomRows) {
-    const cs = r.customService;
-    if (!cs) continue;
-    const isUnavailable = !cs.isActive || !!cs.deletedAt;
-    if (isUnavailable && !customServices.some((s) => s.id === r.customServiceId)) {
-      customServices.push({
-        id: r.customServiceId,
-        name: cs.name,
-        code: cs.code ?? null,
-        price: cs.price ? Number(cs.price) : null,
-      });
-    }
-  }
-
-  // Sigurnosni dodatak: ako je već odabran dio koji više nije u availableParts (npr. obrisan),
-  // dodaj ga sa snapshotom iz live Part zapisa kako ne bi nestao iz selekcije.
-  const availableIdSet = new Set(availableParts.map((a) => a.part.id));
-  const extraSelectedRaw = selectedRows
-    .map((r) => r.part)
-    .filter((p): p is NonNullable<typeof p> => !!p && !availableIdSet.has(p.id));
-
-  const parts: PickerPart[] = [
-    ...availableParts.map((a) => ({
-      id: a.part.id,
-      code: a.displayCode,
-      manufacturerCode: a.manufacturerCode,
-      name: a.part.name,
-      unit: a.part.unit,
-      isCustom: a.isCustom,
-      isCommon: a.isCommon,
-    })),
-    ...extraSelectedRaw.map((p) => ({
+  const seedPartsById = new Map<string, PickerPart>();
+  for (const row of selectedRows) {
+    const p = row.part;
+    if (!p || seedPartsById.has(p.id)) continue;
+    const ov = seedOverrides.get(p.id) ?? null;
+    seedPartsById.set(p.id, {
       id: p.id,
-      code: p.code,
-      manufacturerCode: p.manufacturerCode,
+      code: partDisplayCode(p, ov),
+      manufacturerCode: partManufacturerCode(p),
       name: p.name,
       unit: p.unit,
       isCustom: !!p.companyId,
-      isCommon: !!p.common,
-    })),
-  ];
+      isCommon: partEffectiveCommon(p, ov),
+    });
+  }
+
+  // Već povezane usluge idu uz slim payload i kad su u međuvremenu deaktivirane
+  // ili soft-deletane, kako ne bi nestale iz selekcije.
+  const seedCustomServices: CustomServiceLite[] = [];
+  for (const r of selectedCustomRows) {
+    const cs = r.customService;
+    if (!cs || seedCustomServices.some((s) => s.id === r.customServiceId)) continue;
+    seedCustomServices.push({
+      id: r.customServiceId,
+      name: cs.name,
+      code: cs.code ?? null,
+      price: cs.price ? Number(cs.price) : null,
+    });
+  }
 
   const storedServicer = item.servicer;
   const staleServicerHint =
@@ -269,12 +299,13 @@ export async function loadServiceFormData(args: {
       })),
       initialServicerId: item.servicerId ?? "",
       staleServicerHint,
-      parts,
+      catalogKey: serviceCatalogKey(ex),
+      seedParts: Array.from(seedPartsById.values()),
       initialSelectedParts: selectedRows.map((r) => ({
         id: r.partId,
         quantity: Math.max(1, Math.floor(r.quantity ?? 1)),
       })),
-      customServices,
+      seedCustomServices,
       initialSelectedCustomServiceIds: Array.from(
         new Set(selectedCustomRows.map((r) => r.customServiceId)),
       ),
@@ -292,6 +323,65 @@ export async function loadServiceFormData(args: {
       },
       canReset: !!(item.periodicDone || item.servicedAt || item.internalDone),
       alreadyServiced: !!item.servicedAt,
+    },
+  };
+}
+
+/**
+ * Puni katalozi za izbornike „Dodaj dio” i „Dodaj uslugu”. Odvojeni su od
+ * `loadServiceFormData` da otvaranje/prefetch drawera ostane jeftin.
+ */
+export async function loadServiceFormCatalog(args: {
+  companyId: string;
+  orderId: string;
+  itemId: string;
+}): Promise<ServiceFormCatalogResult> {
+  const { companyId, orderId, itemId } = args;
+
+  const [orderRow, itemRow] = await Promise.all([
+    prisma.workOrder.findFirst({
+      where: { id: orderId, companyId },
+      select: { id: true, status: true },
+    }),
+    findServiceItem(itemId),
+  ]);
+
+  const guard = guardServiceItem({ companyId, order: orderRow, item: itemRow });
+  if (!guard.ok) return guard;
+  const ex = guard.extinguisher;
+
+  // `isCommon` je efektivni favorit: platform Part.common ± tenant override.
+  const [availableParts, customServicesDb] = await Promise.all([
+    listAvailablePartsForCompany(prisma, {
+      companyId,
+      manufacturerId: ex.manufacturerId,
+      extinguisherTypeId: ex.extinguisherTypeId,
+    }),
+    prisma.companyCustomService.findMany({
+      where: { companyId, deletedAt: null, isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, code: true, price: true },
+    }),
+  ]);
+
+  return {
+    ok: true,
+    data: {
+      parts: availableParts.map((a) => ({
+        id: a.part.id,
+        code: a.displayCode,
+        manufacturerCode: a.manufacturerCode,
+        name: a.part.name,
+        unit: a.part.unit,
+        isCustom: a.isCustom,
+        isCommon: a.isCommon,
+      })),
+      customServices: customServicesDb.map((s) => ({
+        id: s.id,
+        name: s.name,
+        code: s.code ?? null,
+        price: s.price ? Number(s.price) : null,
+      })),
     },
   };
 }

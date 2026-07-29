@@ -5,7 +5,8 @@ import ServiceFormWithScrap from "@/components/ServiceFormWithScrap";
 import ServicerPickerGrid from "@/components/ServicerPickerGrid";
 import WorkOrderCustomServicesPicker from "@/components/WorkOrderCustomServicesPicker";
 import WorkOrderPartsPicker from "@/components/WorkOrderPartsPicker";
-import type { RefObject } from "react";
+import { useCallback, type RefObject } from "react";
+import { fetchServiceFormCatalog } from "@/lib/serviceFormCatalogClient";
 import type { ServiceFormPayload } from "@/lib/serviceFormData";
 
 function InfoDot({ text }: { text: string }) {
@@ -42,6 +43,17 @@ export default function ServiceDrawerForm({
   onSubmittingChange: (submitting: boolean) => void;
   onScrapModeChange: (scrap: boolean) => void;
 }) {
+  const { orderId, itemId, catalogKey } = data;
+
+  const loadParts = useCallback(
+    async () => (await fetchServiceFormCatalog({ orderId, itemId, catalogKey })).parts,
+    [orderId, itemId, catalogKey],
+  );
+  const loadCustomServices = useCallback(
+    async () => (await fetchServiceFormCatalog({ orderId, itemId, catalogKey })).customServices,
+    [orderId, itemId, catalogKey],
+  );
+
   return (
     <ServiceFormWithScrap
       embedded
@@ -143,13 +155,15 @@ export default function ServiceDrawerForm({
         <>
           <WorkOrderPartsPicker
             kind={data.typeLabel}
-            parts={data.parts}
+            seedParts={data.seedParts}
             initialSelected={data.initialSelectedParts}
+            loadCatalog={loadParts}
           />
           <div>
             <WorkOrderCustomServicesPicker
-              available={data.customServices}
+              seedServices={data.seedCustomServices}
               initialSelectedIds={data.initialSelectedCustomServiceIds}
+              loadCatalog={loadCustomServices}
             />
           </div>
         </>
