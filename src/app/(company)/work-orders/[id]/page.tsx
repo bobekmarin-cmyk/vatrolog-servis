@@ -31,6 +31,7 @@ import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay"
 import PendingSubmitForm from "@/components/PendingSubmitForm";
 import { getTenantMailStatus } from "@/lib/tenantMail";
 import { getCompanyPlan, planAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
+import { receiptFloorBlocksDelete, receiptFloorMessage } from "@/lib/workOrderReceiptFloor";
 import {
   loadExtinguisherFormCatalog,
   type ExtinguisherEditInitial,
@@ -179,6 +180,17 @@ export default async function ServiceViewPage({
 
   if (!order) notFound();
 
+  const total = order.items.length;
+  const servicedCount = order.items.filter((i) => i.servicedAt).length;
+  const isLocked = order.status === "LOCKED";
+  const hasAnyServiced = order.items.some((i) => !!i.servicedAt || !!i.labelNumber);
+  const deleteBlockedReason = receiptFloorBlocksDelete({
+    itemCount: total,
+    receivedQty: order.receivedQty,
+  })
+    ? receiptFloorMessage(order.receivedQty)
+    : undefined;
+
   const plan = await getCompanyPlan(session.companyId);
   const eracuniSettings = await prisma.companyERacuniSettings.findUnique({
     where: { companyId: session.companyId },
@@ -191,11 +203,6 @@ export default async function ServiceViewPage({
   const mailStatus = await getTenantMailStatus(session.companyId);
   const mailPlanAllowed = planAllows(plan, "MAIL_SENDING");
   const mailConnected = mailPlanAllowed && !!mailStatus.activeProvider;
-
-  const total = order.items.length;
-  const servicedCount = order.items.filter((i) => i.servicedAt).length;
-  const isLocked = order.status === "LOCKED";
-  const hasAnyServiced = order.items.some((i) => !!i.servicedAt || !!i.labelNumber);
 
   // Katalog unaprijed — drawer se otvara odmah bez API čekanja.
   const extinguisherCatalog = isLocked
@@ -521,6 +528,13 @@ export default async function ServiceViewPage({
               <div className={`text-lg font-bold tabular-nums ${remaining > 0 ? "text-amber-700" : "text-slate-400"}`}>{remaining}</div>
             </div>
           </div>
+          {order.receivedQty > 0 ? (
+            <div className="mt-1.5 text-[10px] text-slate-500">
+              Primka:{" "}
+              <span className="font-semibold tabular-nums text-slate-700">{order.receivedQty}</span> kom — broj stavki
+              ne može pasti ispod te količine.
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-black/10 bg-slate-50 p-3 text-sm">
@@ -674,6 +688,7 @@ export default async function ServiceViewPage({
                             <DeleteItemForm
                               action={`/api/work-orders/${order.id}/items/${item.id}/delete`}
                               disabled={false}
+                              blockedReason={deleteBlockedReason}
                               confirmText={
                                 isServiced
                                   ? "PAŽNJA: aparat je već servisiran! Jesi li siguran da želiš obrisati ovu stavku iz naloga?"

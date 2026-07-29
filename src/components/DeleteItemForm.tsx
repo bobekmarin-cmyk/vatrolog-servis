@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useDialog } from "@/components/ui/useDialog";
 
@@ -8,17 +8,33 @@ export default function DeleteItemForm({
   action,
   disabled,
   confirmText = "Obrisati ovu stavku iz naloga?",
+  blockedReason,
 }: {
   action: string;
   disabled?: boolean;
   confirmText?: string;
+  /** Ako je postavljeno, brisanje je zabranjeno i gumb samo objasni zašto. */
+  blockedReason?: string;
 }) {
   const router = useRouter();
   const dialog = useDialog();
   const [deleting, setDeleting] = useState(false);
+  // Redak nestaje tek kad refresh dođe sa servera — dotad gumb ostaje zauzet.
+  const [refreshing, startRefresh] = useTransition();
+  const busy = deleting || refreshing;
 
   async function handleClick() {
-    if (disabled || deleting) return;
+    if (disabled || busy) return;
+
+    if (blockedReason) {
+      await dialog.alert({
+        title: "Brisanje nije moguće",
+        message: blockedReason,
+        variant: "warning",
+      });
+      return;
+    }
+
     const ok = await dialog.confirm({
       title: "Brisanje stavke",
       message: confirmText,
@@ -31,15 +47,16 @@ export default function DeleteItemForm({
     try {
       const res = await fetch(action, {
         method: "POST",
+        headers: { Accept: "application/json" },
         redirect: "manual",
       });
       if (res.ok || res.type === "opaqueredirect") {
-        router.refresh();
+        startRefresh(() => router.refresh());
       } else {
-        const text = await res.text();
+        const data = (await res.json().catch(() => null)) as null | { error?: string };
         await dialog.alert({
           title: "Brisanje nije uspjelo",
-          message: text || "Greška pri brisanju.",
+          message: data?.error ?? "Greška pri brisanju.",
           variant: "error",
         });
       }
@@ -57,19 +74,19 @@ export default function DeleteItemForm({
   return (
     <button
       type="button"
-      disabled={disabled || deleting}
-      aria-disabled={disabled || deleting}
-      title={disabled ? "Zaključano" : "Obriši"}
+      disabled={disabled || busy}
+      aria-disabled={disabled || busy}
+      title={disabled ? "Zaključano" : blockedReason ?? "Obriši"}
       aria-label="Obriši"
       onClick={handleClick}
       className={[
         "inline-flex h-9 w-9 items-center justify-center rounded-lg border cursor-pointer",
-        disabled || deleting
+        disabled || busy
           ? "cursor-not-allowed border-gray-200 text-gray-300"
           : "border-gray-200 text-red-600 hover:bg-red-50",
       ].join(" ")}
     >
-      {deleting ? (
+      {busy ? (
         <span className="animate-spin text-xs">⏳</span>
       ) : (
         <svg

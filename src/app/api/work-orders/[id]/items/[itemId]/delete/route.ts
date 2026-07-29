@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 
 import { redirectRelative } from "@/lib/httpRedirect";
+import { receiptFloorBlocksDelete, receiptFloorMessage } from "@/lib/workOrderReceiptFloor";
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; itemId: string }> }
@@ -14,7 +15,7 @@ export async function POST(
 
   const order = await prisma.workOrder.findUnique({
     where: { id },
-    select: { id: true, status: true, companyId: true },
+    select: { id: true, status: true, companyId: true, receivedQty: true },
   });
 
   if (!order) return NextResponse.json({ error: "Nalog nije pronađen." }, { status: 404 });
@@ -23,13 +24,23 @@ export async function POST(
     return NextResponse.json({ error: "Nalog je zaključan." }, { status: 409 });
   }
 
-  const item = await prisma.workOrderItem.findUnique({
-    where: { id: itemId },
-    select: { id: true, workOrderId: true, extinguisherId: true },
-  });
+  const [item, itemCount] = await Promise.all([
+    prisma.workOrderItem.findUnique({
+      where: { id: itemId },
+      select: { id: true, workOrderId: true, extinguisherId: true },
+    }),
+    prisma.workOrderItem.count({ where: { workOrderId: id } }),
+  ]);
 
   if (!item || item.workOrderId !== id) {
     return NextResponse.json({ error: "Stavka nije pronađena." }, { status: 404 });
+  }
+
+  if (receiptFloorBlocksDelete({ itemCount, receivedQty: order.receivedQty })) {
+    return NextResponse.json(
+      { error: receiptFloorMessage(order.receivedQty), reason: "receipt_floor" },
+      { status: 409 },
+    );
   }
 
   await prisma.workOrderItem.delete({ where: { id: itemId } });
