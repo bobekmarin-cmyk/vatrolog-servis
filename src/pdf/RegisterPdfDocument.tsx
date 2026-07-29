@@ -11,7 +11,6 @@ export type RegisterRow = {
   rbr: number;
   manufacturer: string;
   type: string;
-  agent: string;
   serial: string | null;
   year: number | null;
   internal: string;
@@ -51,6 +50,8 @@ export type RegisterPdfData = {
   orderNumber: string;
   customer: RegisterCustomerInfo;
   dates: RegisterDates;
+  /** Napomena s otvaranja radnog naloga — ispod broja/datuma. */
+  orderNote?: string | null;
   /** Način servisa (stacionarni vs vozilo); null/undefined = ne prikazuj. */
   serviceContextLabel?: string | null;
   serviceFooterLine?: string | null;
@@ -171,6 +172,25 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     textAlign: "right" as const,
   },
+  introOrderNote: {
+    marginTop: 8,
+    paddingTop: 7,
+    borderTopWidth: 0.5,
+    borderTopColor: "#e2e8f0",
+  },
+  introOrderNoteLabel: {
+    fontSize: 6.8,
+    color: "#64748b",
+    letterSpacing: 0.7,
+    textTransform: "uppercase" as const,
+    fontWeight: 700,
+    marginBottom: 3,
+  },
+  introOrderNoteText: {
+    fontSize: 8.2,
+    color: "#0f172a",
+    lineHeight: 1.35,
+  },
 
   infoRow: {
     flexDirection: "row",
@@ -242,19 +262,23 @@ const styles = StyleSheet.create({
   trInternal: { backgroundColor: "#eff6ff" },
   td: { paddingVertical: 3, paddingHorizontal: 4, fontSize: 7.8, color: "#0f172a" },
 
-  colRbr: { width: 26, textAlign: "center" as const },
-  colMfr: { width: 70 },
-  colType: { width: 80 },
-  colAgent: { width: 58 },
-  colSerial: { width: 72 },
-  colYear: { width: 34, textAlign: "center" as const },
-  colInt: { width: 34, textAlign: "center" as const },
-  colParts: { flex: 1, minWidth: 90 },
-  colNextP: { width: 58, textAlign: "center" as const },
-  colNextI: { width: 58, textAlign: "center" as const },
-  colLoc: { width: 76 },
-  colLabel: { width: 66 },
-  colDate: { width: 62, textAlign: "center" as const },
+  colRbr: { width: 22, textAlign: "center" as const },
+  /** Široko dovoljno za PASTOR T.V.A. / TORNADO VALIDUS u jednom redu. */
+  colMfr: { width: 108 },
+  colType: { width: 76 },
+  /** Serijski max ~12 znakova. */
+  colSerial: { width: 48 },
+  colYear: { width: 30, textAlign: "center" as const },
+  colInt: { width: 30, textAlign: "center" as const },
+  /** Najširi stupac — više dijelova smije ići u 2 reda. */
+  colParts: { flex: 1, minWidth: 150 },
+  colNextP: { width: 52, textAlign: "center" as const },
+  colNextI: { width: 52, textAlign: "center" as const },
+  colLoc: { width: 68 },
+  colLabel: { width: 58 },
+  colDate: { width: 54, textAlign: "center" as const },
+  tdMfr: { maxHeight: 11, overflow: "hidden" as const },
+  tdParts: { lineHeight: 1.25 },
 
   empty: {
     paddingVertical: 6,
@@ -360,6 +384,20 @@ function formatCustomerAddress(c: RegisterCustomerInfo): string {
   return line || "—";
 }
 
+/** Jedan red, bez prelamanja — duži nazivi se režu s elipsom. */
+function oneLineManufacturer(name: string, maxChars = 26): string {
+  const t = name.replace(/\s+/g, " ").trim();
+  if (t.length <= maxChars) return t;
+  return `${t.slice(0, Math.max(1, maxChars - 1))}…`;
+}
+
+function oneLineSerial(serial: string | null, maxChars = 12): string {
+  if (!serial) return "-";
+  const t = serial.replace(/\s+/g, " ").trim();
+  if (t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars)}…`;
+}
+
 type TableItem = { kind: "row"; key: string; row: RegisterRow; zebra: boolean };
 
 function buildTableItems(rows: RegisterRow[]): { items: TableItem[] } {
@@ -385,6 +423,7 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
     orderNumber,
     customer,
     dates,
+    orderNote,
     serviceFooterLine,
     status,
     docId,
@@ -393,6 +432,7 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
     qrDataUrl,
     rows,
   } = data;
+  const noteText = orderNote?.trim() || "";
   const addressLine = formatCustomerAddress(customer);
 
   const contacts: Array<{ label: string; value: string }> = [];
@@ -448,6 +488,12 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
               <Text style={styles.introMetaKey}>Datum upisnika</Text>
               <Text style={styles.introMetaValue}>{dates.registerDate}</Text>
             </View>
+            {noteText ? (
+              <View style={styles.introOrderNote}>
+                <Text style={styles.introOrderNoteLabel}>Napomena</Text>
+                <Text style={styles.introOrderNoteText}>{noteText}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -457,7 +503,6 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
             <Text style={[styles.th, styles.colRbr]}>R.br.</Text>
             <Text style={[styles.th, styles.colMfr]}>Proizvođač</Text>
             <Text style={[styles.th, styles.colType]}>Tip</Text>
-            <Text style={[styles.th, styles.colAgent]}>Punjenje</Text>
             <Text style={[styles.th, styles.colSerial]}>Serijski</Text>
             <Text style={[styles.th, styles.colYear]}>God.</Text>
             <Text style={[styles.th, styles.colInt]}>Unut.</Text>
@@ -476,13 +521,18 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
             tableItems.map((it) => (
               <View key={it.key} style={rowStyle(it.row, it.zebra)} wrap={false}>
                 <Text style={[styles.td, styles.colRbr]}>{it.row.rbr}</Text>
-                <Text style={[styles.td, styles.colMfr]}>{it.row.manufacturer}</Text>
+                <Text style={[styles.td, styles.colMfr, styles.tdMfr]}>
+                  {oneLineManufacturer(it.row.manufacturer)}
+                </Text>
                 <Text style={[styles.td, styles.colType]}>{it.row.type}</Text>
-                <Text style={[styles.td, styles.colAgent]}>{it.row.agent}</Text>
-                <Text style={[styles.td, styles.colSerial]}>{it.row.serial ?? "-"}</Text>
+                <Text style={[styles.td, styles.colSerial]}>
+                  {oneLineSerial(it.row.serial)}
+                </Text>
                 <Text style={[styles.td, styles.colYear]}>{it.row.year ?? "-"}</Text>
                 <Text style={[styles.td, styles.colInt]}>{it.row.internal}</Text>
-                <Text style={[styles.td, styles.colParts]}>{it.row.parts}</Text>
+                <Text style={[styles.td, styles.colParts, styles.tdParts]}>
+                  {it.row.parts || "-"}
+                </Text>
                 <Text style={[styles.td, styles.colNextP]}>{it.row.nextPeriodic}</Text>
                 <Text style={[styles.td, styles.colNextI]}>{it.row.nextInternal}</Text>
                 <Text style={[styles.td, styles.colLoc]}>{it.row.location}</Text>

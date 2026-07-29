@@ -22,11 +22,6 @@ import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 export type BuiltPdf = { body: Buffer; filename: string; companyId: string };
 
-function agentLabel(a: { label?: string | null; symbol?: string | null } | null | undefined) {
-  if (!a) return "-";
-  return a.label ?? a.symbol ?? "-";
-}
-
 export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | null> {
   const order = await prisma.workOrder.findUnique({
     where: { id: workOrderId },
@@ -225,7 +220,6 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
         rbr: 0,
         manufacturer: displayManufacturer(ex.manufacturer),
         type: typeLabel,
-        agent: agentLabel(ex.type?.agent ?? null) || "-",
         serial: ex.serialNumber,
         year: ex.productionYear,
         internal: internalDone ? "DA" : "NE",
@@ -299,6 +293,7 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
       orderDate: formatDateDdMmYyyy(order.receivedAt ?? order.createdAt),
       registerDate: formatDateDdMmYyyy(generatedAt),
     },
+    orderNote: order.note?.trim() || null,
     serviceContextLabel,
     serviceFooterLine: `Lokacija: ${locationText}  ·  Način servisa: ${serviceContextLabel}`,
     status: order.status,

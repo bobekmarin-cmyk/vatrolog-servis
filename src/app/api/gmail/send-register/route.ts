@@ -22,11 +22,6 @@ import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 export const runtime = "nodejs";
 
-function agentLabel(a: { label?: string | null; symbol?: string | null; code?: string } | null | undefined) {
-  if (!a) return "-";
-  return a.label ?? a.symbol ?? a.code ?? "-";
-}
-
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -123,7 +118,6 @@ export async function POST(req: NextRequest) {
       rbr: idx + 1,
       manufacturer: displayManufacturer(ex.manufacturer),
       type: ex.type ? formatExtinguisherTypeName(ex.type) : "-",
-      agent: agentLabel(ex.type?.agent ?? null),
       serial: ex.serialNumber,
       year: ex.productionYear,
       internal: i.internalDone ? "DA" : "NE",
@@ -133,7 +127,6 @@ export async function POST(req: NextRequest) {
       nextInternal: formatDateDdMmYyyy(i.nextInternalDue),
       location: i.serviceLocationText ?? "-",
       label: i.labelNumber ?? "-",
-      servicer: i.servicer?.fullName ?? "-",
       servicedAt: formatDateDdMmYyyy(i.servicedAt),
     };
   });
@@ -176,6 +169,7 @@ export async function POST(req: NextRequest) {
       orderDate: formatDateDdMmYyyy(order.receivedAt ?? order.createdAt),
       registerDate: formatDateDdMmYyyy(generatedAt),
     },
+    orderNote: order.note?.trim() || null,
     serviceContextLabel,
     status: order.status,
     docId: pdfNames.docId,
