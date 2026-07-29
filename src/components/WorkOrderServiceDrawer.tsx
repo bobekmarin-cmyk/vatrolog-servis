@@ -84,10 +84,18 @@ export function WorkOrderServiceDrawerProvider({
   const inflightRef = useRef<Map<string, Promise<LoadResult>>>(new Map());
   const currentItemIdRef = useRef<string | null>(itemId);
   const focusRef = useRef<HTMLInputElement | null>(null);
-  // Nakon spremanja su svi keširani podaci zastarjeli; epoha odbacuje i odgovore u letu.
-  const cacheEpochRef = useRef(0);
+  // Epoha po stavki: spremanje obezvrijedi samo tu stavku (i njezine odgovore
+  // u letu), dok ostale stavke ostaju zagrijane u kešu.
+  const epochByItemRef = useRef<Map<string, number>>(new Map());
 
   useContentDrawerPresence(open);
+
+  const invalidateItem = useCallback((targetItemId: string) => {
+    const epochs = epochByItemRef.current;
+    epochs.set(targetItemId, (epochs.get(targetItemId) ?? 0) + 1);
+    cacheRef.current.delete(targetItemId);
+    inflightRef.current.delete(targetItemId);
+  }, []);
 
   const fetchForm = useCallback(
     (targetItemId: string): Promise<LoadResult> => {
@@ -97,7 +105,7 @@ export function WorkOrderServiceDrawerProvider({
       const inflight = inflightRef.current.get(targetItemId);
       if (inflight) return inflight;
 
-      const epoch = cacheEpochRef.current;
+      const epoch = epochByItemRef.current.get(targetItemId) ?? 0;
       const request = (async (): Promise<LoadResult> => {
         try {
           const res = await fetch(
@@ -121,9 +129,11 @@ export function WorkOrderServiceDrawerProvider({
 
       inflightRef.current.set(targetItemId, request);
       void request.then((value) => {
-        if (cacheEpochRef.current !== epoch) return;
+        if ((epochByItemRef.current.get(targetItemId) ?? 0) !== epoch) return;
         cacheRef.current.set(targetItemId, value);
-        inflightRef.current.delete(targetItemId);
+        if (inflightRef.current.get(targetItemId) === request) {
+          inflightRef.current.delete(targetItemId);
+        }
       });
       return request;
     },
@@ -200,16 +210,14 @@ export function WorkOrderServiceDrawerProvider({
 
   const handleSuccess = useCallback(() => {
     highlightItem(itemId);
-    cacheEpochRef.current += 1;
-    cacheRef.current.clear();
-    inflightRef.current.clear();
+    if (itemId) invalidateItem(itemId);
     setSubmitting(false);
     setOpen(false);
     currentItemIdRef.current = null;
     // `replace` (a ne samo history API) jer bi refresh vratio ?item=&mode= u adresu.
     router.replace(window.location.pathname, { scroll: false });
     router.refresh();
-  }, [itemId, router, highlightItem]);
+  }, [itemId, router, highlightItem, invalidateItem]);
 
   const data = result?.data ?? null;
   const errorText = result?.error ?? null;
