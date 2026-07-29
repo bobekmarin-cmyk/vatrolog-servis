@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import CompanyShell, { type CompanyNavItem, type CompanyNavSection } from "@/components/CompanyShell";
 import SubscriptionExpiryBadge from "@/components/SubscriptionExpiryBadge";
 import DialogProvider from "@/components/ui/DialogProvider";
+import { ShellLayoutProvider } from "@/components/ShellLayoutContext";
 import { countUnreadForAccount } from "@/lib/notifications";
 
 /**
@@ -167,14 +168,16 @@ export default async function CompanyLayout({ children }: { children: React.Reac
 
   return (
     <DialogProvider>
-      <CompanyShell
-        companyName={company?.name ?? "Tvrtka"}
-        roleLabel={roleLabel}
-        sections={sections}
-        topBarExtra={expiryBadge}
-      >
-        {children}
-      </CompanyShell>
+      <ShellLayoutProvider>
+        <CompanyShell
+          companyName={company?.name ?? "Tvrtka"}
+          roleLabel={roleLabel}
+          sections={sections}
+          topBarExtra={expiryBadge}
+        >
+          {children}
+        </CompanyShell>
+      </ShellLayoutProvider>
     </DialogProvider>
   );
 }

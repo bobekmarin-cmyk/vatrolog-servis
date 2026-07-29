@@ -7,6 +7,7 @@ import LogoutButton from "@/components/LogoutButton";
 import NowDateTime from "@/components/NowDateTime";
 import ServicerActivationDropdown from "@/components/ServicerActivationDropdown";
 import VatroLogLogo from "@/components/VatroLogLogo";
+import { useShellLayout } from "@/components/ShellLayoutContext";
 import { APP_NAME, APP_VERSION } from "@/lib/appVersion";
 
 export type CompanyNavItem = {
@@ -28,6 +29,9 @@ export type CompanyNavSection = {
   collapsible?: boolean;
 };
 
+/** Širina privremeno proširenog izbornika koji prelazi preko sadržaja (= w-72). */
+const RAIL_OVERLAY_WIDTH = "18rem";
+
 function isItemActive(pathname: string, item: CompanyNavItem): boolean {
   if (item.activePathPrefixes?.length) {
     return item.activePathPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -42,6 +46,18 @@ function NavBadge({ count }: { count: number }) {
   return (
     <span
       className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white tabular-nums"
+      aria-label={`${count} nepročitanih`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function RailBadge({ count }: { count: number }) {
+  const label = count > 9 ? "9+" : String(count);
+  return (
+    <span
+      className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-600 px-1 py-0.5 text-[9px] font-bold leading-none text-white tabular-nums"
       aria-label={`${count} nepročitanih`}
     >
       {label}
@@ -80,6 +96,49 @@ function NavItem(item: CompanyNavItem & { disabled?: boolean }) {
       {icon ? <span className="w-5 text-center">{icon}</span> : null}
       <span className="font-medium">{label}</span>
       {showBadge ? <NavBadge count={badgeCount as number} /> : null}
+    </Link>
+  );
+}
+
+function RailNavItem(item: CompanyNavItem & { disabled?: boolean }) {
+  const { href, label, icon, disabled, badgeCount } = item;
+  const pathname = usePathname();
+  const active = !disabled && isItemActive(pathname, item);
+  const showBadge = !disabled && typeof badgeCount === "number" && badgeCount > 0;
+
+  const inner = (
+    <>
+      <span aria-hidden className="text-base leading-none">
+        {icon ?? label.slice(0, 1)}
+      </span>
+      {showBadge ? <RailBadge count={badgeCount as number} /> : null}
+    </>
+  );
+
+  if (disabled) {
+    return (
+      <span
+        className="relative flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-xl text-white/40"
+        title={`${label} — uskoro`}
+        aria-disabled="true"
+      >
+        {inner}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={[
+        "relative flex h-10 w-10 items-center justify-center rounded-xl",
+        active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white",
+      ].join(" ")}
+      title={label}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+    >
+      {inner}
     </Link>
   );
 }
@@ -123,6 +182,17 @@ function SectionHeader({
   return <div className={cls}>{title}</div>;
 }
 
+function BrandMark() {
+  return (
+    <span
+      className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-600 text-sm font-black text-white"
+      aria-hidden
+    >
+      V
+    </span>
+  );
+}
+
 export default function CompanyShell(props: {
   companyName: string;
   roleLabel: string;
@@ -134,6 +204,81 @@ export default function CompanyShell(props: {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const [manualSectionOpen, setManualSectionOpen] = useState<Record<string, boolean | undefined>>({});
+
+  const { contentDrawerOpen } = useShellLayout();
+  const [railHovered, setRailHovered] = useState(false);
+  const [railPinned, setRailPinned] = useState(false);
+
+  // Svaki novi drawer kreće od skupljene trake (hover/pin se ne pamte).
+  const [lastDrawerOpen, setLastDrawerOpen] = useState(contentDrawerOpen);
+  if (lastDrawerOpen !== contentDrawerOpen) {
+    setLastDrawerOpen(contentDrawerOpen);
+    setRailHovered(false);
+    setRailPinned(false);
+  }
+
+  const railMode = contentDrawerOpen;
+  const railExpanded = railMode && (railHovered || railPinned);
+
+  function renderSections(collapsed: boolean) {
+    return sections.map((section, idx) => {
+      if (section.items.length === 0) return null;
+      const sectionActive =
+        !section.inactiveSection && section.items.some((i) => isItemActive(pathname, i));
+      const sectionKey = section.title ?? `nav-${idx}`;
+      const hasActiveInSection = section.items.some((i) => isItemActive(pathname, i));
+      const expanded = hasActiveInSection
+        ? true
+        : manualSectionOpen[sectionKey] !== undefined
+          ? (manualSectionOpen[sectionKey] as boolean)
+          : !section.collapsible;
+
+      if (collapsed) {
+        return (
+          <div key={idx} className={section.inactiveSection ? "opacity-[0.52]" : undefined}>
+            <div className="flex flex-col items-center gap-1">
+              {section.items.map((i) => (
+                <RailNavItem key={i.href} {...i} disabled={section.inactiveSection} />
+              ))}
+            </div>
+            {idx !== sections.length - 1 && <div className="mx-auto my-2 h-px w-6 bg-white/15" />}
+          </div>
+        );
+      }
+
+      return (
+        <div key={idx} className={section.inactiveSection ? "rounded-xl opacity-[0.52]" : undefined}>
+          {section.title ? (
+            <SectionHeader
+              title={section.title}
+              isActive={sectionActive}
+              muted={section.inactiveSection}
+              collapsible={section.collapsible}
+              expanded={section.collapsible ? expanded : undefined}
+              onToggle={
+                section.collapsible
+                  ? () => {
+                      setManualSectionOpen((prev) => ({
+                        ...prev,
+                        [sectionKey]: !expanded,
+                      }));
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
+          {section.collapsible && !expanded ? null : (
+            <div className="space-y-1">
+              {section.items.map((i) => (
+                <NavItem key={i.href} {...i} disabled={section.inactiveSection} />
+              ))}
+            </div>
+          )}
+          {idx !== sections.length - 1 && <div className="my-3 h-px bg-white/10" />}
+        </div>
+      );
+    });
+  }
 
   return (
     <div className="min-h-dvh bg-transparent">
@@ -194,9 +339,16 @@ export default function CompanyShell(props: {
               "fixed left-0 top-0 h-dvh",
               "transition-transform",
               open ? "translate-x-0" : "-translate-x-full",
-              "md:sticky md:left-auto md:top-20 md:z-auto md:h-auto md:max-h-[calc(100dvh-6rem)] md:overflow-y-auto md:translate-x-0 md:rounded-3xl",
+              "md:sticky md:left-auto md:top-20 md:h-auto md:translate-x-0 md:rounded-3xl",
+              "md:transition-[width] md:duration-200 md:ease-out",
+              // Iznad backdropa drawera da izbornik ostane upotrebljiv dok je drawer otvoren.
+              railMode
+                ? "md:z-[9999] md:w-[4.25rem] md:overflow-visible md:rounded-none md:bg-transparent md:shadow-none"
+                : "md:z-auto md:w-72 md:max-h-[calc(100dvh-6rem)] md:overflow-y-auto",
             ].join(" ")}
             aria-label="Izbornik"
+            onMouseEnter={railMode ? () => setRailHovered(true) : undefined}
+            onMouseLeave={railMode ? () => setRailHovered(false) : undefined}
           >
             <div className="flex h-14 items-center justify-between px-3 md:hidden">
               <div className="text-sm font-semibold text-white">Izbornik</div>
@@ -213,55 +365,64 @@ export default function CompanyShell(props: {
               </button>
             </div>
 
-            <nav className="space-y-2 px-2 py-4">
-              {sections.map((section, idx) => {
-                if (section.items.length === 0) return null;
-                const sectionActive =
-                  !section.inactiveSection && section.items.some((i) => isItemActive(pathname, i));
-                const sectionKey = section.title ?? `nav-${idx}`;
-                const hasActiveInSection = section.items.some((i) => isItemActive(pathname, i));
-                const expanded = hasActiveInSection
-                  ? true
-                  : manualSectionOpen[sectionKey] !== undefined
-                    ? (manualSectionOpen[sectionKey] as boolean)
-                    : !section.collapsible;
-                return (
-                  <div
-                    key={idx}
-                    className={section.inactiveSection ? "rounded-xl opacity-[0.52]" : undefined}
-                  >
-                    {section.title ? (
-                      <SectionHeader
-                        title={section.title}
-                        isActive={sectionActive}
-                        muted={section.inactiveSection}
-                        collapsible={section.collapsible}
-                        expanded={section.collapsible ? expanded : undefined}
-                        onToggle={
-                          section.collapsible
-                            ? () => {
-                                setManualSectionOpen((prev) => ({
-                                  ...prev,
-                                  [sectionKey]: !expanded,
-                                }));
-                              }
-                            : undefined
-                        }
-                      />
-                    ) : null}
-                    {section.collapsible && !expanded ? null : (
-                      <div className="space-y-1">
-                        {section.items.map((i) => (
-                          <NavItem key={i.href} {...i} disabled={section.inactiveSection} />
-                        ))}
-                      </div>
-                    )}
-                    {idx !== sections.length - 1 && <div className="my-3 h-px bg-white/10" />}
-                  </div>
-                );
-              })}
+            {/* MOBITEL + normalni desktop izbornik */}
+            <nav className={["space-y-2 px-2 py-4", railMode ? "md:hidden" : ""].join(" ")}>
+              {renderSections(false)}
             </nav>
 
+            {/* DESKTOP TRAKA S IKONAMA (dok je drawer otvoren) */}
+            {railMode ? (
+              <div className="hidden md:block">
+                <div
+                  className={[
+                    "flex flex-col items-center gap-1 rounded-3xl bg-slate-900 px-2 py-4 shadow-lg",
+                    "transition-opacity duration-150",
+                    railExpanded ? "opacity-0" : "opacity-100",
+                  ].join(" ")}
+                >
+                  <div className="mb-2">
+                    <BrandMark />
+                  </div>
+                  {renderSections(true)}
+                </div>
+
+                {/* Privremeno prošireni izbornik preko sadržaja */}
+                <div
+                  className={[
+                    "absolute left-0 top-0 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-3xl bg-slate-900 shadow-2xl",
+                    "transition-opacity duration-150",
+                    railExpanded
+                      ? "pointer-events-auto opacity-100"
+                      : "pointer-events-none opacity-0",
+                  ].join(" ")}
+                  style={{ width: RAIL_OVERLAY_WIDTH }}
+                  aria-hidden={!railExpanded}
+                >
+                  <div className="flex items-center justify-between gap-2 px-4 pt-4">
+                    <div className="flex items-center gap-2">
+                      <BrandMark />
+                      <span className="text-sm font-semibold text-white">Izbornik</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={[
+                        "inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs",
+                        railPinned
+                          ? "bg-white/20 text-white"
+                          : "text-white/70 hover:bg-white/10 hover:text-white",
+                      ].join(" ")}
+                      onClick={() => setRailPinned((v) => !v)}
+                      title={railPinned ? "Otkvači izbornik" : "Prikvači izbornik"}
+                      aria-label={railPinned ? "Otkvači izbornik" : "Prikvači izbornik"}
+                      aria-pressed={railPinned}
+                    >
+                      <span aria-hidden>📌</span>
+                    </button>
+                  </div>
+                  <nav className="space-y-2 px-2 py-4">{renderSections(false)}</nav>
+                </div>
+              </div>
+            ) : null}
           </aside>
 
           {/* CONTENT */}
