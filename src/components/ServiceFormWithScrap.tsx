@@ -269,8 +269,8 @@ export default function ServiceFormWithScrap(props: {
           </div>
         </Modal>
 
-        <div className={embedded ? "grid gap-4" : "xl:col-span-3 grid gap-4 xl:grid-cols-3"}>
-          <div className={embedded ? "flex flex-col gap-4" : "flex flex-col gap-6 xl:col-span-1"}>
+        <div className={embedded ? "grid gap-3" : "xl:col-span-3 grid gap-4 xl:grid-cols-3"}>
+          <div className={embedded ? "flex flex-col gap-3" : "flex flex-col gap-6 xl:col-span-1"}>
             {extinguisherSummaryLeft ? (
               <section className="surface p-4">
                 {extinguisherSummaryLeft}
@@ -308,7 +308,7 @@ export default function ServiceFormWithScrap(props: {
             className={`min-w-0 border-0 p-0 m-0 disabled:opacity-55 ${embedded ? "" : "xl:col-span-2"}`}
             disabled={scrap}
           >
-            <div className={embedded ? "space-y-4" : "space-y-6"}>{rightContent}</div>
+            <div className={embedded ? "space-y-3" : "space-y-6"}>{rightContent}</div>
           </fieldset>
         </div>
 
