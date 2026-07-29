@@ -270,14 +270,13 @@ const styles = StyleSheet.create({
   colSerial: { width: 48 },
   colYear: { width: 30, textAlign: "center" as const },
   colInt: { width: 30, textAlign: "center" as const },
+  colLabel: { width: 58 },
   /** Najširi stupac — više dijelova smije ići u 2 reda. */
-  colParts: { flex: 1, minWidth: 150 },
+  colParts: { flex: 1, minWidth: 140 },
   colNextP: { width: 52, textAlign: "center" as const },
   colNextI: { width: 52, textAlign: "center" as const },
   colLoc: { width: 68 },
-  colLabel: { width: 58 },
   colDate: { width: 54, textAlign: "center" as const },
-  tdMfr: { maxHeight: 11, overflow: "hidden" as const },
   tdParts: { lineHeight: 1.25 },
 
   empty: {
@@ -506,11 +505,11 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
             <Text style={[styles.th, styles.colSerial]}>Serijski</Text>
             <Text style={[styles.th, styles.colYear]}>God.</Text>
             <Text style={[styles.th, styles.colInt]}>Unut.</Text>
+            <Text style={[styles.th, styles.colLabel]}>Naljepnica</Text>
             <Text style={[styles.th, styles.colParts]}>Dijelovi</Text>
             <Text style={[styles.th, styles.colNextP]}>Idući PP</Text>
             <Text style={[styles.th, styles.colNextI]}>Idući UP</Text>
             <Text style={[styles.th, styles.colLoc]}>Lokacija</Text>
-            <Text style={[styles.th, styles.colLabel]}>Naljepnica</Text>
             <Text style={[styles.th, styles.colDate]}>Datum</Text>
           </View>
           {tableItems.length === 0 ? (
@@ -521,7 +520,7 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
             tableItems.map((it) => (
               <View key={it.key} style={rowStyle(it.row, it.zebra)} wrap={false}>
                 <Text style={[styles.td, styles.colRbr]}>{it.row.rbr}</Text>
-                <Text style={[styles.td, styles.colMfr, styles.tdMfr]}>
+                <Text style={[styles.td, styles.colMfr]}>
                   {oneLineManufacturer(it.row.manufacturer)}
                 </Text>
                 <Text style={[styles.td, styles.colType]}>{it.row.type}</Text>
@@ -530,13 +529,13 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
                 </Text>
                 <Text style={[styles.td, styles.colYear]}>{it.row.year ?? "-"}</Text>
                 <Text style={[styles.td, styles.colInt]}>{it.row.internal}</Text>
+                <Text style={[styles.td, styles.colLabel]}>{it.row.label}</Text>
                 <Text style={[styles.td, styles.colParts, styles.tdParts]}>
                   {it.row.parts || "-"}
                 </Text>
                 <Text style={[styles.td, styles.colNextP]}>{it.row.nextPeriodic}</Text>
                 <Text style={[styles.td, styles.colNextI]}>{it.row.nextInternal}</Text>
                 <Text style={[styles.td, styles.colLoc]}>{it.row.location}</Text>
-                <Text style={[styles.td, styles.colLabel]}>{it.row.label}</Text>
                 <Text style={[styles.td, styles.colDate]}>{it.row.servicedAt}</Text>
               </View>
             ))
