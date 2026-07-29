@@ -206,7 +206,8 @@ export async function getCompanyPartOverridesByPartIds(
  *
  * Filtri:
  *  - `manufacturerId` (obavezno — picker je vezan za aparat tog proizvođača)
- *  - `extinguisherTypeId` (opcionalno — filtrira po vrijedi-za-tip)
+ *  - `extinguisherTypeId` (opcionalno — dio se prikazuje ako je pridružen
+ *    tom tipu ILI nema nijednu tip-vezu = univerzalni dio)
  *  - `common` (opcionalno — true = samo efektivno uobičajeni dijelovi
  *    nakon tenant overridea)
  *  - `seedPartIds` — uvijek uključi te id-jeve (npr. već odabrani dijelovi
@@ -239,12 +240,23 @@ export async function listAvailablePartsForCompany(
   const platformEnabled = enabled.has(params.manufacturerId);
   const seed = new Set(params.seedPartIds ?? []);
 
+  // Dio bez ikakve veze na tipove = univerzalni (vrijedi za sve tipove proizvođača).
+  // Dio s vezama = samo za eksplicitno pridružene tipove.
+  const typeFilter: Prisma.PartWhereInput | null = params.extinguisherTypeId
+    ? {
+        OR: [
+          { types: { none: {} } },
+          { types: { some: { extinguisherTypeId: params.extinguisherTypeId } } },
+        ],
+      }
+    : null;
+
   const baseWhere: Prisma.PartWhereInput = {
     manufacturerId: params.manufacturerId,
-    OR: [{ companyId: null }, { companyId: params.companyId }],
-    ...(params.extinguisherTypeId
-      ? { types: { some: { extinguisherTypeId: params.extinguisherTypeId } } }
-      : {}),
+    AND: [
+      { OR: [{ companyId: null }, { companyId: params.companyId }] },
+      ...(typeFilter ? [typeFilter] : []),
+    ],
   };
 
   const parts = await (db as PrismaClient).part.findMany({

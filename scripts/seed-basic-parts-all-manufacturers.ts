@@ -3,6 +3,8 @@
  *
  * Bez šifre proizvođača i bez cijene — tehnički `code` je intern (obavezan u shemi),
  * a UI prikazuje praznu šifru dok je `manufacturerCode` null.
+ * Bez tip-veza (PartExtinguisherType) — picker ih tretira kao univerzalne
+ * za sve tipove aparata tog proizvođača.
  *
  * Pokretanje:
  *   DATABASE_URL="..." npx ts-node -P tsconfig.seed.json scripts/seed-basic-parts-all-manufacturers.ts

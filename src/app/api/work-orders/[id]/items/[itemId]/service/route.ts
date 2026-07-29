@@ -205,7 +205,8 @@ export async function POST(
 
   // Dohvati Part zapise (i njihove overrideove) za sve odabrane partIds.
   // Validiramo:
-  //  - dio postoji i pripada ovom proizvođaču + tipu aparata
+  //  - dio postoji i pripada ovom proizvođaču
+  //  - tip: pridružen tipu aparata ILI bez tip-veza (univerzalni dio)
   //  - tenant ima pristup tom dijelu (vlastiti ili platform s uključenim katalogom)
   //  - dio je aktivan ILI je već odabran ranije (čuva se povijest)
   const partsInDb =
@@ -214,8 +215,15 @@ export async function POST(
           where: {
             id: { in: partIds },
             manufacturerId: ex.manufacturerId,
-            types: { some: { extinguisherTypeId: ex.extinguisherTypeId } },
-            OR: [{ companyId: null }, { companyId: session.companyId }],
+            AND: [
+              { OR: [{ companyId: null }, { companyId: session.companyId }] },
+              {
+                OR: [
+                  { types: { none: {} } },
+                  { types: { some: { extinguisherTypeId: ex.extinguisherTypeId } } },
+                ],
+              },
+            ],
           },
           select: {
             id: true,
