@@ -50,8 +50,6 @@ export type RenderEmailInput = {
   fields: RenderEmailFields;
   /** Branding — boje, logo, signature, naziv pošiljatelja. */
   branding: EmailBranding;
-  /** Opcionalna labela u headeru (npr. "Servis vatrogasnih aparata"). */
-  documentLabel?: string;
   /** HTML koji se renderira ispod `bodyText`-a a iznad `calloutText`-a (gumb, tablica, lista). */
   extraHtml?: string;
   /** Plain text verzija (fallback za klijente bez HTML-a). Ako se ne pošalje, builda se iz polja. */
@@ -63,7 +61,7 @@ export type RenderEmailInput = {
  * Vraća `{ subject, html, text }` istovjetno kao postojeći helperi.
  */
 export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
-  const { subject, preheader, fields, branding, documentLabel, extraHtml } = input;
+  const { subject, preheader, fields, branding, extraHtml } = input;
 
   const greetingHtml = fields.greeting?.trim()
     ? emailParagraph(`<strong style="color:${EMAIL_COLORS.text};font-weight:600;">${nl2br(fields.greeting)}</strong>`)
@@ -105,8 +103,7 @@ export function renderEmailShell(input: RenderEmailInput): RenderedEmail {
     `<table role="presentation" width="${EMAIL_MAX_WIDTH}" cellpadding="0" cellspacing="0" border="0" ` +
     `style="max-width:${EMAIL_MAX_WIDTH}px;width:100%;background:${EMAIL_COLORS.surface};border:1px solid ${EMAIL_COLORS.border};border-radius:8px;">` +
     `<tr><td style="padding:28px 32px 24px 32px;">` +
-    // documentLabel se više ne prikazuje u headeru (tip je u H1); zadržano u API-ju radi kompatibilnosti.
-    emailHeader(branding, documentLabel) +
+    emailHeader(branding) +
     emailHeading(escapeHtml(subject)) +
     innerContent +
     emailFooter(branding, fields.footerNote ?? null) +

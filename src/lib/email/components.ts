@@ -69,11 +69,9 @@ function emailVatrologWordmarkLink(brandColor: string, fontSize: number): string
  * Header: pošiljatelj (tvrtka ili VatroLog) + VatroLog marka.
  * Tenant mailovi: lijevo tvrtka, desno VatroLog.
  * Vendor mailovi (fromName = VatroLog): jedna marka, bez duplikata.
- *
- * Napomena: document-type labela (npr. "Primka") se namjerno ne prikazuje u
- * headeru — tip dokumenta je već u H1 naslovu.
+ * Tip dokumenta (Primka/Upisnik…) ide u H1, ne u header.
  */
-export function emailHeader(branding: EmailBranding, _documentLabel?: string): string {
+export function emailHeader(branding: EmailBranding): string {
   const brandColor = branding.brandColor;
   const fromName = branding.fromName.trim() || VATROLOG_PRODUCT_NAME;
   const isVatrologSender = fromName.toLowerCase() === "vatrolog";
