@@ -25,6 +25,10 @@ import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay"
 import PendingSubmitForm from "@/components/PendingSubmitForm";
 import { getTenantMailStatus } from "@/lib/tenantMail";
 import { getCompanyPlan, planAllows, planUpgradeMessage } from "@/lib/subscriptionPlan";
+import {
+  loadExtinguisherFormCatalog,
+  type ExtinguisherEditInitial,
+} from "@/lib/extinguisherFormCatalog";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -185,6 +189,27 @@ export default async function ServiceViewPage({
   const servicedCount = order.items.filter((i) => i.servicedAt).length;
   const isLocked = order.status === "LOCKED";
   const hasAnyServiced = order.items.some((i) => !!i.servicedAt || !!i.labelNumber);
+
+  // Katalog unaprijed — drawer se otvara odmah bez API čekanja.
+  const extinguisherCatalog = isLocked
+    ? null
+    : await loadExtinguisherFormCatalog(session.companyId);
+  const editInitialByItemId: Record<string, ExtinguisherEditInitial> = {};
+  if (!isLocked) {
+    for (const item of order.items) {
+      const ex = item.extinguisher;
+      if (item.isPlaceholder || !ex) continue;
+      editInitialByItemId[item.id] = {
+        internalCode: ex.internalCode,
+        manufacturerId: ex.manufacturerId,
+        extinguisherTypeId: ex.extinguisherTypeId,
+        serialNumber: ex.serialNumber,
+        productionYear: ex.productionYear,
+        typeDescription: ex.typeDescription,
+        serviceLocationText: item.serviceLocationText,
+      };
+    }
+  }
 
   const issuedDeliveryNotes = order.deliveryNotes.filter((n) => n.pdfStoragePath);
   const activeDeliveryNote = issuedDeliveryNotes.find((n) => !n.supersededAt) ?? null;
@@ -506,6 +531,8 @@ export default async function ServiceViewPage({
         orderNumber={order.orderNumber}
         customerName={customerDisplayName(order.customer)}
         locked={isLocked}
+        catalog={extinguisherCatalog}
+        editInitialByItemId={editInitialByItemId}
         initialItemId={drawerItemId}
         initialMode={drawerMode}
       >

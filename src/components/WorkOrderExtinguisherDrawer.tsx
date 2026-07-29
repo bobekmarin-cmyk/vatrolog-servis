@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -13,37 +14,12 @@ import { useRouter } from "next/navigation";
 import Drawer from "@/components/ui/Drawer";
 import AddExtinguisherForm from "@/components/AddExtinguisherForm";
 import EditExtinguisherForm from "@/components/EditExtinguisherForm";
+import type {
+  ExtinguisherEditInitial,
+  ExtinguisherFormCatalog,
+} from "@/lib/extinguisherFormCatalog";
 
 export type ExtinguisherDrawerMode = "fill" | "edit";
-
-type Manufacturer = {
-  id: string;
-  name: string;
-  supportedTypes?: { extinguisherTypeId: string }[];
-};
-
-type ExtinguisherType = {
-  id: string;
-  name: string;
-  code: string;
-  agent?: { code: string; label: string; symbol?: string | null } | null;
-  construction?: { code: string; label: string } | null;
-};
-
-type FormData = {
-  mode: ExtinguisherDrawerMode;
-  manufacturers: Manufacturer[];
-  types: ExtinguisherType[];
-  initial: {
-    internalCode: string;
-    manufacturerId: string;
-    extinguisherTypeId: string;
-    serialNumber: string;
-    productionYear: number;
-    typeDescription: string | null;
-    serviceLocationText: string | null;
-  } | null;
-};
 
 type Ctx = {
   openDrawer: (itemId: string, mode: ExtinguisherDrawerMode) => void;
@@ -81,6 +57,8 @@ export function WorkOrderExtinguisherDrawerProvider({
   orderNumber,
   customerName,
   locked,
+  catalog,
+  editInitialByItemId,
   initialItemId,
   initialMode,
   children,
@@ -89,6 +67,9 @@ export function WorkOrderExtinguisherDrawerProvider({
   orderNumber: string;
   customerName: string;
   locked: boolean;
+  /** Pred učitan katalog — drawer se otvara bez mrežnog čekanja. */
+  catalog: ExtinguisherFormCatalog | null;
+  editInitialByItemId: Record<string, ExtinguisherEditInitial>;
   initialItemId?: string;
   initialMode?: ExtinguisherDrawerMode;
   children: ReactNode;
@@ -101,26 +82,28 @@ export function WorkOrderExtinguisherDrawerProvider({
   const [open, setOpen] = useState<boolean>(!locked && !!initialItemId);
   const [mode, setMode] = useState<ExtinguisherDrawerMode>(initialMode ?? "fill");
 
-  const [data, setData] = useState<FormData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
   const [canSubmit, setCanSubmit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const [highlightItemId, setHighlightItemId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const focusRef = useRef<HTMLElement | null>(null);
 
   const openDrawer = useCallback(
     (nextItemId: string, nextMode: ExtinguisherDrawerMode) => {
       if (locked) return;
+      if (nextMode === "edit" && !editInitialByItemId[nextItemId]) {
+        setFormError("Podaci aparata nisu dostupni za uređivanje.");
+      } else {
+        setFormError(null);
+      }
       setItemId(nextItemId);
       setMode(nextMode);
+      setCanSubmit(false);
       setOpen(true);
       syncUrl(nextItemId, nextMode);
     },
-    [locked],
+    [locked, editInitialByItemId],
   );
 
   const closeDrawer = useCallback(() => {
@@ -129,51 +112,10 @@ export function WorkOrderExtinguisherDrawerProvider({
     syncUrl(null, null);
   }, [submitting]);
 
-  // Dohvat podataka forme tek kad se drawer otvori — stranica naloga ih ne nosi.
+  // Forma je odmah dostupna (katalog s servera) — fokus čim se panel otvori.
   useEffect(() => {
-    if (!open || !itemId) return;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      setLoading(true);
-      setLoadError(null);
-      setData(null);
-      setCanSubmit(false);
-    });
-
-    fetch(`/api/work-orders/${orderId}/items/${itemId}/extinguisher-form`, {
-      headers: { Accept: "application/json" },
-    })
-      .then(async (res) => {
-        const payload = await res.json().catch(() => null);
-        if (cancelled) return;
-        if (!res.ok || !payload?.ok) {
-          setLoadError(payload?.error ?? "Podatke nije moguće učitati.");
-          return;
-        }
-        setMode(payload.mode as ExtinguisherDrawerMode);
-        setData({
-          mode: payload.mode,
-          manufacturers: payload.manufacturers ?? [],
-          types: payload.types ?? [],
-          initial: payload.initial ?? null,
-        });
-      })
-      .catch(() => {
-        if (!cancelled) setLoadError("Greška mreže — podaci nisu učitani.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, itemId, orderId]);
-
-  // Forma se renderira tek nakon dohvata, pa fokus namještamo kad podaci stignu.
-  useEffect(() => {
-    if (!open || !data) return;
+    if (!open || !catalog || !itemId) return;
+    if (mode === "edit" && !editInitialByItemId[itemId]) return;
     const timer = setTimeout(() => {
       const el = focusRef.current;
       if (!el) return;
@@ -181,7 +123,7 @@ export function WorkOrderExtinguisherDrawerProvider({
       if (el instanceof HTMLInputElement) el.select();
     }, 30);
     return () => clearTimeout(timer);
-  }, [open, data]);
+  }, [open, catalog, itemId, mode, editInitialByItemId]);
 
   useEffect(() => {
     if (!highlightItemId) return;
@@ -200,6 +142,17 @@ export function WorkOrderExtinguisherDrawerProvider({
   const handleSubmittingChange = useCallback((value: boolean) => setSubmitting(value), []);
 
   const title = mode === "fill" ? "Popuni podatke aparata" : "Uredi podatke aparata";
+
+  const editInitial = itemId ? editInitialByItemId[itemId] ?? null : null;
+  const ready =
+    !!catalog &&
+    !!itemId &&
+    (mode === "fill" || (mode === "edit" && !!editInitial));
+
+  const manufacturers = useMemo(() => {
+    if (!catalog) return [];
+    return mode === "edit" ? catalog.editManufacturers : catalog.fillManufacturers;
+  }, [catalog, mode]);
 
   return (
     <DrawerCtx.Provider value={{ openDrawer, highlightItemId }}>
@@ -231,57 +184,52 @@ export function WorkOrderExtinguisherDrawerProvider({
                 "btn px-5",
                 canSubmit ? "btn-primary" : "cursor-not-allowed bg-slate-200 text-slate-500",
               ].join(" ")}
-              disabled={!canSubmit || submitting || loading || !data}
+              disabled={!canSubmit || submitting || !ready}
             >
               {submitting ? "Spremam…" : mode === "fill" ? "Spremi" : "Spremi promjene"}
             </button>
           </div>
         }
       >
-        {loading ? (
-          <div className="space-y-3" aria-busy="true">
-            <div className="h-9 w-full animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-24 w-full animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-9 w-full animate-pulse rounded-xl bg-slate-100" />
-            <div className="h-9 w-2/3 animate-pulse rounded-xl bg-slate-100" />
+        {!catalog ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Katalog tipova još nije učitan. Osvježi stranicu.
           </div>
-        ) : loadError ? (
+        ) : formError || (mode === "edit" && !editInitial) ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
-            {loadError}
+            {formError ?? "Podaci aparata nisu dostupni za uređivanje."}
           </div>
-        ) : data && itemId ? (
-          data.mode === "edit" && data.initial ? (
-            <EditExtinguisherForm
-              key={`edit-${itemId}`}
-              orderId={orderId}
-              itemId={itemId}
-              manufacturers={data.manufacturers}
-              types={data.types}
-              initial={data.initial}
-              embedded
-              formId={FORM_ID}
-              focusRef={focusRef}
-              onSuccess={handleSuccess}
-              onCancel={closeDrawer}
-              onCanSubmitChange={handleCanSubmitChange}
-              onSubmittingChange={handleSubmittingChange}
-            />
-          ) : (
-            <AddExtinguisherForm
-              key={`fill-${itemId}`}
-              orderId={orderId}
-              itemId={itemId}
-              manufacturers={data.manufacturers}
-              types={data.types}
-              embedded
-              formId={FORM_ID}
-              focusRef={focusRef}
-              onSuccess={handleSuccess}
-              onCancel={closeDrawer}
-              onCanSubmitChange={handleCanSubmitChange}
-              onSubmittingChange={handleSubmittingChange}
-            />
-          )
+        ) : mode === "edit" && editInitial && itemId ? (
+          <EditExtinguisherForm
+            key={`edit-${itemId}`}
+            orderId={orderId}
+            itemId={itemId}
+            manufacturers={manufacturers}
+            types={catalog.types}
+            initial={editInitial}
+            embedded
+            formId={FORM_ID}
+            focusRef={focusRef}
+            onSuccess={handleSuccess}
+            onCancel={closeDrawer}
+            onCanSubmitChange={handleCanSubmitChange}
+            onSubmittingChange={handleSubmittingChange}
+          />
+        ) : itemId ? (
+          <AddExtinguisherForm
+            key={`fill-${itemId}`}
+            orderId={orderId}
+            itemId={itemId}
+            manufacturers={manufacturers}
+            types={catalog.types}
+            embedded
+            formId={FORM_ID}
+            focusRef={focusRef}
+            onSuccess={handleSuccess}
+            onCancel={closeDrawer}
+            onCanSubmitChange={handleCanSubmitChange}
+            onSubmittingChange={handleSubmittingChange}
+          />
         ) : null}
       </Drawer>
     </DrawerCtx.Provider>

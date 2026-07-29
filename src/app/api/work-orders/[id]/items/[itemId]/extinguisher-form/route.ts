@@ -2,15 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { customerDisplayName } from "@/lib/customerDisplay";
+import { loadExtinguisherFormCatalog } from "@/lib/extinguisherFormCatalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Podaci za drawer „Popuni placeholder” / „Uredi podatke aparata”.
- *
- * Mode se određuje na serveru (placeholder → fill, inače edit) da klijent ne
- * može tražiti popis proizvođača za nešto što nije njegovo.
+ * Podaci za drawer (fallback / stari klijenti). Preferirani put: katalog se
+ * učita na stranici naloga pa se drawer otvara bez ovog poziva.
  */
 export async function GET(
   _req: Request,
@@ -44,43 +43,8 @@ export async function GET(
   }
 
   const mode: "fill" | "edit" = item.isPlaceholder || !item.extinguisher ? "fill" : "edit";
-
-  const types = await prisma.extinguisherType.findMany({
-    orderBy: [{ code: "asc" }],
-    select: {
-      id: true,
-      name: true,
-      code: true,
-      agent: { select: { code: true, label: true, symbol: true } },
-      construction: { select: { code: true, label: true } },
-    },
-  });
-
-  // Fill koristi samo proizvođače za koje tvrtka ima aktivno ovlaštenje;
-  // edit prikazuje sve da se postojeći aparat može ispraviti.
-  const manufacturers =
-    mode === "fill"
-      ? (
-          await prisma.companyManufacturerAuthorization.findMany({
-            where: { companyId: session.companyId, active: true },
-            include: {
-              manufacturer: {
-                include: { supportedTypes: { select: { extinguisherTypeId: true } } },
-              },
-            },
-          })
-        )
-          .map((a) => a.manufacturer)
-          .sort((a, b) => {
-            const so = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-            if (so !== 0) return so;
-            return a.name.localeCompare(b.name, "hr");
-          })
-      : await prisma.manufacturer.findMany({
-          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-          include: { supportedTypes: { select: { extinguisherTypeId: true } } },
-        });
-
+  const catalog = await loadExtinguisherFormCatalog(session.companyId);
+  const manufacturers = mode === "fill" ? catalog.fillManufacturers : catalog.editManufacturers;
   const ext = item.extinguisher;
 
   return NextResponse.json({
@@ -88,12 +52,8 @@ export async function GET(
     mode,
     orderNumber: order.orderNumber,
     customerName: customerDisplayName(order.customer),
-    manufacturers: manufacturers.map((m) => ({
-      id: m.id,
-      name: m.name,
-      supportedTypes: m.supportedTypes.map((s) => ({ extinguisherTypeId: s.extinguisherTypeId })),
-    })),
-    types,
+    manufacturers,
+    types: catalog.types,
     initial:
       mode === "edit" && ext
         ? {

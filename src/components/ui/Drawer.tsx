@@ -20,7 +20,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-const ANIMATION_MS = 200;
+const ANIMATION_MS = 150;
 
 type Props = {
   open: boolean;
