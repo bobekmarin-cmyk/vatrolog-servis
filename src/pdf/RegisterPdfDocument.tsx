@@ -11,8 +11,11 @@ export type RegisterRow = {
   rbr: number;
   manufacturer: string;
   type: string;
+  /** Interni broj aparata (npr. 0100300001). */
+  internalCode: string;
   serial: string | null;
   year: number | null;
+  /** Unutarnji pregled: DA / NE. */
   internal: string;
   internalDone: boolean;
   parts: string;
@@ -264,19 +267,21 @@ const styles = StyleSheet.create({
 
   colRbr: { width: 22, textAlign: "center" as const },
   /** Široko dovoljno za PASTOR T.V.A. / TORNADO VALIDUS u jednom redu. */
-  colMfr: { width: 108 },
-  colType: { width: 76 },
+  colMfr: { width: 100 },
+  colType: { width: 70 },
+  /** Interni broj aparata (~10 znamenki). */
+  colCode: { width: 58 },
   /** Serijski max ~12 znakova. */
-  colSerial: { width: 48 },
-  colYear: { width: 30, textAlign: "center" as const },
-  colInt: { width: 30, textAlign: "center" as const },
-  colLabel: { width: 58 },
+  colSerial: { width: 46 },
+  colYear: { width: 28, textAlign: "center" as const },
+  colInt: { width: 28, textAlign: "center" as const },
+  colLabel: { width: 54 },
   /** Najširi stupac — više dijelova smije ići u 2 reda. */
-  colParts: { flex: 1, minWidth: 140 },
-  colNextP: { width: 52, textAlign: "center" as const },
-  colNextI: { width: 52, textAlign: "center" as const },
-  colLoc: { width: 68 },
-  colDate: { width: 54, textAlign: "center" as const },
+  colParts: { flex: 1, minWidth: 120 },
+  colNextP: { width: 50, textAlign: "center" as const },
+  colNextI: { width: 50, textAlign: "center" as const },
+  colLoc: { width: 64 },
+  colDate: { width: 52, textAlign: "center" as const },
   tdParts: { lineHeight: 1.25 },
 
   empty: {
@@ -502,6 +507,7 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
             <Text style={[styles.th, styles.colRbr]}>R.br.</Text>
             <Text style={[styles.th, styles.colMfr]}>Proizvođač</Text>
             <Text style={[styles.th, styles.colType]}>Tip</Text>
+            <Text style={[styles.th, styles.colCode]}>Interni br.</Text>
             <Text style={[styles.th, styles.colSerial]}>Serijski</Text>
             <Text style={[styles.th, styles.colYear]}>God.</Text>
             <Text style={[styles.th, styles.colInt]}>Unut.</Text>
@@ -524,6 +530,7 @@ export default function RegisterPdfDocument({ data }: { data: RegisterPdfData })
                   {oneLineManufacturer(it.row.manufacturer)}
                 </Text>
                 <Text style={[styles.td, styles.colType]}>{it.row.type}</Text>
+                <Text style={[styles.td, styles.colCode]}>{it.row.internalCode || "-"}</Text>
                 <Text style={[styles.td, styles.colSerial]}>
                   {oneLineSerial(it.row.serial)}
                 </Text>

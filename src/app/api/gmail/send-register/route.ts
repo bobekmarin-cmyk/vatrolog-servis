@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
       rbr: idx + 1,
       manufacturer: displayManufacturer(ex.manufacturer),
       type: ex.type ? formatExtinguisherTypeName(ex.type) : "-",
+      internalCode: (ex.internalCode ?? "").trim() || "-",
       serial: ex.serialNumber,
       year: ex.productionYear,
       internal: i.internalDone ? "DA" : "NE",

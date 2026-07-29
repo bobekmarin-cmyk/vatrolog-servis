@@ -220,6 +220,7 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
         rbr: 0,
         manufacturer: displayManufacturer(ex.manufacturer),
         type: typeLabel,
+        internalCode: (ex.internalCode ?? "").trim() || "-",
         serial: ex.serialNumber,
         year: ex.productionYear,
         internal: internalDone ? "DA" : "NE",
