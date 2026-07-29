@@ -80,7 +80,8 @@ export type PartOverrideLite = {
  * Vrati prikaznu šifru dijela:
  *  - vlastiti dio: uvijek `Part.code` (tenantov)
  *  - platform dio s overrideom i ne-praznom šifrom: override šifra
- *  - platform dio bez override šifre: `manufacturerCode` (fallback `code`)
+ *  - platform dio s `manufacturerCode`: ta šifra
+ *  - platform dio bez šifre proizvođača: prazno (tehnički `code` ostaje u DB)
  */
 export function partDisplayCode(part: PartLite, override?: PartOverrideLite | null): string {
   if (part.companyId) return part.code;
@@ -88,17 +89,18 @@ export function partDisplayCode(part: PartLite, override?: PartOverrideLite | nu
   if (ov) return ov;
   const mc = part.manufacturerCode?.trim();
   if (mc) return mc;
-  return part.code;
+  return "";
 }
 
 /**
  * Vrati šifru proizvođača (samo za platform dijelove). Za vlastite dijelove
  * vraća null jer ih proizvođač ne vodi pod svojim šiframa.
+ * Ako `manufacturerCode` nije unesen, vraća null (ne pada na tehnički `code`).
  */
 export function partManufacturerCode(part: PartLite): string | null {
   if (part.companyId) return null;
   const mc = part.manufacturerCode?.trim();
-  return mc && mc.length > 0 ? mc : part.code;
+  return mc && mc.length > 0 ? mc : null;
 }
 
 /**
