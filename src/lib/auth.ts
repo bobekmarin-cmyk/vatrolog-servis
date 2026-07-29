@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
@@ -89,7 +90,8 @@ export async function verifySessionToken(token: string): Promise<SessionPayload>
 
 export type SubscriptionStatus = "active" | "expired" | "blocked";
 
-export async function getSession(): Promise<SessionPayload | null> {
+/** Deduplikacija unutar jednog RSC requesta (layout + page više ne gađaju DB 2–3×). */
+export const getSession = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -140,7 +142,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   } catch {
     return null;
   }
-}
+});
 
 export async function getSubscriptionStatus(companyId: string): Promise<SubscriptionStatus> {
   const company = await prisma.company.findUnique({
@@ -162,7 +164,7 @@ export type SubscriptionInfo = {
   expiringSoon: boolean;
 };
 
-export async function getSubscriptionInfo(companyId: string): Promise<SubscriptionInfo> {
+export const getSubscriptionInfo = cache(async (companyId: string): Promise<SubscriptionInfo> => {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
     select: { blocked: true, activeUntil: true },
@@ -193,7 +195,7 @@ export async function getSubscriptionInfo(companyId: string): Promise<Subscripti
     daysUntilExpiry >= 0;
 
   return { status, activeUntil, daysUntilExpiry, expiringSoon };
-}
+});
 
 export async function requireSession(): Promise<SessionPayload> {
   const s = await getSession();

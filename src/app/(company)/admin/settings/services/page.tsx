@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { syncCompanyServiceCatalog } from "@/lib/companyServiceCatalog";
 import {
   formatVariantName,
   serviceKindLabel,
@@ -21,13 +20,24 @@ export default async function ServicesCatalogPage() {
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/");
 
-  await syncCompanyServiceCatalog(null, { companyId: session.companyId });
+  // Katalog se sinkronizira pri kreaciji tvrtke / promjeni tipova aparata
+  // (i pri izdavanju dokumenta). Full upsert na svakom otvaranju taba je bio
+  // glavni uzrok sporog prebacivanja na Usluge.
+  const [customRowsDb, rowsDb] = await Promise.all([
+    prisma.companyCustomService.findMany({
+      where: { companyId: session.companyId, deletedAt: null },
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      select: { id: true, name: true, code: true, price: true, isActive: true },
+    }),
+    prisma.companyServiceCatalog.findMany({
+      where: { companyId: session.companyId },
+      include: {
+        agent: true,
+        construction: true,
+      },
+    }),
+  ]);
 
-  const customRowsDb = await prisma.companyCustomService.findMany({
-    where: { companyId: session.companyId, deletedAt: null },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-    select: { id: true, name: true, code: true, price: true, isActive: true },
-  });
   const customRows: CustomServiceRow[] = customRowsDb.map((r) => ({
     id: r.id,
     name: r.name,
@@ -35,14 +45,6 @@ export default async function ServicesCatalogPage() {
     price: r.price ? Number(r.price) : null,
     isActive: r.isActive,
   }));
-
-  const rowsDb = await prisma.companyServiceCatalog.findMany({
-    where: { companyId: session.companyId },
-    include: {
-      agent: true,
-      construction: true,
-    },
-  });
 
   const rows: ServiceCatalogRow[] = rowsDb
     .map((r) => {

@@ -76,10 +76,20 @@ export default async function PartsCatalogSettingsPage({
 
   const manufacturerIds = manufacturers.map((m) => m.id);
 
-  const settings = await prisma.companyPartCatalogSetting.findMany({
-    where: { companyId: session.companyId, manufacturerId: { in: manufacturerIds } },
-    select: { manufacturerId: true, usePlatformCatalog: true },
-  });
+  const focusManufacturer =
+    initialManufacturerId && manufacturerIds.includes(initialManufacturerId)
+      ? initialManufacturerId
+      : null;
+
+  const [settings, allParts] = await Promise.all([
+    prisma.companyPartCatalogSetting.findMany({
+      where: { companyId: session.companyId, manufacturerId: { in: manufacturerIds } },
+      select: { manufacturerId: true, usePlatformCatalog: true },
+    }),
+    listSettingsPartsForCompany(prisma, {
+      companyId: session.companyId,
+    }),
+  ]);
   const settingsMap = new Map(settings.map((s) => [s.manufacturerId, s.usePlatformCatalog]));
 
   const manuRows: ManufacturerSettingRow[] = manufacturers
@@ -96,15 +106,6 @@ export default async function PartsCatalogSettingsPage({
       if (aHas !== bHas) return aHas - bHas;
       return a.name.localeCompare(b.name, "hr");
     });
-
-  const focusManufacturer =
-    initialManufacturerId && manufacturerIds.includes(initialManufacturerId)
-      ? initialManufacturerId
-      : null;
-
-  const allParts = await listSettingsPartsForCompany(prisma, {
-    companyId: session.companyId,
-  });
 
   const typesByManufacturer = new Map<string, ExtinguisherTypeOption[]>();
   for (const m of manufacturers) {

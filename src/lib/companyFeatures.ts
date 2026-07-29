@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import type { AccountRole } from "@/lib/auth";
 
@@ -53,18 +54,21 @@ export const DEFAULT_FEATURES: Record<FeatureKey, FeatureAccess> = {
   API_KEYS: { enabledForAdmin: true, enabledForWorkshop: false },
 };
 
-export async function getCompanyFeatures(companyId: string): Promise<Record<string, FeatureAccess>> {
-  const fromDb = await prisma.companyFeature.findMany({
-    where: { companyId },
-    select: { key: true, enabledForAdmin: true, enabledForWorkshop: true },
-  });
+/** Deduplikacija unutar jednog RSC requesta (company layout + settings layout + page). */
+export const getCompanyFeatures = cache(
+  async (companyId: string): Promise<Record<string, FeatureAccess>> => {
+    const fromDb = await prisma.companyFeature.findMany({
+      where: { companyId },
+      select: { key: true, enabledForAdmin: true, enabledForWorkshop: true },
+    });
 
-  const map: Record<string, FeatureAccess> = { ...DEFAULT_FEATURES };
-  for (const f of fromDb) {
-    map[f.key] = { enabledForAdmin: f.enabledForAdmin, enabledForWorkshop: f.enabledForWorkshop };
-  }
-  return map;
-}
+    const map: Record<string, FeatureAccess> = { ...DEFAULT_FEATURES };
+    for (const f of fromDb) {
+      map[f.key] = { enabledForAdmin: f.enabledForAdmin, enabledForWorkshop: f.enabledForWorkshop };
+    }
+    return map;
+  },
+);
 
 export function isFeatureEnabledForRole(
   role: AccountRole,
