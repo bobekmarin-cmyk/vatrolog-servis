@@ -4,9 +4,6 @@ import { Fragment, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-// pendingHref se čisti implicitno: dok traje transition koristimo ga za highlight,
-// inače pathname (bez setState u effectu).
-
 type Tab = { href: string; label: string };
 type TabGroup = { label: string; accent?: "default" | "code"; tabs: Tab[] };
 
