@@ -77,24 +77,40 @@ export default function ServiceDrawerForm({
         </div>
       }
       labelLeft={
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-start">
-          <div className="min-w-0 lg:col-span-3">
-            <label className="label flex flex-wrap items-center gap-1.5" htmlFor="labelNumber">
-              <span>Broj naljepnice</span>
-              <InfoDot text="Naljepnica mora biti jedinstvena kroz cijelu bazu." />
-            </label>
-            <input
-              id="labelNumber"
-              name="labelNumber"
-              ref={focusRef}
-              className="input font-mono"
-              defaultValue={data.labelNumber}
-              required
-              autoComplete="off"
-            />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start md:gap-5">
+          {/* Lijeva polovica: naljepnica + lokacija */}
+          <div className="flex min-w-0 flex-col gap-3">
+            <div>
+              <label className="label flex flex-wrap items-center gap-1.5" htmlFor="labelNumber">
+                <span>Broj naljepnice</span>
+                <InfoDot text="Naljepnica mora biti jedinstvena kroz cijelu bazu." />
+              </label>
+              <input
+                id="labelNumber"
+                name="labelNumber"
+                ref={focusRef}
+                className="input font-mono"
+                defaultValue={data.labelNumber}
+                required
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="label flex flex-wrap items-center gap-1.5">
+                <span>Lokacija</span>
+                <InfoDot text="Opcionalna lokacija ili napomena koja se zapisuje na upisniku." />
+              </label>
+              <input
+                name="serviceLocationText"
+                className="input"
+                defaultValue={data.serviceLocationText}
+                autoComplete="off"
+              />
+            </div>
           </div>
 
-          <div className="min-w-0 lg:col-span-5">
+          {/* Desna polovica: odabir servisera (1–N) */}
+          <div className="min-w-0">
             <label className="label flex flex-wrap items-center gap-1.5">
               <span>Serviser</span>
               <InfoDot text="Odaberi servisera koji je prijavljen za današnji dan. Neaktivni serviseri su zasivljeni." />
@@ -104,19 +120,6 @@ export default function ServiceDrawerForm({
               initialServicerId={data.initialServicerId}
               staleServicerHint={data.staleServicerHint}
               compact
-            />
-          </div>
-
-          <div className="min-w-0 lg:col-span-4">
-            <label className="label flex flex-wrap items-center gap-1.5">
-              <span>Lokacija</span>
-              <InfoDot text="Opcionalna lokacija ili napomena koja se zapisuje na upisniku." />
-            </label>
-            <input
-              name="serviceLocationText"
-              className="input"
-              defaultValue={data.serviceLocationText}
-              autoComplete="off"
             />
           </div>
         </div>

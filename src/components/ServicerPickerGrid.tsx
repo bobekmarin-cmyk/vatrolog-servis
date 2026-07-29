@@ -17,12 +17,22 @@ type Props = {
   initialServicerId: string;
   /** Poruka kad je na stavci bio serviser koji danas nije prijavljen. */
   staleServicerHint?: string | null;
-  /** Uži gumbi u draweru (2 stupca umjesto 3). */
+  /**
+   * Layout za desnu polovicu drawera:
+   * 1 → jedan gumb; 2/4 → 2 stupca; 3 → 3; 5+ → 3 stupca (omota u više redova).
+   */
   compact?: boolean;
 };
 
 const INACTIVE_TITLE =
   "Nije prijavljen za rad danas — treba se prijaviti u izborniku „Serviseri”.";
+
+function compactGridClass(count: number): string {
+  if (count <= 1) return "grid grid-cols-1 gap-2";
+  if (count === 3) return "grid grid-cols-3 gap-2";
+  if (count === 2 || count === 4) return "grid grid-cols-2 gap-2";
+  return "grid grid-cols-2 gap-2 sm:grid-cols-3";
+}
 
 export default function ServicerPickerGrid({
   name = "servicerId",
@@ -44,14 +54,13 @@ export default function ServicerPickerGrid({
     );
   }
 
+  const gridClass = compact ? compactGridClass(servicers.length) : "grid grid-cols-3 gap-2";
+  const single = compact && servicers.length === 1;
+
   return (
     <div className="space-y-2">
       <input type="hidden" name={name} value={selectedId} aria-hidden="true" />
-      <div
-        className={compact ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-3 gap-2"}
-        role="group"
-        aria-label="Odabir servisera"
-      >
+      <div className={gridClass} role="group" aria-label="Odabir servisera">
         {servicers.map((s) => {
           const selected = selectedId === s.id;
           const clickable = s.activeToday;
@@ -64,9 +73,11 @@ export default function ServicerPickerGrid({
                 setSelectedId(s.id);
               }}
               className={[
-                compact
-                  ? "min-h-[2.25rem] w-full rounded-lg border px-1.5 py-1.5 text-center text-xs font-medium transition-colors"
-                  : "min-h-[2.5rem] w-full rounded-lg border px-2 py-2 text-center text-sm font-medium transition-colors",
+                single
+                  ? "min-h-[2.75rem] w-full rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors"
+                  : compact
+                    ? "min-h-[2.5rem] w-full rounded-lg border px-2 py-2 text-center text-sm font-medium transition-colors"
+                    : "min-h-[2.5rem] w-full rounded-lg border px-2 py-2 text-center text-sm font-medium transition-colors",
                 !clickable
                   ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                   : selected
