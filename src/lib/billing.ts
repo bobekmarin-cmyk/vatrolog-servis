@@ -52,7 +52,7 @@ export const PLANS: ReadonlyArray<PlanDefinition> = [
     id: "start",
     label: "Start",
     planEnum: "START",
-    priceEurMonthly: 29,
+    priceEurMonthly: 59,
     features: [
       "Radni nalozi, primke, upisnici i otpremnice (PDF)",
       "Evidencija aparata i kupaca",
@@ -67,7 +67,7 @@ export const PLANS: ReadonlyArray<PlanDefinition> = [
     id: "standard",
     label: "Standard",
     planEnum: "STANDARD",
-    priceEurMonthly: 59,
+    priceEurMonthly: 129,
     features: [
       "Sve iz Start plana",
       "Slanje dokumenata mailom (Gmail / SMTP)",
@@ -82,7 +82,7 @@ export const PLANS: ReadonlyArray<PlanDefinition> = [
     id: "premium",
     label: "Premium",
     planEnum: "PREMIUM",
-    priceEurMonthly: 89,
+    priceEurMonthly: 199,
     features: [
       "Sve iz Standard plana",
       "Integracija s e-računima (automatski računi)",
