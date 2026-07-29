@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 import ReceiptCustomerDepartmentPicker from "@/components/ReceiptCustomerDepartmentPicker";
 import { useDialog } from "@/components/ui/useDialog";
@@ -26,6 +27,7 @@ export default function EditWorkOrderCustomerButton({
   departmentId: string;
   note: string;
 }) {
+  const router = useRouter();
   const dialog = useDialog();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,7 +59,7 @@ export default function EditWorkOrderCustomerButton({
         return;
       }
       setOpen(false);
-      window.location.reload();
+      router.refresh();
     } catch {
       await dialog.alert({
         title: "Spremanje nije uspjelo",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import DatePickerInput from "@/components/DatePickerInput";
 import { useDialog } from "@/components/ui/useDialog";
 
@@ -15,6 +16,7 @@ export default function WorkOrderDateForm({
   disabled: boolean;
   disabledReason?: string;
 }) {
+  const router = useRouter();
   const dialog = useDialog();
   const [date, setDate] = useState(defaultValue);
   const [saving, setSaving] = useState(false);
@@ -40,7 +42,7 @@ export default function WorkOrderDateForm({
         });
         return;
       }
-      window.location.reload();
+      router.refresh();
     } catch {
       await dialog.alert({
         title: "Spremanje datuma nije uspjelo",
