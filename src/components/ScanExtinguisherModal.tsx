@@ -48,6 +48,8 @@ export default function ScanExtinguisherModal({
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const nextId = useRef(1);
+  // Tablica naloga se osvježava jednom, na zatvaranju — ne nakon svakog skena.
+  const addedCountRef = useRef(0);
 
   const addEntry = useCallback((e: Omit<ScanEntry, "id" | "at">) => {
     setEntries((prev) => [
@@ -102,7 +104,7 @@ export default function ScanExtinguisherModal({
             subtitle: subtitleParts || undefined,
           });
           setFlash("ok");
-          router.refresh();
+          addedCountRef.current += 1;
           return;
         }
 
@@ -164,7 +166,7 @@ export default function ScanExtinguisherModal({
         setTimeout(focusInput, 20);
       }
     },
-    [orderId, router, addEntry, focusInput]
+    [orderId, addEntry, focusInput]
   );
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -204,7 +206,10 @@ export default function ScanExtinguisherModal({
     setPendingConfirm(null);
     setValue("");
     setEntries([]);
-    router.refresh();
+    if (addedCountRef.current > 0) {
+      addedCountRef.current = 0;
+      router.refresh();
+    }
   };
 
   return (
