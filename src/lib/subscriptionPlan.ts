@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getCompanyCore } from "@/lib/companyCore";
 import type { SubscriptionPlan } from "@prisma/client";
 
 /**
@@ -40,10 +40,7 @@ export function planAllows(plan: SubscriptionPlan, capability: PlanCapability): 
 }
 
 export async function getCompanyPlan(companyId: string): Promise<SubscriptionPlan> {
-  const row = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { plan: true },
-  });
+  const row = await getCompanyCore(companyId);
   return row?.plan ?? "PREMIUM";
 }
 

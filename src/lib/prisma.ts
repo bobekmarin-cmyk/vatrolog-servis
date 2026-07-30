@@ -70,17 +70,31 @@ function createPrismaClient(): PrismaClient {
     ...(url ? { datasources: { db: { url } } } : {}),
   });
 
+  /**
+   * Dijagnostika: `PRISMA_LOG_QUERIES=1` ispisuje svaki upit s trajanjem.
+   * Broj upita po stranici je kljucan kad je latencija prema bazi visoka —
+   * tada svaki dodatni krug izravno produljuje odgovor servera.
+   */
+  const logQueries = process.env.PRISMA_LOG_QUERIES === "1";
+
   // Kratkotrajni mrežni prekidi prema Railway private networku ne smiju rušiti
   // request — tri pokušaja s backoffom pokrivaju restart baze i DNS blip.
   const extended = base.$extends({
     query: {
-      async $allOperations({ args, query }) {
+      async $allOperations({ args, query, model, operation }) {
         const maxAttempts = 3;
         let lastError: unknown;
+        const startedAt = logQueries ? Date.now() : 0;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
           try {
-            return await query(args);
+            const result = await query(args);
+            if (logQueries) {
+              console.log(
+                `[prisma] ${model ?? "raw"}.${operation} ${Date.now() - startedAt}ms`,
+              );
+            }
+            return result;
           } catch (err) {
             lastError = err;
             if (attempt === maxAttempts || !isRetryable(err)) throw err;

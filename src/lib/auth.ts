@@ -2,6 +2,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
+import { getCompanyCore } from "@/lib/companyCore";
 
 export type AccountRole = "ADMIN" | "WORKSHOP";
 
@@ -165,10 +166,7 @@ export type SubscriptionInfo = {
 };
 
 export const getSubscriptionInfo = cache(async (companyId: string): Promise<SubscriptionInfo> => {
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { blocked: true, activeUntil: true },
-  });
+  const company = await getCompanyCore(companyId);
 
   if (!company) {
     return { status: "expired", activeUntil: null, daysUntilExpiry: null, expiringSoon: false };

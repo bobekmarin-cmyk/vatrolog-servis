@@ -9,6 +9,7 @@ import DialogProvider from "@/components/ui/DialogProvider";
 import { ShellLayoutProvider } from "@/components/ShellLayoutContext";
 import { countUnreadForAccount } from "@/lib/notifications";
 import { todayStart } from "@/lib/servicerStatus";
+import { getCompanyCore } from "@/lib/companyCore";
 
 /**
  * Sve tenant rute (dashboard, radni nalozi, kupci, aparati, skladište, izvještaji, admin)
@@ -36,10 +37,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
   // odvojena kruga do baze na SVAKOJ stranici tenanta.
   const [subInfo, company, features, unreadNotifications, activeServicerCount] = await Promise.all([
     getSubscriptionInfo(session.companyId),
-    prisma.company.findUnique({
-      where: { id: session.companyId },
-      select: { name: true },
-    }),
+    getCompanyCore(session.companyId),
     getCompanyFeatures(session.companyId),
     countUnreadForAccount({
       accountUserId: session.accountUserId,
