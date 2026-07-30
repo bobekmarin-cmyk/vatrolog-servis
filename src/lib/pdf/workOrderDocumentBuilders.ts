@@ -20,6 +20,7 @@ import {
   ensureInitialReceiptBatch,
   listReceiptBatches,
 } from "@/lib/workOrderReceiptBatches";
+import { WORK_ORDER_ITEM_ORDER_BY, workOrderItemRbr } from "@/lib/workOrderItemOrder";
 
 /**
  * Zajedničko generiranje PDF-a primke i upisnika za jedan radni nalog. Koristi
@@ -41,7 +42,7 @@ export async function buildPrimkaPdfData(
       department: true,
       serviceLocation: { select: { kind: true, label: true } },
       items: {
-        orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
+        orderBy: WORK_ORDER_ITEM_ORDER_BY,
         include: {
           extinguisher: {
             include: { manufacturer: true, type: { include: { agent: true, construction: true } } },
@@ -83,8 +84,9 @@ export async function buildPrimkaPdfData(
   const unidentifiedPlaceholderCount = order.items.filter((i) => i.isPlaceholder).length;
 
   const rows = order.items
-    .filter((i) => !i.isPlaceholder && i.extinguisher)
-    .map((i, idx) => {
+    .map((i, idx) => ({ item: i, rbr: workOrderItemRbr(idx) }))
+    .filter(({ item }) => !item.isPlaceholder && item.extinguisher)
+    .map(({ item: i, rbr }) => {
       const ex = i.extinguisher!;
       const typeParts = ex.type ? formatExtinguisherTypeParts(ex.type) : null;
       const typeLabel = typeParts
@@ -94,7 +96,7 @@ export async function buildPrimkaPdfData(
         : "—";
 
       return {
-        rbr: idx + 1,
+        rbr,
         internalCode: ex.internalCode,
         manufacturer: displayManufacturer(ex.manufacturer),
         type: typeLabel,
@@ -209,7 +211,7 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
       department: true,
       serviceLocation: { select: { kind: true, label: true } },
       items: {
-        orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
+        orderBy: WORK_ORDER_ITEM_ORDER_BY,
         include: {
           parts: { include: { part: { select: { code: true, name: true, manufacturerCode: true } } } },
           extinguisher: {
@@ -231,9 +233,11 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
 
   const now = new Date();
 
-  const rowsUnsorted = order.items
-    .filter((i) => !i.isPlaceholder && i.extinguisher)
-    .map((i) => {
+  // Isti redoslijed i R.br. kao na radnom nalogu (bez sortiranja po lokaciji).
+  const rows = order.items
+    .map((i, idx) => ({ item: i, rbr: workOrderItemRbr(idx) }))
+    .filter(({ item }) => !item.isPlaceholder && item.extinguisher)
+    .map(({ item: i, rbr }) => {
       const ex = i.extinguisher!;
       const typeParts = ex.type ? formatExtinguisherTypeParts(ex.type) : null;
       const typeLabel = typeParts
@@ -251,7 +255,7 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
       const partsLabel = uniqueNames.length > 0 ? uniqueNames.join(", ") : (i.partsText ?? "").trim();
 
       return {
-        rbr: 0,
+        rbr,
         manufacturer: displayManufacturer(ex.manufacturer),
         type: typeLabel,
         internalCode: (ex.internalCode ?? "").trim() || "-",
@@ -267,11 +271,6 @@ export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | 
         servicedAt: formatDateDdMmYyyy(i.servicedAt),
       };
     });
-
-  const collator = new Intl.Collator("hr", { sensitivity: "base" });
-  const rows = [...rowsUnsorted]
-    .sort((a, b) => collator.compare(a.location, b.location))
-    .map((r, idx) => ({ ...r, rbr: idx + 1 }));
 
   const dep = order.department;
   const cust = order.customer;

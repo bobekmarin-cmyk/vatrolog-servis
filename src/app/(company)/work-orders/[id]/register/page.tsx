@@ -6,6 +6,7 @@ import { formatExtinguisherTypeName, formatAgentLabel } from "@/lib/formatExting
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
 import { formatDateDdMmYyyy } from "@/lib/dateFormat";
+import { WORK_ORDER_ITEM_ORDER_BY, workOrderItemRbr } from "@/lib/workOrderItemOrder";
 
 function agentLabel(a: { code?: string; label?: string | null; symbol?: string | null } | null | undefined) {
   if (!a) return "-";
@@ -23,7 +24,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
     include: {
       customer: true,
       items: {
-        orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
+        orderBy: WORK_ORDER_ITEM_ORDER_BY,
         include: {
           servicer: true,
           extinguisher: {
@@ -41,11 +42,12 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
   });
 
   const rows = order.items
-    .filter((i) => !i.isPlaceholder && i.extinguisher) // samo popunjeni
-    .map((i, idx) => {
+    .map((i, idx) => ({ item: i, rbr: workOrderItemRbr(idx) }))
+    .filter(({ item }) => !item.isPlaceholder && item.extinguisher) // samo popunjeni
+    .map(({ item: i, rbr }) => {
       const ex = i.extinguisher!;
       return {
-        rbr: idx + 1,
+        rbr,
         manufacturer: displayManufacturer(ex.manufacturer),
         type: ex.type ? formatExtinguisherTypeName(ex.type) : "-",
         agent: agentLabel(ex.type?.agent ?? null) || "-",

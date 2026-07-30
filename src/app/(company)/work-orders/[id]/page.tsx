@@ -36,6 +36,7 @@ import {
   loadExtinguisherFormCatalog,
   type ExtinguisherEditInitial,
 } from "@/lib/extinguisherFormCatalog";
+import { WORK_ORDER_ITEM_ORDER_BY } from "@/lib/workOrderItemOrder";
 
 function fmtMonthYear(d: Date | null): string {
   if (!d) return "-";
@@ -150,7 +151,7 @@ export default async function ServiceViewPage({
       serviceLocation: { select: { kind: true, label: true } },
       createdByAccountUser: { select: { username: true } },
       items: {
-        orderBy: [{ isPlaceholder: "asc" }, { servicedAt: "asc" }, { createdAt: "asc" }],
+        orderBy: WORK_ORDER_ITEM_ORDER_BY,
         include: {
           servicer: true,
           extinguisher: { include: { manufacturer: true, type: { include: { agent: true, construction: true } } } },

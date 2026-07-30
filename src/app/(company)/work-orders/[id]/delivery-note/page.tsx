@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { formatExtinguisherTypeName } from "@/lib/formatExtinguisherType";
 import { customerDisplayName } from "@/lib/customerDisplay";
 import { formatPartUnit } from "@/lib/partsCatalog";
+import { WORK_ORDER_ITEM_ORDER_BY } from "@/lib/workOrderItemOrder";
 
 function agentLabel(a: { label?: string | null; symbol?: string | null; code?: string } | null | undefined) {
   if (!a) return "-";
@@ -24,7 +25,7 @@ export default async function DeliveryNotePage({ params }: { params: Promise<{ i
     include: {
       customer: true,
       items: {
-        orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
+        orderBy: WORK_ORDER_ITEM_ORDER_BY,
         include: {
           servicer: true,
           parts: { include: { part: true } },

@@ -22,6 +22,7 @@ import { formatDateDdMmYyyy } from "@/lib/dateFormat";
 import QRCode from "qrcode";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
+import { WORK_ORDER_ITEM_ORDER_BY } from "@/lib/workOrderItemOrder";
 
 type AgentLite = { code: string; label: string; symbol: string | null } | null;
 type ConstructionLite = {
@@ -83,7 +84,7 @@ export async function renderDeliveryNotePdfBuffer(
       department: true,
       serviceLocation: { select: { kind: true, label: true } },
       items: {
-        orderBy: [{ isPlaceholder: "asc" }, { createdAt: "asc" }],
+        orderBy: WORK_ORDER_ITEM_ORDER_BY,
         include: {
           parts: { include: { part: true } },
           customServices: { include: { customService: true } },
