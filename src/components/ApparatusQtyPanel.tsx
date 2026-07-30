@@ -262,8 +262,8 @@ export default function ApparatusQtyPanel({
 
   return (
     <>
-      <form className="flex w-full flex-col gap-1.5" onSubmit={handleAddPlaceholders}>
-        <div className="flex items-baseline justify-between gap-2">
+      <form className="flex w-full flex-col items-center gap-1.5 text-center" onSubmit={handleAddPlaceholders}>
+        <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5">
           <div className="text-sm font-semibold text-slate-900">Količina aparata</div>
           {totalQty > 0 ? (
             <div className="text-[11px] tabular-nums text-slate-500">
@@ -271,8 +271,8 @@ export default function ApparatusQtyPanel({
             </div>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <QtyStepper value={count} onChange={setCount} min={1} max={200} disabled={busy} />
+        <QtyStepper value={count} onChange={setCount} min={1} max={200} disabled={busy} />
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
           <button className="btn btn-primary h-8 px-3 text-sm" type="submit" disabled={busy}>
             {busy ? "…" : "Dodaj"}
           </button>
