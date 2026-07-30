@@ -11,8 +11,15 @@ import { savePdf } from "@/lib/pdfStorage";
 import QRCode from "qrcode";
 import { APP_VERSION } from "@/lib/appVersion";
 import { describeWorkOrderServiceContext } from "@/lib/workOrderDeliveryDisplay";
-import { buildPrimkaReceiptLines } from "@/lib/primkaDeliveryLines";
+import {
+  buildPrimkaReceiptLines,
+  buildPrimkaReceiptLinesFromBatches,
+} from "@/lib/primkaDeliveryLines";
 import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
+import {
+  ensureInitialReceiptBatch,
+  listReceiptBatches,
+} from "@/lib/workOrderReceiptBatches";
 
 /**
  * Zajedničko generiranje PDF-a primke i upisnika za jedan radni nalog. Koristi
@@ -22,7 +29,10 @@ import { buildWorkOrderPdfNames } from "@/lib/workOrderDocumentNames";
 
 export type BuiltPdf = { body: Buffer; filename: string; companyId: string };
 
-export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | null> {
+/** Samo struktura PrimkaPdfData (bez rendera / loga) — za izdavanje zamrznute primke. */
+export async function buildPrimkaPdfData(
+  workOrderId: string,
+): Promise<{ data: PrimkaPdfData; companyId: string; filename: string; fileBase: string } | null> {
   const order = await prisma.workOrder.findUnique({
     where: { id: workOrderId },
     include: {
@@ -43,6 +53,13 @@ export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | nu
 
   if (!order) return null;
 
+  await ensureInitialReceiptBatch(prisma, {
+    companyId: order.companyId,
+    workOrderId: order.id,
+    receivedAt: order.receivedAt,
+    qty: order.receivedQty,
+  });
+
   const pdfNames = buildWorkOrderPdfNames(
     { serviceCode: order.company.serviceCode, usernameSlug: order.company.usernameSlug },
     { orderNumber: order.orderNumber, customer: order.customer },
@@ -52,13 +69,17 @@ export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | nu
 
   const now = new Date();
 
-  const receiptLines = buildPrimkaReceiptLines(
-    order.items.map((i) => ({
-      fromInitialReceipt: i.fromInitialReceipt,
-      createdAt: i.createdAt,
-    })),
-    order.receivedAt,
-  );
+  const batches = await listReceiptBatches(prisma, order.id);
+  const receiptLines =
+    batches.length > 0
+      ? buildPrimkaReceiptLinesFromBatches(batches, order.receivedAt)
+      : buildPrimkaReceiptLines(
+          order.items.map((i) => ({
+            fromInitialReceipt: i.fromInitialReceipt,
+            createdAt: i.createdAt,
+          })),
+          order.receivedAt,
+        );
   const unidentifiedPlaceholderCount = order.items.filter((i) => i.isPlaceholder).length;
 
   const rows = order.items
@@ -151,19 +172,32 @@ export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | nu
     note: order.note,
   };
 
+  return {
+    data,
+    companyId: order.companyId,
+    filename: pdfNames.fileName,
+    fileBase: pdfNames.fileBase,
+  };
+}
+
+/** Live generiranje (portal / legacy). Tenant UI koristi izdane primke preko `primkaIssue`. */
+export async function buildPrimkaPdf(workOrderId: string): Promise<BuiltPdf | null> {
+  const built = await buildPrimkaPdfData(workOrderId);
+  if (!built) return null;
+
   await prisma.documentLog.create({
-    data: { companyId: order.companyId, workOrderId: order.id, docType: "PRIMKA_PDF" },
+    data: { companyId: built.companyId, workOrderId, docType: "PRIMKA_PDF" },
   });
 
-  const props = { data } satisfies ComponentProps<typeof PrimkaPdfDocument>;
+  const props = { data: built.data } satisfies ComponentProps<typeof PrimkaPdfDocument>;
   const element = React.createElement(PrimkaPdfDocument, props);
   const body = await renderPdfToBuffer(element);
 
-  savePdf(order.companyId, "receipt", order.orderNumber, Buffer.from(body), {
-    fileBase: pdfNames.fileBase,
+  savePdf(built.companyId, "receipt", built.data.orderNumber, Buffer.from(body), {
+    fileBase: built.fileBase,
   }).catch(() => {});
 
-  return { body: Buffer.from(body), filename: pdfNames.fileName, companyId: order.companyId };
+  return { body: Buffer.from(body), filename: built.filename, companyId: built.companyId };
 }
 
 export async function buildRegisterPdf(workOrderId: string): Promise<BuiltPdf | null> {

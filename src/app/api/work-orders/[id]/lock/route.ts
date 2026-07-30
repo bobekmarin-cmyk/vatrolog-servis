@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { decrementStockForWorkOrder } from "@/lib/partStock";
 import { consumeLabelsOnLock } from "@/lib/serviceLabels";
 import { logAudit, extractAuditMeta } from "@/lib/auditLog";
+import { clampReceiptBatchesToMax } from "@/lib/workOrderReceiptBatches";
 
 import { redirectRelative } from "@/lib/httpRedirect";
 export async function POST(
@@ -48,7 +49,7 @@ export async function POST(
     const remainingCount = await tx.workOrderItem.count({
       where: { workOrderId: id, companyId: session.companyId },
     });
-    const nextReceivedQty = Math.min(order.receivedQty, remainingCount);
+    const nextReceivedQty = await clampReceiptBatchesToMax(tx, id, Math.min(order.receivedQty, remainingCount));
 
     await tx.workOrder.update({
       where: { id },

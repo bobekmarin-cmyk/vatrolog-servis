@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PendingSubmitForm from "@/components/PendingSubmitForm";
 import ConfirmForm from "@/components/ConfirmForm";
+import { useDialog } from "@/components/ui/useDialog";
 
 type DocKind = "primka" | "register" | "delivery-note";
+
+type PrimkaIssue = {
+  id: string;
+  version: number;
+  issuedAtLabel: string;
+  hasPdf: boolean;
+};
 
 type Props = {
   workOrderId: string;
@@ -13,11 +21,9 @@ type Props = {
   customerName: string;
   customerEmail: string | null;
   mailConnected: boolean;
-  /** Custom tooltip kad je slanje mailom onemogućeno (npr. plan ne pokriva mail). */
   mailDisabledTitle?: string;
   isLocked: boolean;
   isAdmin: boolean;
-  /** Postoji aktivna (izdana) otpremnica sa spremljenim PDF-om. */
   deliveryNoteIssued: boolean;
 };
 
@@ -57,6 +63,7 @@ export default function WorkOrderDocumentsMenu({
   deliveryNoteIssued,
 }: Props) {
   const router = useRouter();
+  const dialog = useDialog();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -64,6 +71,25 @@ export default function WorkOrderDocumentsMenu({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState(customerEmail ?? "");
+
+  const [primkaIssues, setPrimkaIssues] = useState<PrimkaIssue[]>([]);
+  const [canIssueNewPrimka, setCanIssueNewPrimka] = useState(false);
+  const [primkaLoading, setPrimkaLoading] = useState(false);
+  const [issuingPrimka, setIssuingPrimka] = useState(false);
+
+  const loadPrimkaStatus = useCallback(async () => {
+    setPrimkaLoading(true);
+    try {
+      const res = await fetch(`/api/work-orders/${workOrderId}/primka/issues`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setPrimkaIssues(data.issues ?? []);
+        setCanIssueNewPrimka(!!data.canIssueNew);
+      }
+    } finally {
+      setPrimkaLoading(false);
+    }
+  }, [workOrderId]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -73,8 +99,9 @@ export default function WorkOrderDocumentsMenu({
       }
     }
     document.addEventListener("mousedown", onDoc);
+    void loadPrimkaStatus();
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [menuOpen]);
+  }, [menuOpen, loadPrimkaStatus]);
 
   const dnAvailable = isLocked && deliveryNoteIssued;
   const dnDisabledTitle = !isLocked
@@ -87,9 +114,39 @@ export default function WorkOrderDocumentsMenu({
     "delivery-note": `/work-orders/${workOrderId}/delivery-note/pdf`,
   };
 
-  function openPdf(kind: DocKind) {
-    window.open(docUrl[kind], "_blank", "noopener,noreferrer");
+  function openPdf(kind: DocKind, issueId?: string) {
+    const url =
+      kind === "primka" && issueId
+        ? `${docUrl.primka}?issue=${encodeURIComponent(issueId)}`
+        : docUrl[kind];
+    window.open(url, "_blank", "noopener,noreferrer");
     setMenuOpen(false);
+  }
+
+  async function issueNewPrimka() {
+    if (!canIssueNewPrimka || issuingPrimka) return;
+    setIssuingPrimka(true);
+    try {
+      const res = await fetch(`/api/work-orders/${workOrderId}/primka/issues`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        await dialog.alert({
+          title: "Nova primka",
+          message: data.error || "Izdavanje nije uspjelo.",
+          variant: res.status === 409 ? "warning" : "error",
+        });
+        if (data.latestIssueId) {
+          openPdf("primka", data.latestIssueId);
+        }
+        await loadPrimkaStatus();
+        return;
+      }
+      openPdf("primka", data.issueId);
+      await loadPrimkaStatus();
+      router.refresh();
+    } finally {
+      setIssuingPrimka(false);
+    }
   }
 
   function openMailModal(kind: DocKind) {
@@ -185,9 +242,75 @@ export default function WorkOrderDocumentsMenu({
         {menuOpen && (
           <div
             role="menu"
-            className="absolute right-0 top-full z-30 mt-1 w-64 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg"
+            className="absolute right-0 top-full z-30 mt-1 w-72 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg"
           >
-            <DocRow kind="primka" />
+            <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Primke
+            </div>
+            {primkaLoading ? (
+              <div className="px-3 py-2 text-xs text-slate-400">Učitavam…</div>
+            ) : primkaIssues.length === 0 ? (
+              <div className="px-3 py-1.5 text-xs text-slate-500">Još nema izdane primke.</div>
+            ) : (
+              primkaIssues.map((issue) => (
+                <div key={issue.id} className="flex items-center justify-between gap-2 px-3 py-1.5">
+                  <span className="text-sm text-slate-800">
+                    Primka #{issue.version}
+                    <span className="ml-1.5 text-[11px] text-slate-400">{issue.issuedAtLabel}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    onClick={() => openPdf("primka", issue.id)}
+                    title="Otvori izdanu primku"
+                    aria-label={`Otvori primku ${issue.version}`}
+                  >
+                    <PdfIcon />
+                  </button>
+                </div>
+              ))
+            )}
+            <div className="px-3 pb-2 pt-1 space-y-1.5">
+              <button
+                type="button"
+                className="btn btn-primary w-full text-sm"
+                disabled={!canIssueNewPrimka || issuingPrimka}
+                title={
+                  canIssueNewPrimka
+                    ? "Izdaj novu primku jer su dodane nove količine / aparati"
+                    : "Nema novih podataka — otvori postojeću primku"
+                }
+                onClick={issueNewPrimka}
+              >
+                {issuingPrimka
+                  ? "Izdajem…"
+                  : primkaIssues.length === 0
+                    ? "Izdaj primku"
+                    : "Izdaj novu primku"}
+              </button>
+              {primkaIssues.length > 0 ? (
+                <button
+                  type="button"
+                  className="btn btn-outline w-full text-sm"
+                  disabled={!mailConnected}
+                  title={
+                    mailConnected
+                      ? "Pošalji zadnju izdanu primku na mail"
+                      : (mailDisabledTitle ?? "Mail nije konfiguriran")
+                  }
+                  onClick={() => openMailModal("primka")}
+                >
+                  Pošalji zadnju primku
+                </button>
+              ) : null}
+              {!canIssueNewPrimka && primkaIssues.length > 0 ? (
+                <p className="text-[11px] text-slate-400">
+                  Trenutne količine već imaju izdanu primku.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="my-1 h-px bg-slate-100" />
             <DocRow kind="register" />
             <div className="my-1 h-px bg-slate-100" />
             <DocRow kind="delivery-note" disabled={!dnAvailable} disabledTitle={dnDisabledTitle} />

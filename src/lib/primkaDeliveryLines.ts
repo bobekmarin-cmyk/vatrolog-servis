@@ -77,6 +77,38 @@ export function buildPrimkaReceiptLines(items: ItemLike[], receivedAt: Date): Pr
     byDay.set(day, (byDay.get(day) ?? 0) + 1);
   }
 
+  return linesFromDayMap(byDay, receiptDay);
+}
+
+/**
+ * Retci primke iz eksplicitnih batch unosa (preferirani izvor).
+ * `initialDayKey` = dan početnog unosa (isInitial batch).
+ */
+export function buildPrimkaReceiptLinesFromBatches(
+  batches: Array<{ receivedAt: Date; qty: number; isInitial?: boolean }>,
+  fallbackReceivedAt?: Date,
+): PrimkaReceiptLines {
+  const byDay = new Map<string, number>();
+  let initialDay =
+    fallbackReceivedAt != null ? calendarDayKeyEuropeZagreb(fallbackReceivedAt) : null;
+
+  for (const b of batches) {
+    const qty = Math.max(0, Math.floor(b.qty || 0));
+    if (qty < 1) continue;
+    const day = calendarDayKeyEuropeZagreb(b.receivedAt);
+    byDay.set(day, (byDay.get(day) ?? 0) + qty);
+    if (b.isInitial) initialDay = day;
+  }
+
+  if (!initialDay) {
+    const keys = [...byDay.keys()].sort();
+    initialDay = keys[0] ?? calendarDayKeyEuropeZagreb(new Date());
+  }
+
+  return linesFromDayMap(byDay, initialDay);
+}
+
+function linesFromDayMap(byDay: Map<string, number>, receiptDay: string): PrimkaReceiptLines {
   const initialReceivedQty = byDay.get(receiptDay) ?? 0;
   const otherDays = [...byDay.keys()].filter((k) => k !== receiptDay).sort();
 

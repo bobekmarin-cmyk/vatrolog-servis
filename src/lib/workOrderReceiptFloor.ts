@@ -13,7 +13,7 @@ export function receiptFloorBlocksDelete(args: {
 }
 
 export function receiptFloorMessage(receivedQty: number): string {
-  return `Ne može se obrisati — količina mora ostati usklađena s primkom (primljeno ${Math.max(
+  return `Ne može se obrisati — količina mora ostati usklađena sa zabilježenim primitkom (ukupno ${Math.max(
     0,
     Math.floor(receivedQty || 0),
   )}).`;

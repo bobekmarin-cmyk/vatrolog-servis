@@ -196,6 +196,15 @@ export async function POST(req: Request) {
           fromInitialReceipt: true,
         }));
         await tx.workOrderItem.createMany({ data: itemsData });
+        await tx.workOrderReceiptBatch.create({
+          data: {
+            companyId: session.companyId,
+            workOrderId: workOrder.id,
+            receivedAt,
+            qty: countInt,
+            isInitial: true,
+          },
+        });
       }
 
       return {

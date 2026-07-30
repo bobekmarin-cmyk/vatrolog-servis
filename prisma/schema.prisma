@@ -983,6 +983,12 @@ model WorkOrder {
 
   deliveryNotes DeliveryNote[]
 
+  /// Količine primitka po datumima (izvor istine za primku i floor brisanja).
+  receiptBatches WorkOrderReceiptBatch[]
+
+  /// Izdane (zamrznute) primke — nova se izdaje samo kad se sadržaj promijeni.
+  primkaIssues WorkOrderPrimkaIssue[]
+
   /// Veza na račun u e-računima (najviše jedan po nalogu).
   eracuniInvoice WorkOrderInvoice?
 
@@ -993,6 +999,47 @@ model WorkOrder {
   @@index([companyId, receivedAt])
   @@index([companyId, serviceLocationId])
   @@index([companyId, createdByAccountUserId])
+}
+
+/// Jedan unos količine aparata na datum (inicijalni + naknadne dostave).
+model WorkOrderReceiptBatch {
+  id          String    @id @default(cuid())
+  companyId   String
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  /// Kalendarski dan primitka / dostave (Europe/Zagreb, pohranjen kao lokalni podne).
+  receivedAt DateTime
+  qty        Int
+  /// Prvi red (kreiranje naloga) — ne smije se obrisati.
+  isInitial  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workOrderId, receivedAt])
+  @@index([companyId])
+}
+
+/// Zamrznuta / izdana primka za radni nalog (verzije po sadržaju).
+model WorkOrderPrimkaIssue {
+  id          String    @id @default(cuid())
+  companyId   String
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  /// Redni broj izdanja unutar naloga (1, 2, …).
+  version Int
+  /// Fingerprint batch stanja u trenutku izdavanja (`YYYY-MM-DD:qty|…`).
+  contentKey String
+
+  issuedAt       DateTime @default(now())
+  pdfStoragePath String?
+  filename       String?
+
+  @@unique([workOrderId, version])
+  @@index([workOrderId, issuedAt])
+  @@index([companyId])
 }
 
 /// Redni broj otpremnica po tvrtki i kalendarskoj godini (Europe/Zagreb).

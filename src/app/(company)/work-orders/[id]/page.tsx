@@ -11,7 +11,7 @@ import { customerDisplayName } from "@/lib/customerDisplay";
 import { displayManufacturer } from "@/lib/manufacturerDisplay";
 import WorkOrderDateForm from "@/components/WorkOrderDateForm";
 import EditWorkOrderCustomerButton from "@/components/EditWorkOrderCustomerButton";
-import PlaceholderAddForm from "@/components/PlaceholderAddForm";
+import ApparatusQtyPanel from "@/components/ApparatusQtyPanel";
 import ScanExtinguisherModal from "@/components/ScanExtinguisherModal";
 import {
   WorkOrderExtinguisherDrawerButton,
@@ -533,9 +533,9 @@ export default async function ServiceViewPage({
           </div>
           {order.receivedQty > 0 ? (
             <div className="mt-1.5 text-[10px] text-slate-500">
-              Primka:{" "}
-              <span className="font-semibold tabular-nums text-slate-700">{order.receivedQty}</span> kom — broj stavki
-              ne može pasti ispod te količine.
+              Zabilježeno primitkom:{" "}
+              <span className="font-semibold tabular-nums text-slate-700">{order.receivedQty}</span> kom — broj
+              stavki ne može pasti ispod te količine (uređuje se u „Količina aparata”).
             </div>
           ) : null}
         </div>
@@ -545,7 +545,7 @@ export default async function ServiceViewPage({
             <div className="text-xs text-gray-500">Nalog je zaključan — nije moguće dodavati ili brisati stavke.</div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3">
-              <PlaceholderAddForm orderId={order.id} />
+              <ApparatusQtyPanel orderId={order.id} initialTotalQty={order.receivedQty} />
               <div className="h-px w-full bg-slate-200" />
               <ScanExtinguisherModal
                 orderId={order.id}
