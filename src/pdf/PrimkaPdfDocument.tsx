@@ -164,6 +164,25 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     textAlign: "right" as const,
   },
+  introOrderNote: {
+    marginTop: 8,
+    paddingTop: 7,
+    borderTopWidth: 0.5,
+    borderTopColor: "#e2e8f0",
+  },
+  introOrderNoteLabel: {
+    fontSize: 6.8,
+    color: "#64748b",
+    letterSpacing: 0.7,
+    textTransform: "uppercase" as const,
+    fontWeight: 700,
+    marginBottom: 3,
+  },
+  introOrderNoteText: {
+    fontSize: 8.2,
+    color: "#0f172a",
+    lineHeight: 1.35,
+  },
 
   infoRow: {
     flexDirection: "row",
@@ -294,19 +313,6 @@ const styles = StyleSheet.create({
   colSerial: { width: 72 },
   colYear: { width: 34, textAlign: "center" as const },
   colNote: { flex: 1 },
-
-  noteSection: {
-    marginTop: 10,
-    marginBottom: 2,
-  },
-  noteSectionBody: {
-    marginTop: 6,
-    fontSize: 9,
-    fontFamily: "Roboto",
-    fontWeight: 400,
-    color: "#0f172a",
-    lineHeight: 1.35,
-  },
 
   empty: {
     paddingVertical: 6,
@@ -492,17 +498,14 @@ export default function PrimkaPdfDocument({ data }: { data: PrimkaPdfData }) {
               <Text style={styles.introMetaKey}>Planirani datum završetka</Text>
               <Text style={styles.introMetaValue}>{dates.dueDate}</Text>
             </View>
+            {note && note.trim().length > 0 ? (
+              <View style={styles.introOrderNote}>
+                <Text style={styles.introOrderNoteLabel}>Napomena</Text>
+                <Text style={styles.introOrderNoteText}>{note.trim()}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
-
-        {note && note.trim().length > 0 ? (
-          <View style={styles.noteSection} wrap={false}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Napomena</Text>
-            </View>
-            <Text style={styles.noteSectionBody}>{note.trim()}</Text>
-          </View>
-        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Primljeni aparati</Text>
