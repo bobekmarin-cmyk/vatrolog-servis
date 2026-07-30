@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
 
   // Napomena stiže iz vanjskog izvora, pa je ovdje netipizirana.
-  const payload = JSON.parse('{"note": null}') as { note: string };
+  const payload = JSON.parse('{"note": null}') as { note: string | null };
 
   return NextResponse.json({
     ok: true,
