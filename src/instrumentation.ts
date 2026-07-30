@@ -28,6 +28,15 @@ export async function register() {
   // Boot-time env check — pokreće se samo u Node runtime-u (Edge nema fs, ne
   // pokreće Prisma niti procesira cron, pa nema potrebe duplo zvati).
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // Kontejner u produkciji radi u UTC-u, pa bi svaki `toLocaleString()` i
+    // svaki `getHours()` na serveru davao UTC — korisniku u Hrvatskoj to
+    // izgleda kao da vrijeme kasni sat (zimi) ili dva (ljeti). Aplikacija se
+    // koristi isključivo u Hrvatskoj, pa je Zagreb ispravan default.
+    // Postavljeno kao default: ako je TZ eksplicitno zadan u okolini, poštujemo njega.
+    if (!process.env.TZ) {
+      process.env.TZ = "Europe/Zagreb";
+    }
+
     try {
       const { validateLaunchEnv, reportLaunchEnv } = await import("@/lib/envChecks");
       reportLaunchEnv(validateLaunchEnv());

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePlatformSession } from "@/lib/platformAuth";
 import { getVendorStatus } from "@/lib/platformGmail";
 import { listRecentBackups, formatBytes } from "@/lib/backupListing";
+import { formatDateTimeHr } from "@/lib/dateFormat";
 import BackupRunButton from "./BackupRunButton";
 import { validateLaunchEnv, type EnvIssue } from "@/lib/envChecks";
 import { getBillingMode } from "@/lib/billing";
@@ -231,10 +232,7 @@ export default async function PlatformHealthPage() {
                 ? "Čitanje bucketa nije uspjelo"
                 : !latestBackup
                   ? "Bucket prazan"
-                  : `${latestBackup.lastModified.toLocaleString("hr-HR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })} · ${formatBytes(latestBackup.size)}`
+                  : `${formatDateTimeHr(latestBackup.lastModified)} · ${formatBytes(latestBackup.size)}`
           }
         />
         <SummaryCard
@@ -355,10 +353,7 @@ export default async function PlatformHealthPage() {
                 {backups.objects.map((o) => (
                   <tr key={o.key}>
                     <td className="py-2 pr-3 tabular-nums">
-                      {o.lastModified.toLocaleString("hr-HR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
+                      {formatDateTimeHr(o.lastModified)}
                     </td>
                     <td className="py-2 pr-3 tabular-nums text-slate-600">
                       {formatBytes(o.size)}
@@ -423,7 +418,7 @@ export default async function PlatformHealthPage() {
             hint={
               vendor.connected
                 ? vendor.connectedAt
-                  ? `Povezan ${vendor.connectedAt.toLocaleString("hr-HR")}`
+                  ? `Povezan ${formatDateTimeHr(vendor.connectedAt)}`
                   : null
                 : (
                     <>
@@ -541,7 +536,7 @@ export default async function PlatformHealthPage() {
       </Section>
 
       <p className="text-xs text-slate-500">
-        Snapshot: {snapshotAt.toLocaleString("hr-HR")} · konfiguracija Vendor Gmaila i brandinga je
+        Snapshot: {formatDateTimeHr(snapshotAt)} · konfiguracija Vendor Gmaila i brandinga je
         u <Link href="/platform/settings" className="text-sky-700 hover:underline">Postavkama</Link>.
       </p>
     </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDateTimeHr } from "@/lib/dateFormat";
 
 type Run = {
   id: number;
@@ -22,8 +23,7 @@ function runLabel(r: Run): { text: string; className: string } {
 }
 
 function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString("hr-HR", { dateStyle: "short", timeStyle: "short" });
+  return formatDateTimeHr(new Date(iso));
 }
 
 export default function BackupRunButton() {
