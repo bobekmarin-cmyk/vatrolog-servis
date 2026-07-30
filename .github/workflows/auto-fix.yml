@@ -39,11 +39,23 @@ concurrency:
 
 jobs:
   autofix:
-    # Ne pokreci se za uspjesan CI, ni za issue bez `auto-fix` / `sentry` labele.
+    # Okidaci:
+    #  - CI pao na main
+    #  - issue s labelom `auto-fix` / `sentry`
+    #  - issue koji je otvorio Sentry (njegova GitHub integracija u tijelo issuea
+    #    uvijek upise "Sentry Issue:" i link na sentry.io) — tako ne treba rucno
+    #    dodavati labelu na svaku prijavu
+    #  - vanjski dispatch ili rucno pokretanje
     if: >-
       ${{
         (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
-        || (github.event_name == 'issues' && (contains(github.event.issue.labels.*.name, 'auto-fix') || contains(github.event.issue.labels.*.name, 'sentry')))
+        || (github.event_name == 'issues' && (
+              contains(github.event.issue.labels.*.name, 'auto-fix')
+              || contains(github.event.issue.labels.*.name, 'sentry')
+              || contains(github.event.issue.body, 'Sentry Issue:')
+              || contains(github.event.issue.body, 'sentry.io/organizations')
+              || contains(github.event.issue.body, '.sentry.io/issues/')
+           ))
         || github.event_name == 'repository_dispatch'
         || github.event_name == 'workflow_dispatch'
       }}

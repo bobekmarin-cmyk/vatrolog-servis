@@ -165,6 +165,7 @@ export default async function PlatformHealthPage() {
   const warnsCount = issues.filter((i) => i.severity === "warn").length;
 
   const sentryConfigured = !!process.env.SENTRY_DSN?.trim();
+  const sentryClientConfigured = !!process.env.NEXT_PUBLIC_SENTRY_DSN?.trim();
   const upstashConfigured =
     !!process.env.UPSTASH_REDIS_REST_URL?.trim() &&
     !!process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
@@ -392,13 +393,23 @@ export default async function PlatformHealthPage() {
             hint="Koristi se u pozivnicama, setup i reset linkovima — mora biti https://vatrolog.com"
           />
           <Row
-            label="Sentry DSN"
+            label="Sentry DSN (server)"
             tone={sentryConfigured ? "ok" : "off"}
             value={sentryConfigured ? "Postavljen" : "Nije postavljen"}
             hint={
               sentryConfigured
                 ? `env=${sentryEnv} · trace=${sentryTrace}`
                 : "Greske se logaju samo lokalno"
+            }
+          />
+          <Row
+            label="Sentry DSN (preglednik)"
+            tone={sentryClientConfigured ? "ok" : "warn"}
+            value={sentryClientConfigured ? "Postavljen" : "Nije postavljen"}
+            hint={
+              sentryClientConfigured
+                ? "Greske u React komponentama i hidraciji se prijavljuju"
+                : "NEXT_PUBLIC_SENTRY_DSN nije postavljen — greske u pregledniku nigdje se ne biljeze"
             }
           />
           <Row

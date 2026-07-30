@@ -87,13 +87,17 @@ export async function getPlatformHealth(): Promise<HealthItem[]> {
   }
 
   // ─────────────────── Sentry ───────────────────
+  const sentryServer = hasEnv("SENTRY_DSN");
+  const sentryClient = hasEnv("NEXT_PUBLIC_SENTRY_DSN");
   items.push({
     key: "sentry",
     label: "Sentry",
-    level: hasEnv("SENTRY_DSN") ? "ok" : "off",
-    detail: hasEnv("SENTRY_DSN")
-      ? "Greske se raportiraju (10% trace sampling u prod)"
-      : "SENTRY_DSN nije postavljen",
+    level: sentryServer && sentryClient ? "ok" : sentryServer ? "warn" : "off",
+    detail: !sentryServer
+      ? "SENTRY_DSN nije postavljen"
+      : sentryClient
+        ? "Prate se greske servera i preglednika"
+        : "Samo server — NEXT_PUBLIC_SENTRY_DSN nije postavljen, greske u pregledniku se ne prijavljuju",
     href: "https://sentry.io/",
   });
 

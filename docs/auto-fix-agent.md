@@ -52,10 +52,32 @@ Sentry ima native GitHub integraciju i može sam otvoriti issue:
 2. Sentry → **Alerts → Create Alert → Issues**
    - Uvjet: *A new issue is created* (po želji dodaj `level:error`)
    - Akcija: **Create a GitHub issue**
-3. Da se autofix okine, issue mora imati labelu `sentry`.
-   Najlakše: **Settings → Labels** → kreiraj `sentry`, pa u Sentry alert akciji
-   postavi tu labelu. Ako Sentry ne postavlja labelu, dodaj je ručno — agent se
-   pokrene i na naknadno dodanu labelu (`types: [labeled]`).
+
+Labela nije potrebna. Sentryjeva integracija u tijelo issuea uvijek upiše
+`Sentry Issue:` i link na `sentry.io`, pa workflow to sam prepozna i pokrene
+agenta. Labele `auto-fix` i `sentry` i dalje rade ako ih želite dodati ručno.
+
+### Praćenje grešaka u pregledniku
+
+Server i preglednik su dva odvojena izvora. Za oba trebaju DSN varijable u
+Railwayu (servis aplikacije → Variables):
+
+```
+SENTRY_DSN=https://...            # greške na serveru
+NEXT_PUBLIC_SENTRY_DSN=https://... # greške u pregledniku (ista vrijednost)
+```
+
+DSN nije tajna — po dizajnu se šalje u preglednik. Bez `NEXT_PUBLIC_SENTRY_DSN`
+greške u React komponentama i hidraciji **nigdje se ne bilježe**; vide se samo u
+konzoli korisnika. Stanje oba DSN-a piše na **Platforma → Zdravlje sustava**.
+
+### Filtriranje šuma
+
+`src/lib/sentryFilters.ts` odbacuje prijave na koje se ne može djelovati:
+greške iz proširenja preglednika, prekinute zahtjeve kod gubitka mreže i
+Next.js-ovu internu kontrolu toka (`redirect()` i `notFound()` rade tako da
+bacaju iznimku). Ako se u Sentryju pojavi novi tip šuma, dodajte podniz poruke
+u `SENTRY_IGNORE_ERRORS`.
 
 ### Alternativa: direktan webhook
 

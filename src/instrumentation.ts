@@ -59,23 +59,29 @@ export async function register() {
 
   try {
     const Sentry = await import("@sentry/nextjs");
+    const { SENTRY_IGNORE_ERRORS, isNonActionableError } = await import("@/lib/sentryFilters");
+
+    const shared = {
+      dsn,
+      environment: process.env.NODE_ENV ?? "development",
+      enabled: true,
+      ignoreErrors: SENTRY_IGNORE_ERRORS,
+      beforeSend(event: unknown, hint: { originalException?: unknown } | undefined) {
+        // `redirect()` i `notFound()` rade tako da bacaju iznimku — to nije kvar.
+        if (isNonActionableError(hint?.originalException)) return null;
+        return event;
+      },
+    } as Parameters<typeof Sentry.init>[0];
 
     if (process.env.NEXT_RUNTIME === "nodejs") {
       Sentry.init({
-        dsn,
-        environment: process.env.NODE_ENV ?? "development",
+        ...shared,
         tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
-        enabled: true,
       });
     }
 
     if (process.env.NEXT_RUNTIME === "edge") {
-      Sentry.init({
-        dsn,
-        environment: process.env.NODE_ENV ?? "development",
-        tracesSampleRate: 0,
-        enabled: true,
-      });
+      Sentry.init({ ...shared, tracesSampleRate: 0 });
     }
 
     // Expose captureException globalno da ga logger.ts može koristiti bez direktne ovisnosti.
