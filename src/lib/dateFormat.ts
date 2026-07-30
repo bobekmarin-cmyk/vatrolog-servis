@@ -25,6 +25,17 @@ const dateTimeParts = new Intl.DateTimeFormat("hr-HR", {
   hour12: false,
 });
 
+const dateTimeSecondsParts = new Intl.DateTimeFormat("hr-HR", {
+  timeZone: APP_TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
 const timeParts = new Intl.DateTimeFormat("hr-HR", {
   timeZone: APP_TIME_ZONE,
   hour: "2-digit",
@@ -55,6 +66,13 @@ export function formatDateTimeHr(d?: Date | null): string {
   if (!d) return "-";
   const p = dateTimeParts.formatToParts(d);
   return `${part(p, "day")}.${part(p, "month")}.${part(p, "year")}. ${part(p, "hour")}:${part(p, "minute")}`;
+}
+
+/** "30.07.2026. 12:34:56" */
+export function formatDateTimeSecondsHr(d?: Date | null): string {
+  if (!d) return "-";
+  const p = dateTimeSecondsParts.formatToParts(d);
+  return `${part(p, "day")}.${part(p, "month")}.${part(p, "year")}. ${part(p, "hour")}:${part(p, "minute")}:${part(p, "second")}`;
 }
 
 /** "12:17" */
