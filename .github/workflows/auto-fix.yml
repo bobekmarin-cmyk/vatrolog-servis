@@ -1,0 +1,211 @@
+name: Auto-fix
+
+# Automatski popravlja produkcijske greske bez ljudske intervencije.
+#
+# Okidaci:
+#   1. CI na `main` padne                -> analiziraj log, popravi, otvori PR
+#   2. Sentry otvori GitHub issue        -> popravi gresku iz stack tracea
+#   3. repository_dispatch iz Slacka     -> popravi opisanu gresku
+#   4. rucno (workflow_dispatch)         -> proizvoljan zadatak
+#
+# Agent SMIJE mijenjati datoteke, ali NE smije pushati ni mergeati.
+# Granu, PR i komentare radi CI deterministicki (auditabilno).
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  issues:
+    types: [opened, labeled]
+  repository_dispatch:
+    types: [sentry-error, slack-error]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Sto agent treba popraviti"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  # Jedan autofix po okidacu — sprjecava da se agenti gomilaju nad istom greskom.
+  group: auto-fix-${{ github.event_name }}-${{ github.event.issue.number || github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  autofix:
+    # Ne pokreci se za uspjesan CI, ni za issue bez `auto-fix` / `sentry` labele.
+    if: >-
+      ${{
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
+        || (github.event_name == 'issues' && (contains(github.event.issue.labels.*.name, 'auto-fix') || contains(github.event.issue.labels.*.name, 'sentry')))
+        || github.event_name == 'repository_dispatch'
+        || github.event_name == 'workflow_dispatch'
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+
+      - name: Configure git
+        run: |
+          git config user.name "VatroLog Auto-fix"
+          git config user.email "auto-fix@vatrolog.com"
+
+      - name: Build agent prompt
+        # Prompt ide u datoteku, ne u shell string: logovi i Sentry poruke znaju
+        # sadrzavati navodnike i backtickove koji bi inace razbili naredbu.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          DISPATCH_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+          MANUAL_TASK: ${{ inputs.task }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "Ti si dezurni inzenjer na VatroLog produkciji (Next.js 16 App Router,"
+            echo "Prisma, PostgreSQL na Railwayu, hrvatski UI tekstovi)."
+            echo ""
+            echo "ZADATAK — popravi sljedecu gresku:"
+            echo ""
+          } > /tmp/agent-prompt.txt
+
+          case "$EVENT_NAME" in
+            workflow_run)
+              echo "CI workflow run #${RUN_ID} je pao na main. Zadnji dio logova:" >> /tmp/agent-prompt.txt
+              gh run view "$RUN_ID" --log-failed 2>/dev/null | tail -c 12000 >> /tmp/agent-prompt.txt \
+                || echo "(log nedostupan — dohvati ga sam preko gh CLI)" >> /tmp/agent-prompt.txt
+              ;;
+            issues)
+              echo "GitHub issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}" >> /tmp/agent-prompt.txt
+              echo "" >> /tmp/agent-prompt.txt
+              printf '%s\n' "$ISSUE_BODY" >> /tmp/agent-prompt.txt
+              ;;
+            repository_dispatch)
+              echo "Prijavljena greska (Sentry/Slack):" >> /tmp/agent-prompt.txt
+              printf '%s\n' "$DISPATCH_PAYLOAD" >> /tmp/agent-prompt.txt
+              ;;
+            *)
+              printf '%s\n' "$MANUAL_TASK" >> /tmp/agent-prompt.txt
+              ;;
+          esac
+
+          cat >> /tmp/agent-prompt.txt <<'RULES'
+
+          PRAVILA:
+          - Napravi minimalan, ciljani popravak uzroka. Ne refaktoriraj sire nego sto treba.
+          - Postuj postojeci stil koda i hrvatske UI tekstove.
+          - Ako je uzrok nejasan ili popravak trazi promjenu poslovne logike, NE nagadjaj —
+            ostavi kod netaknut i objasni zasto u zadnjoj poruci.
+          - Nikad ne mijenjaj .github/workflows/** ni .env datoteke.
+          - Nakon izmjena OBAVEZNO pokreni: npm run lint && npm run typecheck
+            i popravi sve sto prijave.
+          - NE radi git commit, push, branch ni PR — to radi CI nakon tebe.
+          RULES
+
+      - name: Run Cursor agent (samo izmjene datoteka)
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          agent -p "$(cat /tmp/agent-prompt.txt)" \
+            --force --model claude-opus-5-thinking-high --output-format=text
+
+      - name: Verify (lint + typecheck + build)
+        id: verify
+        continue-on-error: true
+        env:
+          NODE_ENV: production
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_build?schema=public"
+          AUTH_SECRET: "ci-build-only-secret-not-used-at-runtime"
+          PLATFORM_AUTH_SECRET: "ci-build-only-platform-secret"
+          OWNER_AUTH_SECRET: "ci-build-only-owner-secret"
+          ENCRYPTION_KEY: "ci-build-only-encryption-key-32bytes!"
+        run: npm run lint && npm run typecheck && npm run build
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push fix branch and open PR
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERIFY_RESULT: ${{ steps.verify.outcome }}
+        run: |
+          set -euo pipefail
+          BRANCH="autofix/${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "fix: automatski popravak (${GITHUB_EVENT_NAME})"
+          git push -u origin "$BRANCH"
+
+          if [ "$VERIFY_RESULT" = "success" ]; then
+            STATUS="Provjere prolaze (lint, typecheck, build)."
+            DRAFT=""
+          else
+            STATUS="**Provjere NE prolaze** — potreban pregled prije mergea."
+            DRAFT="--draft"
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Auto-fix: ${GITHUB_EVENT_NAME}" \
+            --body "Automatski popravak koji je izradio Cursor agent.
+
+          ${STATUS}
+
+          Okidac: \`${GITHUB_EVENT_NAME}\`
+          Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          Pregledaj promjene prije mergea — agent popravlja uzrok, ali ne poznaje poslovni kontekst." \
+            $DRAFT
+
+      - name: Auto-merge (opcionalno)
+        # Ukljucuje se tek kad se u repo varijablama postavi AUTOFIX_AUTOMERGE=true.
+        # Bez toga popravak ceka ljudski pregled — preporuka dok je aplikacija u
+        # produkcijskom testiranju.
+        if: >-
+          ${{ steps.changes.outputs.changed == 'true'
+              && steps.verify.outcome == 'success'
+              && vars.AUTOFIX_AUTOMERGE == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge "autofix/${GITHUB_RUN_ID}" --squash --auto
+
+      - name: Report when no fix was produced
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "Agent nije napravio izmjene — uzrok nije bio jasan ili popravak treba ljudsku odluku."

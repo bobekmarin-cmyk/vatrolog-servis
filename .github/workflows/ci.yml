@@ -33,3 +33,16 @@ jobs:
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_validate?schema=public"
         run: npx prisma validate
+
+      - name: Production build
+        # Lint i typecheck ne hvataju greske u prerenderu (npr. client komponenta
+        # koja padne tijekom static generacije). Bez ovog koraka takav kvar se
+        # otkrije tek na deployu.
+        env:
+          NODE_ENV: production
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_build?schema=public"
+          AUTH_SECRET: "ci-build-only-secret-not-used-at-runtime"
+          PLATFORM_AUTH_SECRET: "ci-build-only-platform-secret"
+          OWNER_AUTH_SECRET: "ci-build-only-owner-secret"
+          ENCRYPTION_KEY: "ci-build-only-encryption-key-32bytes!"
+        run: npm run build
