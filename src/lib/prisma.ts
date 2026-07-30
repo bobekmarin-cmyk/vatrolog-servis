@@ -45,9 +45,11 @@ function buildDatabaseUrl(): string | undefined {
  * i za write operacije:
  *  - P1001 — baza nedostupna (konekcija nije ni uspostavljena)
  *  - P1017 — server je zatvorio konekciju
- *  - P2024 — istekao timeout čekanja na konekciju iz poola
+ *
+ * P2024 (istekao timeout čekanja na konekciju) namjerno NIJE ovdje: taj se kod
+ * javlja kad je pool već pun, pa bi ponavljanje samo pojačalo zagušenje.
  */
-const RETRYABLE_CODES = new Set(["P1001", "P1017", "P2024"]);
+const RETRYABLE_CODES = new Set(["P1001", "P1017"]);
 
 function isRetryable(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;

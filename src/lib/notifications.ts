@@ -66,17 +66,16 @@ export async function countUnreadForAccount(params: {
 }): Promise<number> {
   if (params.role !== "ADMIN") return 0;
 
-  const totalPublished = await prisma.notification.count({
-    where: { status: "PUBLISHED" },
-  });
+  const [totalPublished, readCount] = await Promise.all([
+    prisma.notification.count({ where: { status: "PUBLISHED" } }),
+    prisma.notificationRead.count({
+      where: {
+        accountUserId: params.accountUserId,
+        notification: { status: "PUBLISHED" },
+      },
+    }),
+  ]);
   if (totalPublished === 0) return 0;
-
-  const readCount = await prisma.notificationRead.count({
-    where: {
-      accountUserId: params.accountUserId,
-      notification: { status: "PUBLISHED" },
-    },
-  });
 
   const unread = totalPublished - readCount;
   return unread > 0 ? unread : 0;

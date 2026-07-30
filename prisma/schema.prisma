@@ -750,6 +750,7 @@ model CompanyPartCatalogSetting {
 
   @@unique([companyId, manufacturerId])
   @@index([companyId])
+  @@index([manufacturerId])
 }
 
 /// Tenantov override za platform dio: vlastita računovodstvena šifra, cijena
@@ -803,6 +804,7 @@ model PartStock {
 
   @@unique([companyId, partId])
   @@index([companyId])
+  @@index([partId])
 }
 
 model PartExtinguisherType {
@@ -838,6 +840,7 @@ model StockReceipt {
 
   @@unique([companyId, number])
   @@index([companyId, receiptDate])
+  @@index([createdById])
 }
 
 model StockReceiptItem {
@@ -871,6 +874,8 @@ model StockAdjustment {
   createdAt DateTime @default(now())
 
   @@index([companyId, partId, createdAt])
+  @@index([partId])
+  @@index([createdById])
 }
 
 /**
@@ -918,6 +923,8 @@ model Extinguisher {
   @@unique([companyId, internalCode])
   @@index([companyId])
   @@index([deletedAt])
+  @@index([manufacturerId])
+  @@index([extinguisherTypeId])
 }
 
 /**
@@ -999,6 +1006,11 @@ model WorkOrder {
   @@index([companyId, receivedAt])
   @@index([companyId, serviceLocationId])
   @@index([companyId, createdByAccountUserId])
+  @@index([customerId])
+  @@index([departmentId])
+  @@index([serviceLocationId])
+  @@index([createdByAccountUserId])
+  @@index([lockedById])
 }
 
 /// Jedan unos količine aparata na datum (inicijalni + naknadne dostave).
@@ -1029,7 +1041,7 @@ model WorkOrderPrimkaIssue {
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
 
   /// Redni broj izdanja unutar naloga (1, 2, …).
-  version Int
+  version    Int
   /// Fingerprint batch stanja u trenutku izdavanja (`YYYY-MM-DD:qty|…`).
   contentKey String
 
@@ -1086,6 +1098,7 @@ model DeliveryNote {
   @@index([companyId, issuedAt])
   @@index([workOrderId])
   @@index([companyId, workOrderId, supersededAt])
+  @@index([issuedByAccountUserId])
 }
 
 /**
@@ -1113,6 +1126,7 @@ model DocumentLog {
 
   @@index([workOrderId, createdAt])
   @@index([companyId])
+  @@index([userId])
 }
 
 /**
@@ -1182,6 +1196,9 @@ model WorkOrderItem {
   @@unique([companyId, labelNumber])
   @@index([companyId])
   @@index([targetPeriodicMonth])
+  @@index([workOrderId])
+  @@index([extinguisherId])
+  @@index([servicerId])
 }
 
 model WorkOrderItemPart {
@@ -1645,6 +1662,7 @@ model OwnerCustomerLink {
   @@index([ownerOrgId])
   @@index([companyId, status])
   @@index([invitedEmail])
+  @@index([invitedByAccountUserId])
 }
 
 enum RegularInspectionResult {
@@ -2088,6 +2106,7 @@ model ServiceLabelStock {
 
   @@unique([companyId, serviceLabelId])
   @@index([companyId])
+  @@index([serviceLabelId])
 }
 
 /// Primka naljepnica (ulaz naljepnica od dobavljača).
@@ -2113,6 +2132,7 @@ model ServiceLabelReceipt {
 
   @@unique([companyId, number])
   @@index([companyId, receiptDate])
+  @@index([createdById])
 }
 
 model ServiceLabelReceiptItem {
@@ -2148,6 +2168,8 @@ model ServiceLabelAdjustment {
   createdAt DateTime @default(now())
 
   @@index([companyId, serviceLabelId, createdAt])
+  @@index([serviceLabelId])
+  @@index([createdById])
 }
 
 /// Snimka potrošnje naljepnica pri zaključavanju radnog naloga (ispis na otpremnici).
@@ -2253,6 +2275,7 @@ model Notification {
 
   @@index([status, publishedAt])
   @@index([categoryId])
+  @@index([authorPlatformUserId])
 }
 
 /// Praćenje pročitanosti — jedan zapis = jedan admin pročitao jednu obavijest.

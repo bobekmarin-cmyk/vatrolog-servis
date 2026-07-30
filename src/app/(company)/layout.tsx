@@ -31,21 +31,28 @@ export default async function CompanyLayout({ children }: { children: React.Reac
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const subInfo = await getSubscriptionInfo(session.companyId);
+  // Ova cetiri izvora ne ovise jedan o drugom. Serijski su znacili cetiri
+  // odvojena kruga do baze na SVAKOJ stranici tenanta.
+  const [subInfo, company, features, unreadNotifications] = await Promise.all([
+    getSubscriptionInfo(session.companyId),
+    prisma.company.findUnique({
+      where: { id: session.companyId },
+      select: { name: true },
+    }),
+    getCompanyFeatures(session.companyId),
+    countUnreadForAccount({
+      accountUserId: session.accountUserId,
+      role: session.role,
+    }),
+  ]);
+
   if (subInfo.status !== "active") {
     redirect("/subscription-expired");
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: session.companyId },
-    select: { name: true },
-  });
-
   if (!company) {
     redirect("/api/auth/logout");
   }
-
-  const features = await getCompanyFeatures(session.companyId);
 
   const sectionsAll: NavSectionConfig[] = [
     {
@@ -127,11 +134,6 @@ export default async function CompanyLayout({ children }: { children: React.Reac
       ],
     },
   ];
-
-  const unreadNotifications = await countUnreadForAccount({
-    accountUserId: session.accountUserId,
-    role: session.role,
-  });
 
   const sections: CompanyNavSection[] = sectionsAll
     .map((section) => ({

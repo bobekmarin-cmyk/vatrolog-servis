@@ -112,10 +112,18 @@ export default async function WorkOrdersPage({
     prisma.workOrder.findMany({
       where,
       orderBy: { receivedAt: "desc" },
-      include: {
-        customer: true,
+      // Namjerno `select` umjesto `include`: lista treba samo dvije brojke po
+      // stavci, a `items: true` je dovlačio sve stupce svih stavki svih 100
+      // naloga (na tenanta s 30 aparata po nalogu to je ~3000 širokih redaka).
+      select: {
+        id: true,
+        orderNumber: true,
+        receivedAt: true,
+        receivedQty: true,
+        status: true,
+        customer: { select: { name: true, shortName: true } },
         department: { select: { name: true } },
-        items: true,
+        items: { select: { servicedAt: true, labelNumber: true } },
         serviceLocation: { select: { kind: true, label: true } },
         createdByAccountUser: { select: { username: true } },
         deliveryNotes: {

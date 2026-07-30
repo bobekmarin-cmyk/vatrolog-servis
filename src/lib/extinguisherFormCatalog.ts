@@ -44,14 +44,26 @@ function mapManufacturer(m: {
   };
 }
 
+type GlobalCatalog = {
+  types: ExtinguisherFormType[];
+  manufacturers: ExtinguisherFormManufacturer[];
+};
+
 /**
- * Katalog za drawer (proizvođači + tipovi). Učitava se jednom na stranici naloga
- * da se drawer otvara bez čekanja API-ja.
+ * Tipovi aparata i veze proizvođač→tip su globalni katalog koji mijenja samo
+ * platforma. Bez cachea se cijela `ManufacturerExtinguisherType` tablica
+ * (proizvođači × tipovi, desetci tisuća redaka) čitala na svako otvaranje
+ * radnog naloga. TTL je kratak da promjena u katalogu brzo dođe do tenanta.
  */
-export async function loadExtinguisherFormCatalog(
-  companyId: string,
-): Promise<ExtinguisherFormCatalog> {
-  const [types, fillAuth, editManufacturers] = await Promise.all([
+const GLOBAL_CATALOG_TTL_MS = 5 * 60 * 1000;
+let globalCatalogCache: { at: number; value: GlobalCatalog } | null = null;
+
+async function loadGlobalCatalog(): Promise<GlobalCatalog> {
+  if (globalCatalogCache && Date.now() - globalCatalogCache.at < GLOBAL_CATALOG_TTL_MS) {
+    return globalCatalogCache.value;
+  }
+
+  const [types, manufacturers] = await Promise.all([
     prisma.extinguisherType.findMany({
       orderBy: [{ code: "asc" }],
       select: {
@@ -62,30 +74,17 @@ export async function loadExtinguisherFormCatalog(
         construction: { select: { code: true, label: true } },
       },
     }),
-    prisma.companyManufacturerAuthorization.findMany({
-      where: { companyId, active: true },
-      include: {
-        manufacturer: {
-          include: { supportedTypes: { select: { extinguisherTypeId: true } } },
-        },
-      },
-    }),
     prisma.manufacturer.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      include: { supportedTypes: { select: { extinguisherTypeId: true } } },
+      select: {
+        id: true,
+        name: true,
+        supportedTypes: { select: { extinguisherTypeId: true } },
+      },
     }),
   ]);
 
-  const fillManufacturers = fillAuth
-    .map((a) => a.manufacturer)
-    .sort((a, b) => {
-      const so = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-      if (so !== 0) return so;
-      return a.name.localeCompare(b.name, "hr");
-    })
-    .map(mapManufacturer);
-
-  return {
+  const value: GlobalCatalog = {
     types: types.map((t) => ({
       id: t.id,
       name: t.name,
@@ -101,7 +100,39 @@ export async function loadExtinguisherFormCatalog(
         ? { code: t.construction.code, label: t.construction.label }
         : null,
     })),
-    fillManufacturers,
-    editManufacturers: editManufacturers.map(mapManufacturer),
+    manufacturers: manufacturers.map(mapManufacturer),
+  };
+
+  globalCatalogCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Ručno poništavanje cachea nakon izmjene kataloga na platformi. */
+export function invalidateExtinguisherFormCatalog(): void {
+  globalCatalogCache = null;
+}
+
+/**
+ * Katalog za drawer (proizvođači + tipovi). Učitava se jednom na stranici naloga
+ * da se drawer otvara bez čekanja API-ja.
+ */
+export async function loadExtinguisherFormCatalog(
+  companyId: string,
+): Promise<ExtinguisherFormCatalog> {
+  const [global, auth] = await Promise.all([
+    loadGlobalCatalog(),
+    prisma.companyManufacturerAuthorization.findMany({
+      where: { companyId, active: true },
+      select: { manufacturerId: true },
+    }),
+  ]);
+
+  const authorized = new Set(auth.map((a) => a.manufacturerId));
+
+  return {
+    types: global.types,
+    // `global.manufacturers` je već sortiran po sortOrder pa nazivu.
+    fillManufacturers: global.manufacturers.filter((m) => authorized.has(m.id)),
+    editManufacturers: global.manufacturers,
   };
 }
