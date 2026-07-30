@@ -224,11 +224,27 @@ jobs:
           AUTOMERGE_SECRET: ${{ secrets.AUTOFIX_AUTOMERGE }}
         run: |
           set -euo pipefail
-          if [ "${AUTOMERGE_VAR:-}" = "true" ] || [ "${AUTOMERGE_SECRET:-}" = "true" ]; then
-            gh pr merge "autofix/${GITHUB_RUN_ID}" --squash --auto
-            echo "Auto-merge ukljucen — PR se mergea cim provjere produ."
-          else
+          if [ "${AUTOMERGE_VAR:-}" != "true" ] && [ "${AUTOMERGE_SECRET:-}" != "true" ]; then
             echo "Auto-merge iskljucen (AUTOFIX_AUTOMERGE nije 'true') — PR ceka pregled."
+            exit 0
+          fi
+
+          BRANCH="autofix/${GITHUB_RUN_ID}"
+
+          # `--auto` trazi ukljucenu opciju "Allow auto-merge" u postavkama repoa.
+          # Ako nije ukljucena, mergeamo odmah: lint, typecheck i build su vec
+          # prosli u koraku "Verify" prije nego je PR uopce otvoren.
+          if gh pr merge "$BRANCH" --squash --auto 2>/tmp/merge-err; then
+            echo "Auto-merge zakazan — PR se mergea cim provjere produ."
+            exit 0
+          fi
+
+          if grep -q "Auto merge is not allowed" /tmp/merge-err; then
+            echo "Auto-merge nije ukljucen u postavkama repoa — mergeam odmah (provjere su vec prosle)."
+            gh pr merge "$BRANCH" --squash --delete-branch
+          else
+            cat /tmp/merge-err
+            exit 1
           fi
 
       - name: Report when no fix was produced
