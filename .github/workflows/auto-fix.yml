@@ -146,9 +146,16 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bez postavljene AUTOFIX_MODEL repo varijable koristi se default modela
+          # s racuna. Fiksno upisan slug bi pukao cim ga Cursor preimenuje.
+          AUTOFIX_MODEL: ${{ vars.AUTOFIX_MODEL }}
         run: |
-          agent -p "$(cat /tmp/agent-prompt.txt)" \
-            --force --model claude-opus-5-thinking-high --output-format=text
+          set -euo pipefail
+          if [ -n "${AUTOFIX_MODEL}" ]; then
+            agent -p "$(cat /tmp/agent-prompt.txt)" --force --output-format=text --model "${AUTOFIX_MODEL}"
+          else
+            agent -p "$(cat /tmp/agent-prompt.txt)" --force --output-format=text
+          fi
 
       - name: Verify (lint + typecheck + build)
         id: verify
