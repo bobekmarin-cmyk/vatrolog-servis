@@ -8,6 +8,7 @@ import SubscriptionExpiryBadge from "@/components/SubscriptionExpiryBadge";
 import DialogProvider from "@/components/ui/DialogProvider";
 import { ShellLayoutProvider } from "@/components/ShellLayoutContext";
 import { countUnreadForAccount } from "@/lib/notifications";
+import { todayStart } from "@/lib/servicerStatus";
 
 /**
  * Sve tenant rute (dashboard, radni nalozi, kupci, aparati, skladište, izvještaji, admin)
@@ -33,7 +34,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
 
   // Ova cetiri izvora ne ovise jedan o drugom. Serijski su znacili cetiri
   // odvojena kruga do baze na SVAKOJ stranici tenanta.
-  const [subInfo, company, features, unreadNotifications] = await Promise.all([
+  const [subInfo, company, features, unreadNotifications, activeServicerCount] = await Promise.all([
     getSubscriptionInfo(session.companyId),
     prisma.company.findUnique({
       where: { id: session.companyId },
@@ -43,6 +44,16 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     countUnreadForAccount({
       accountUserId: session.accountUserId,
       role: session.role,
+    }),
+    // Točkica „Serviseri" u traci — prije je zbog nje svaka stranica slala
+    // dodatni /api/servicers/status zahtjev.
+    prisma.user.count({
+      where: {
+        companyId: session.companyId,
+        active: true,
+        role: "SERVISER",
+        activatedAt: { gte: todayStart() },
+      },
     }),
   ]);
 
@@ -176,6 +187,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
           roleLabel={roleLabel}
           sections={sections}
           topBarExtra={expiryBadge}
+          activeServicerCount={activeServicerCount}
         >
           {children}
         </CompanyShell>

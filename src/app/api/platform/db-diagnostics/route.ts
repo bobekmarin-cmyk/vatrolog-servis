@@ -22,6 +22,32 @@ export async function GET() {
 
   const startedAt = Date.now();
 
+  /**
+   * Deset uzastopnih trivijalnih upita. `SELECT 1` ne radi nikakav posao, pa je
+   * izmjereno vrijeme cista cijena jednog kruga app -> Postgres. Time se
+   * razlikuje "baza je spora" od "aplikacija radi previse upita".
+   */
+  const latencies: number[] = [];
+  for (let i = 0; i < 10; i += 1) {
+    const t = Date.now();
+    try {
+      await prisma.$queryRawUnsafe(`SELECT 1`);
+      latencies.push(Date.now() - t);
+    } catch {
+      break;
+    }
+  }
+  const sorted = [...latencies].sort((a, b) => a - b);
+  const roundTrip = latencies.length
+    ? {
+        samples: latencies.length,
+        minMs: sorted[0],
+        medianMs: sorted[Math.floor(sorted.length / 2)],
+        maxMs: sorted[sorted.length - 1],
+        avgMs: Math.round(latencies.reduce((s, v) => s + v, 0) / latencies.length),
+      }
+    : null;
+
   try {
     const [maxConnRows, totalRows, byStateRows, longestRows, dbSizeRows] = await Promise.all([
       prisma.$queryRawUnsafe<Array<{ setting: string }>>(
@@ -61,7 +87,9 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      roundTripMs: Date.now() - startedAt,
+      totalMs: Date.now() - startedAt,
+      /** Cijena jednog kruga do baze. Zdravo je < 5 ms; > 50 ms znaci mrezni problem. */
+      roundTrip,
       connections: {
         used: total,
         max: maxConnections,
@@ -86,7 +114,8 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        roundTripMs: Date.now() - startedAt,
+        totalMs: Date.now() - startedAt,
+        roundTrip,
         error: err instanceof Error ? err.message : String(err),
       },
       { status: 503 },

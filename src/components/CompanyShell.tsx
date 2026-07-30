@@ -87,6 +87,10 @@ function NavItem(item: CompanyNavItem & { disabled?: boolean }) {
   return (
     <Link
       href={href}
+      // Sidebar je uvijek u vidnom polju, pa bi Next prefetchao SVE stavke na
+      // svakom otvaranju stranice — a svaki prefetch je pun server render s
+      // vlastitim upitima. To je bio najveci izvor suvisnog opterecenja.
+      prefetch={false}
       className={[
         "group flex items-center gap-2 rounded-xl px-3 py-2 text-sm",
         active ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/10 hover:text-white",
@@ -130,6 +134,7 @@ function RailNavItem(item: CompanyNavItem & { disabled?: boolean }) {
   return (
     <Link
       href={href}
+      prefetch={false}
       className={[
         "relative flex h-10 w-10 items-center justify-center rounded-xl",
         active ? "bg-white/15 text-white" : "text-white/75 hover:bg-white/10 hover:text-white",
@@ -198,9 +203,10 @@ export default function CompanyShell(props: {
   roleLabel: string;
   sections: CompanyNavSection[];
   topBarExtra?: React.ReactNode;
+  activeServicerCount?: number;
   children: React.ReactNode;
 }) {
-  const { companyName, roleLabel, sections, topBarExtra, children } = props;
+  const { companyName, roleLabel, sections, topBarExtra, activeServicerCount, children } = props;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const [manualSectionOpen, setManualSectionOpen] = useState<Record<string, boolean | undefined>>({});
@@ -312,7 +318,7 @@ export default function CompanyShell(props: {
           <div className="flex items-center gap-2 sm:gap-3">
             <NowDateTime className="hidden text-xs text-slate-700 sm:inline" />
             {topBarExtra}
-            <ServicerActivationDropdown />
+            <ServicerActivationDropdown initialActiveCount={activeServicerCount ?? 0} />
             <LogoutButton
               className="btn btn-outline"
               label="Odjava"
@@ -437,20 +443,22 @@ export default function CompanyShell(props: {
             <div>
               {APP_NAME} v{APP_VERSION}
             </div>
+            {/* prefetch={false}: legal stranice se otvaraju rijetko, a u footeru
+                su na svakoj stranici — bez ovoga se prefetchaju stalno. */}
             <nav className="flex flex-wrap gap-3">
-              <Link href="/admin/privacy" className="hover:text-slate-900">
+              <Link href="/admin/privacy" prefetch={false} className="hover:text-slate-900">
                 Privatnost i GDPR
               </Link>
-              <Link href="/legal/terms" className="hover:text-slate-900">
+              <Link href="/legal/terms" prefetch={false} className="hover:text-slate-900">
                 Uvjeti
               </Link>
-              <Link href="/legal/privacy" className="hover:text-slate-900">
+              <Link href="/legal/privacy" prefetch={false} className="hover:text-slate-900">
                 Politika privatnosti
               </Link>
-              <Link href="/legal/dpa" className="hover:text-slate-900">
+              <Link href="/legal/dpa" prefetch={false} className="hover:text-slate-900">
                 DPA
               </Link>
-              <Link href="/legal/impressum" className="hover:text-slate-900">
+              <Link href="/legal/impressum" prefetch={false} className="hover:text-slate-900">
                 Impressum
               </Link>
             </nav>

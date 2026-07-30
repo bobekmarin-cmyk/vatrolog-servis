@@ -40,7 +40,9 @@ const cspDirectives: Record<string, string[]> = {
   "object-src": ["'none'"],
 };
 
-if (isProd) {
+// `upgrade-insecure-requests` preglednici ignoriraju u Report-Only modu i pritom
+// zapisu gresku u konzolu. Dodajemo ga samo kad policy stvarno provodimo.
+if (isProd && process.env.CSP_ENFORCE === "1") {
   cspDirectives["upgrade-insecure-requests"] = [];
 }
 

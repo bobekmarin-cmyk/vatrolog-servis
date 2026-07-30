@@ -9,9 +9,19 @@ type Servicer = {
   hasPin: boolean;
 };
 
-export default function ServicerActivationDropdown() {
+export default function ServicerActivationDropdown({
+  /**
+   * Broj danas aktiviranih servisera koji je server već izračunao pri renderu
+   * layouta. Bez toga je svaka stranica okidala dodatni `/api/servicers/status`
+   * zahtjev (mjereno 647 ms) samo da obojimo točkicu u traci.
+   */
+  initialActiveCount = 0,
+}: {
+  initialActiveCount?: number;
+}) {
   const [open, setOpen] = useState(false);
   const [servicers, setServicers] = useState<Servicer[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pinFor, setPinFor] = useState<string | null>(null);
   const [pinValue, setPinValue] = useState("");
@@ -24,15 +34,15 @@ export default function ServicerActivationDropdown() {
     setLoading(true);
     try {
       const res = await fetch("/api/servicers/status");
-      if (res.ok) setServicers(await res.json());
+      if (res.ok) {
+        setServicers(await res.json());
+        setLoaded(true);
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    queueMicrotask(() => void fetchServicers());
-  }, [fetchServicers]);
-
+  // Popis se dohvaća tek kad korisnik otvori izbornik.
   useEffect(() => {
     if (open) queueMicrotask(() => void fetchServicers());
   }, [open, fetchServicers]);
@@ -54,7 +64,7 @@ export default function ServicerActivationDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  const activeCount = servicers.filter((s) => s.activeToday).length;
+  const activeCount = loaded ? servicers.filter((s) => s.activeToday).length : initialActiveCount;
 
   async function handleActivate(id: string) {
     if (activating) return;
