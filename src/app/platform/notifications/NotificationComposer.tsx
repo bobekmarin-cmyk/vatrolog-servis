@@ -8,7 +8,7 @@ import {
   type UpdatePayload,
   type UpdateSection,
   type UpdateSectionKind,
-} from "@/lib/notifications";
+} from "@/lib/notificationsShared";
 
 type CategoryOption = { id: string; name: string; isUpdate: boolean };
 

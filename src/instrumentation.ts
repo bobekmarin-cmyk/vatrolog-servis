@@ -5,22 +5,6 @@
  * Docs: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 
-/**
- * Railway private networking (`*.railway.internal`) razrješava se samo na IPv6.
- * Node bez ovoga zna prvo probati IPv4 zapis i javiti "Can't reach database
- * server" dok se kontejnerski DNS ne slegne nakon boota.
- */
-async function preferIpv6ForRailwayInternal() {
-  const host = process.env.DATABASE_URL?.trim();
-  if (!host || !host.includes(".railway.internal")) return;
-  try {
-    const dns = await import("node:dns");
-    dns.setDefaultResultOrder("ipv6first");
-  } catch {
-    // ignore
-  }
-}
-
 /** Prvi upit nakon boota ne smije pasti zato što privatna mreža još nije spremna. */
 async function warmUpDatabase() {
   if (!process.env.DATABASE_URL?.trim()) return;
@@ -44,7 +28,6 @@ export async function register() {
   // Boot-time env check — pokreće se samo u Node runtime-u (Edge nema fs, ne
   // pokreće Prisma niti procesira cron, pa nema potrebe duplo zvati).
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    await preferIpv6ForRailwayInternal();
     try {
       const { validateLaunchEnv, reportLaunchEnv } = await import("@/lib/envChecks");
       reportLaunchEnv(validateLaunchEnv());

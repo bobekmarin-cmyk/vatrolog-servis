@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Modal from "@/components/ui/Modal";
 import { useServiceScrapMode } from "@/components/ServiceScrapModeContext";
-import { formatPartUnit } from "@/lib/partsCatalog";
+import { formatPartUnit } from "@/lib/partsDisplay";
 import type { PartUnit } from "@prisma/client";
 
 export type PickerPart = {

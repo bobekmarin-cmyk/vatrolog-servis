@@ -6,9 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+# Novi push na istu granu otkazuje prethodni run — nema cekanja na zastarjele provjere.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  # Dva posla se vrte paralelno: ukupno trajanje je duljina sporijeg,
+  # a ne zbroj svih koraka kao kad je sve u jednom jobu.
+  quality:
+    name: Lint, typecheck, import guard
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
@@ -26,6 +35,11 @@ jobs:
       - name: TypeScript
         run: npm run typecheck
 
+      - name: Client bundle guard
+        # Hvata `"use client"` komponente koje uvlace Prisma u browser bundle.
+        # Takva greska prolazi lint, typecheck i build, a rusi stranicu korisniku.
+        run: npm run check:client-imports
+
       - name: Prisma schema
         # `prisma validate` parsira schema.prisma uključujući `env("DATABASE_URL")`,
         # pa varijabla MORA postojati cak i ako se nigdje ne spaja. Dummy
@@ -33,6 +47,30 @@ jobs:
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_validate?schema=public"
         run: npx prisma validate
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**/*.[jt]s', 'src/**/*.[jt]sx') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            nextjs-${{ runner.os }}-
 
       - name: Production build
         # Lint i typecheck ne hvataju greske u prerenderu (npr. client komponenta
