@@ -395,6 +395,7 @@ export async function renderDeliveryNotePdfBuffer(
       orderDate: formatDateDdMmYyyy(order.receivedAt ?? order.createdAt),
       deliveryNoteDate: formatDateDdMmYyyy(deliveryNoteAt),
     },
+    orderNote: order.note?.trim() || null,
     serviceFooterLine: `Lokacija: ${locationText}  ·  Način servisa: ${serviceModeText}`,
     status: order.status,
     docId,

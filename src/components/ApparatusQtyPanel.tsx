@@ -87,7 +87,7 @@ function QtyStepper({
     <div className="flex items-center gap-1">
       <button
         type="button"
-        className="btn btn-outline h-9 w-9 p-0 text-lg leading-none"
+        className="btn btn-outline h-8 w-8 p-0 text-base leading-none"
         disabled={disabled || value <= min}
         onMouseDown={() => startHold(-1)}
         onMouseUp={clearHold}
@@ -99,7 +99,7 @@ function QtyStepper({
       </button>
       <input
         type="number"
-        className="input h-9 w-16 text-center font-bold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="input h-8 w-12 text-center text-sm font-bold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         min={min}
         max={max}
         value={value}
@@ -108,7 +108,7 @@ function QtyStepper({
       />
       <button
         type="button"
-        className="btn btn-primary h-9 w-9 p-0 text-lg leading-none"
+        className="btn btn-primary h-8 w-8 p-0 text-base leading-none"
         disabled={disabled || value >= max}
         onMouseDown={() => startHold(1)}
         onMouseUp={clearHold}
@@ -262,26 +262,28 @@ export default function ApparatusQtyPanel({
 
   return (
     <>
-      <form className="flex w-full flex-col items-center justify-center gap-2" onSubmit={handleAddPlaceholders}>
-        <div className="text-sm font-semibold text-slate-900">Količina aparata</div>
-        {totalQty > 0 ? (
-          <div className="text-[11px] text-slate-500">
-            Ukupno zabilježeno:{" "}
-            <span className="font-semibold tabular-nums text-slate-700">{totalQty}</span> kom
-          </div>
-        ) : null}
-        <QtyStepper value={count} onChange={setCount} min={1} max={200} disabled={busy} />
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <button className="btn btn-primary h-9 px-4" type="submit" disabled={busy}>
-            {busy ? "Dodajem…" : "Dodaj"}
+      <form className="flex w-full flex-col gap-1.5" onSubmit={handleAddPlaceholders}>
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="text-sm font-semibold text-slate-900">Količina aparata</div>
+          {totalQty > 0 ? (
+            <div className="text-[11px] tabular-nums text-slate-500">
+              Ukupno: <span className="font-semibold text-slate-700">{totalQty}</span> kom
+            </div>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <QtyStepper value={count} onChange={setCount} min={1} max={200} disabled={busy} />
+          <button className="btn btn-primary h-8 px-3 text-sm" type="submit" disabled={busy}>
+            {busy ? "…" : "Dodaj"}
           </button>
           <button
             type="button"
-            className="btn btn-outline h-9 px-3 text-xs"
+            className="btn btn-outline h-8 px-2.5 text-xs"
             onClick={openEditor}
             disabled={busy}
+            title="Uređivanje količine"
           >
-            Uređivanje količine
+            Uredi
           </button>
         </div>
       </form>

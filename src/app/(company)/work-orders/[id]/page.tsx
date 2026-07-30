@@ -538,22 +538,13 @@ export default async function ServiceViewPage({
               <div className={`text-lg font-bold tabular-nums ${remaining > 0 ? "text-amber-700" : "text-slate-400"}`}>{remaining}</div>
             </div>
           </div>
-          {order.receivedQty > 0 ? (
-            <div className="mt-1.5 text-[10px] text-slate-500">
-              Zabilježeno primitkom:{" "}
-              <span className="font-semibold tabular-nums text-slate-700">{order.receivedQty}</span> kom — broj
-              stavki ne može pasti ispod te količine (uređuje se u „Količina aparata”).
-            </div>
-          ) : null}
         </div>
 
-        <div className="rounded-xl border border-black/10 bg-slate-50 p-3 text-sm">
+        <div className="rounded-xl border border-black/10 bg-slate-50 px-3 py-2 text-sm">
           {isLocked ? (
             <div className="text-xs text-gray-500">Nalog je zaključan — nije moguće dodavati ili brisati stavke.</div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center">
-              <ApparatusQtyPanel orderId={order.id} initialTotalQty={order.receivedQty} />
-            </div>
+            <ApparatusQtyPanel orderId={order.id} initialTotalQty={order.receivedQty} />
           )}
         </div>
       </div>

@@ -69,6 +69,8 @@ export type DeliveryNotePdfData = {
   orderNumber: string;
   customer: DeliveryNoteCustomerInfo;
   dates: DeliveryNoteDates;
+  /** Napomena s otvaranja radnog naloga — ispod broja/datuma (kao na upisniku/primci). */
+  orderNote?: string | null;
   serviceFooterLine?: string | null;
   status: DeliveryNoteStatus;
   docId: string;
@@ -182,6 +184,25 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontWeight: 700,
     textAlign: "right" as const,
+  },
+  introOrderNote: {
+    marginTop: 8,
+    paddingTop: 7,
+    borderTopWidth: 0.5,
+    borderTopColor: "#e2e8f0",
+  },
+  introOrderNoteLabel: {
+    fontSize: 6.8,
+    color: "#64748b",
+    letterSpacing: 0.7,
+    textTransform: "uppercase" as const,
+    fontWeight: 700,
+    marginBottom: 3,
+  },
+  introOrderNoteText: {
+    fontSize: 8.2,
+    color: "#0f172a",
+    lineHeight: 1.35,
   },
 
   infoRow: {
@@ -390,6 +411,7 @@ export default function DeliveryNotePdfDocument({ data }: { data: DeliveryNotePd
     orderNumber,
     customer,
     dates,
+    orderNote,
     serviceFooterLine,
     status,
     docId,
@@ -401,6 +423,7 @@ export default function DeliveryNotePdfDocument({ data }: { data: DeliveryNotePd
     labels,
   } = data;
 
+  const noteText = orderNote?.trim() || "";
   const addressLine = formatCustomerAddress(customer);
 
   const contacts: Array<{ label: string; value: string }> = [];
@@ -456,6 +479,12 @@ export default function DeliveryNotePdfDocument({ data }: { data: DeliveryNotePd
               <Text style={styles.introMetaKey}>Datum primitka na servis</Text>
               <Text style={styles.introMetaValue}>{dates.receiptDate}</Text>
             </View>
+            {noteText ? (
+              <View style={styles.introOrderNote}>
+                <Text style={styles.introOrderNoteLabel}>Napomena</Text>
+                <Text style={styles.introOrderNoteText}>{noteText}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
