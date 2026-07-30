@@ -120,6 +120,18 @@ export function buildAgentTask(issue: SentryIssueSummary): string {
 }
 
 /**
+ * Ima li prijava dovoljno signala da agent uopće ima što tražiti?
+ *
+ * Testne obavijesti i nepotpuni payloadi nemaju ni mjesto greške ni stack ni
+ * link na Sentry. Pokretati agenta na to znači trošiti run na nagađanje, a uz
+ * uključen auto-merge i riskirati izmjenu bez pokrića.
+ */
+export function hasEnoughSignal(issue: SentryIssueSummary): boolean {
+  if (!issue.title || issue.title === "Nepoznata greška") return false;
+  return !!(issue.culprit || issue.stackHint || issue.issueUrl);
+}
+
+/**
  * Sprječava da retry istog webhooka pokrene agenta dvaput.
  * Dovoljan je kratki memorijski trag — Sentry retry-a u roku nekoliko minuta.
  */

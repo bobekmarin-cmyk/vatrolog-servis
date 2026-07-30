@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { logError, logInfo, logWarn } from "@/lib/logger";
 import {
   buildAgentTask,
+  hasEnoughSignal,
   parseSentryPayload,
   shouldDispatch,
   verifySentrySignature,
@@ -94,6 +95,14 @@ export async function POST(req: Request) {
   const issue = parseSentryPayload(payload);
   if (!issue) {
     return NextResponse.json({ ok: true, ignored: "nepoznat format" });
+  }
+
+  if (!hasEnoughSignal(issue)) {
+    logInfo("sentry_webhook_insufficient_signal", { title: issue.title });
+    return NextResponse.json({
+      ok: true,
+      ignored: "premalo podataka za agenta (testna obavijest?)",
+    });
   }
 
   if (!shouldDispatch(issue.issueId)) {
