@@ -42,6 +42,26 @@ function requireEnv(name) {
   return v;
 }
 
+/**
+ * Backup se vrti na GitHub Actions runneru, izvan Railway mreze. Railwayev
+ * privatni host (`*.railway.internal`) se odande ne moze razrijesiti, pa
+ * `pg_dump` padne s nejasnom DNS greskom. Radije to uhvatimo odmah i kazemo
+ * tocno sto treba promijeniti.
+ */
+function requireExternallyReachableDatabaseUrl() {
+  const url = requireEnv("DATABASE_URL");
+  if (url.includes(".railway.internal")) {
+    throw new Error(
+      "DATABASE_URL pokazuje na Railwayev privatni host (*.railway.internal), " +
+        "koji je dostupan samo unutar Railwaya. Za backup iz GitHub Actionsa treba " +
+        "javni URL: Railway -> Postgres -> Variables -> DATABASE_PUBLIC_URL " +
+        "(oblik postgresql://...@*.proxy.rlwy.net:PORT/railway). " +
+        "Zamijeni GitHub secret Settings -> Secrets and variables -> Actions -> DATABASE_URL.",
+    );
+  }
+  return url;
+}
+
 function parseHexKey(name) {
   const v = requireEnv(name);
   if (!/^[0-9a-f]{64}$/i.test(v)) {
@@ -55,7 +75,7 @@ async function runPgDump(targetPath) {
     const child = spawn(
       "pg_dump",
       [
-        requireEnv("DATABASE_URL"),
+        requireExternallyReachableDatabaseUrl(),
         "--format=custom",
         "--no-owner",
         "--no-acl",

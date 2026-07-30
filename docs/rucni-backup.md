@@ -63,6 +63,22 @@ i taj secret:
 
 Inače backup i dalje uredno prolazi — ali snima staru bazu.
 
+### Koji URL kopirati — javni, ne privatni
+
+GitHub Actions runner je izvan Railway mreže, pa privatni host
+`postgres.railway.internal` odande **nije dostupan**. Za GitHub secret uvijek
+uzmite **`DATABASE_PUBLIC_URL`** iz Railwaya (Postgres → Variables), oblika:
+
+```
+postgresql://postgres:...@nesto.proxy.rlwy.net:PORT/railway
+```
+
+Privatni `DATABASE_URL` (`postgres.railway.internal`) ostaje samo u Railway
+varijablama aplikacije — tamo je i brži jer ne izlazi iz njihove mreže.
+
+Ako se ipak upiše privatni URL, skripta to prepozna i prekine s jasnom porukom
+umjesto da padne na nerazumljivoj DNS grešci.
+
 ## Vraćanje backupa
 
 Postupak je opisan u [`launch-ops-checklist.md`](./launch-ops-checklist.md);
