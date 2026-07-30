@@ -214,16 +214,22 @@ jobs:
             $DRAFT
 
       - name: Auto-merge (opcionalno)
-        # Ukljucuje se tek kad se u repo varijablama postavi AUTOFIX_AUTOMERGE=true.
-        # Bez toga popravak ceka ljudski pregled — preporuka dok je aplikacija u
-        # produkcijskom testiranju.
-        if: >-
-          ${{ steps.changes.outputs.changed == 'true'
-              && steps.verify.outcome == 'success'
-              && vars.AUTOFIX_AUTOMERGE == 'true' }}
+        # Ukljucuje se s AUTOFIX_AUTOMERGE=true. Prihvacamo i repo varijablu i
+        # secret jer se lako zamijene u GitHub sucelju, a `secrets` se ne moze
+        # citati u `if:` uvjetu — zato se provjera radi u shellu.
+        if: steps.changes.outputs.changed == 'true' && steps.verify.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge "autofix/${GITHUB_RUN_ID}" --squash --auto
+          AUTOMERGE_VAR: ${{ vars.AUTOFIX_AUTOMERGE }}
+          AUTOMERGE_SECRET: ${{ secrets.AUTOFIX_AUTOMERGE }}
+        run: |
+          set -euo pipefail
+          if [ "${AUTOMERGE_VAR:-}" = "true" ] || [ "${AUTOMERGE_SECRET:-}" = "true" ]; then
+            gh pr merge "autofix/${GITHUB_RUN_ID}" --squash --auto
+            echo "Auto-merge ukljucen — PR se mergea cim provjere produ."
+          else
+            echo "Auto-merge iskljucen (AUTOFIX_AUTOMERGE nije 'true') — PR ceka pregled."
+          fi
 
       - name: Report when no fix was produced
         if: steps.changes.outputs.changed == 'false'

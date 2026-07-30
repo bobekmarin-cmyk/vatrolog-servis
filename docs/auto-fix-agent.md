@@ -112,6 +112,19 @@ Dodatno, workflow:
 - ako provjere padnu, PR se otvara kao **draft** s jasnim upozorenjem
 - ne mergea ništa osim ako to eksplicitno uključiš (vidi dolje)
 
+### Izbor modela
+
+Bez dodatnih postavki agent koristi zadani model vašeg Cursor računa. Ako želite
+konkretan model, dodajte repo varijablu:
+
+**Settings → Secrets and variables → Actions → Variables → New repository variable**
+
+- Name: `AUTOFIX_MODEL`
+- Value: npr. `sonnet-4.5` ili `gpt-5`
+
+Model se namjerno ne upisuje fiksno u workflow — slugovi se s vremenom mijenjaju,
+pa bi zastarjeli naziv rušio svako pokretanje.
+
 ### Auto-merge (isključen po defaultu)
 
 Dok je aplikacija u produkcijskom testiranju, preporuka je da popravke pogledaš
