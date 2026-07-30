@@ -19,6 +19,7 @@ import { buildWorkOrderPdfNames, type WorkOrderDocSlug } from "@/lib/workOrderDo
 import { getActiveDeliveryNote } from "@/lib/deliveryNoteIssue";
 import { readPdf } from "@/lib/pdfStorage";
 import { countWorkOrderItemsForEmailDoc } from "@/lib/workOrderEmailCounts";
+import { readIssuedPrimkaPdf } from "@/lib/primkaIssue";
 
 export const runtime = "nodejs";
 
@@ -58,8 +59,13 @@ export async function POST(req: NextRequest) {
     workOrderId?: string;
     kind?: string;
     toEmail?: string;
+    primkaIssueId?: string;
   };
   const { workOrderId, toEmail } = payload;
+  const primkaIssueId =
+    typeof payload.primkaIssueId === "string" && payload.primkaIssueId.trim()
+      ? payload.primkaIssueId.trim()
+      : null;
 
   if (!workOrderId || !isKind(payload.kind)) {
     return NextResponse.json({ error: "Neispravni parametri" }, { status: 400 });
@@ -134,6 +140,21 @@ export async function POST(req: NextRequest) {
     }
     const safeNum = activeDn.number.replace(/[^a-zA-Z0-9-]+/g, "_");
     pdfFilename = `otpremnica_${safeNum}.pdf`;
+  } else if (kind === "primka" && primkaIssueId) {
+    const owned = await prisma.workOrderPrimkaIssue.findFirst({
+      where: { id: primkaIssueId, workOrderId, companyId: session.companyId },
+      select: { id: true, filename: true },
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "Primka nije pronađena." }, { status: 404 });
+    }
+    try {
+      pdfBuffer = await readIssuedPrimkaPdf(owned.id);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Nepoznata greška";
+      return NextResponse.json({ error: `Čitanje primke nije uspjelo: ${msg}` }, { status: 500 });
+    }
+    pdfFilename = owned.filename ?? pdfFilename;
   } else {
     // Interni fetch PDF-a (reuse postojećih GET ruta s istom sesijom).
     const cookieHdr = req.headers.get("cookie") ?? "";

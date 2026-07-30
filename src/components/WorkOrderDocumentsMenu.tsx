@@ -51,6 +51,45 @@ function MailIcon() {
   );
 }
 
+function InfoHover({ text }: { text: string }) {
+  return (
+    <span
+      className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold leading-none text-slate-500"
+      title={text}
+      aria-label={text}
+    >
+      i
+    </span>
+  );
+}
+
+function IconBtn({
+  disabled,
+  title,
+  ariaLabel,
+  onClick,
+  children,
+}: {
+  disabled?: boolean;
+  title: string;
+  ariaLabel: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={ariaLabel}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function WorkOrderDocumentsMenu({
   workOrderId,
   orderNumber,
@@ -68,6 +107,7 @@ export default function WorkOrderDocumentsMenu({
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [mailKind, setMailKind] = useState<DocKind | null>(null);
+  const [mailPrimkaIssueId, setMailPrimkaIssueId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState(customerEmail ?? "");
@@ -104,6 +144,11 @@ export default function WorkOrderDocumentsMenu({
   }, [menuOpen, loadPrimkaStatus]);
 
   const dnAvailable = isLocked && deliveryNoteIssued;
+  const dnInfoText = !isLocked
+    ? "Otpremnica je dostupna nakon zaključavanja naloga."
+    : !deliveryNoteIssued
+      ? "Prvo izdajte otpremnicu (gumb ispod)."
+      : "Otpremnica je izdana — možete otvoriti PDF ili poslati mail.";
   const dnDisabledTitle = !isLocked
     ? "Zaključaj radni nalog prije izdavanja otpremnice."
     : "Prvo izdajte otpremnicu (opcija ispod).";
@@ -123,8 +168,9 @@ export default function WorkOrderDocumentsMenu({
     setMenuOpen(false);
   }
 
-  async function issueNewPrimka() {
-    if (!canIssueNewPrimka || issuingPrimka) return;
+  /** Izdaj novu primku i vrati issueId (ili null). */
+  async function issueNewPrimka(): Promise<string | null> {
+    if (!canIssueNewPrimka || issuingPrimka) return null;
     setIssuingPrimka(true);
     try {
       const res = await fetch(`/api/work-orders/${workOrderId}/primka/issues`, { method: "POST" });
@@ -135,23 +181,33 @@ export default function WorkOrderDocumentsMenu({
           message: data.error || "Izdavanje nije uspjelo.",
           variant: res.status === 409 ? "warning" : "error",
         });
-        if (data.latestIssueId) {
-          openPdf("primka", data.latestIssueId);
-        }
         await loadPrimkaStatus();
-        return;
+        return data.latestIssueId ?? null;
       }
-      openPdf("primka", data.issueId);
       await loadPrimkaStatus();
       router.refresh();
+      return data.issueId as string;
     } finally {
       setIssuingPrimka(false);
     }
   }
 
-  function openMailModal(kind: DocKind) {
+  async function onNewPrimkaPdf() {
+    const id = await issueNewPrimka();
+    if (id) openPdf("primka", id);
+  }
+
+  async function onNewPrimkaMail() {
+    if (!mailConnected) return;
+    const id = await issueNewPrimka();
+    if (!id) return;
+    openMailModal("primka", id);
+  }
+
+  function openMailModal(kind: DocKind, primkaIssueId?: string) {
     setEmailInput(customerEmail ?? "");
     setError(null);
+    setMailPrimkaIssueId(primkaIssueId ?? null);
     setMailKind(kind);
     setMenuOpen(false);
   }
@@ -169,13 +225,21 @@ export default function WorkOrderDocumentsMenu({
       const res = await fetch("/api/gmail/send-work-order-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workOrderId, kind: mailKind, toEmail: trimmed }),
+        body: JSON.stringify({
+          workOrderId,
+          kind: mailKind,
+          toEmail: trimmed,
+          ...(mailKind === "primka" && mailPrimkaIssueId
+            ? { primkaIssueId: mailPrimkaIssueId }
+            : {}),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `Greška ${res.status}`);
       }
       setMailKind(null);
+      setMailPrimkaIssueId(null);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Nepoznata greška");
@@ -184,44 +248,62 @@ export default function WorkOrderDocumentsMenu({
     }
   }
 
-  function DocRow({ kind, disabled, disabledTitle }: { kind: DocKind; disabled?: boolean; disabledTitle?: string }) {
+  function DocRow({
+    kind,
+    disabled,
+    disabledTitle,
+    infoText,
+    onPdf,
+    onMail,
+  }: {
+    kind: DocKind;
+    disabled?: boolean;
+    disabledTitle?: string;
+    infoText?: string;
+    onPdf?: () => void;
+    onMail?: () => void;
+  }) {
     const mailDisabled = disabled || !mailConnected;
     return (
       <div className="flex items-center justify-between gap-2 px-3 py-1.5">
-        <span className={`text-sm ${disabled ? "text-slate-400" : "text-slate-800"}`}>
+        <span className={`flex items-center gap-1.5 text-sm ${disabled ? "text-slate-400" : "text-slate-800"}`}>
           {DOC_LABELS[kind]}
+          {infoText ? <InfoHover text={infoText} /> : null}
         </span>
         <span className="flex gap-1">
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            onClick={() => openPdf(kind)}
+          <IconBtn
             disabled={disabled}
-            title={disabled ? disabledTitle : `Otvori ${DOC_LABELS[kind].toLowerCase()} PDF`}
-            aria-label={`Otvori ${DOC_LABELS[kind]} PDF`}
+            title={disabled ? (disabledTitle ?? "") : `Otvori ${DOC_LABELS[kind].toLowerCase()} PDF`}
+            ariaLabel={`Otvori ${DOC_LABELS[kind]} PDF`}
+            onClick={onPdf ?? (() => openPdf(kind))}
           >
             <PdfIcon />
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            onClick={() => openMailModal(kind)}
+          </IconBtn>
+          <IconBtn
             disabled={mailDisabled}
             title={
               disabled
-                ? disabledTitle
+                ? (disabledTitle ?? "")
                 : !mailConnected
                   ? (mailDisabledTitle ?? "Mail nije konfiguriran (Postavke → Postavke maila)")
                   : `Pošalji ${DOC_LABELS[kind].toLowerCase()} na mail`
             }
-            aria-label={`Pošalji ${DOC_LABELS[kind]} na mail`}
+            ariaLabel={`Pošalji ${DOC_LABELS[kind]} na mail`}
+            onClick={onMail ?? (() => openMailModal(kind))}
           >
             <MailIcon />
-          </button>
+          </IconBtn>
         </span>
       </div>
     );
   }
+
+  const primkaNewDisabled = !canIssueNewPrimka || issuingPrimka || primkaLoading;
+  const primkaNewTitle = canIssueNewPrimka
+    ? "Izdaj novu primku (ima novih količina / aparata)"
+    : primkaIssues.length > 0
+      ? "Nema novih podataka — koristi postojeću primku ispod"
+      : "Nema podataka za izdavanje primke";
 
   return (
     <>
@@ -244,76 +326,62 @@ export default function WorkOrderDocumentsMenu({
             role="menu"
             className="absolute right-0 top-full z-30 mt-1 w-72 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg"
           >
-            <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              Primke
-            </div>
+            <DocRow
+              kind="primka"
+              disabled={primkaNewDisabled}
+              disabledTitle={primkaNewTitle}
+              onPdf={onNewPrimkaPdf}
+              onMail={onNewPrimkaMail}
+            />
+
             {primkaLoading ? (
-              <div className="px-3 py-2 text-xs text-slate-400">Učitavam…</div>
-            ) : primkaIssues.length === 0 ? (
-              <div className="px-3 py-1.5 text-xs text-slate-500">Još nema izdane primke.</div>
-            ) : (
-              primkaIssues.map((issue) => (
-                <div key={issue.id} className="flex items-center justify-between gap-2 px-3 py-1.5">
-                  <span className="text-sm text-slate-800">
-                    Primka #{issue.version}
-                    <span className="ml-1.5 text-[11px] text-slate-400">{issue.issuedAtLabel}</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
-                    onClick={() => openPdf("primka", issue.id)}
-                    title="Otvori izdanu primku"
-                    aria-label={`Otvori primku ${issue.version}`}
+              <div className="px-3 pb-1 text-[11px] text-slate-400">Učitavam primke…</div>
+            ) : primkaIssues.length > 0 ? (
+              <div className="pb-1">
+                {primkaIssues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    className="flex items-center justify-between gap-2 px-3 py-1"
                   >
-                    <PdfIcon />
-                  </button>
-                </div>
-              ))
-            )}
-            <div className="px-3 pb-2 pt-1 space-y-1.5">
-              <button
-                type="button"
-                className="btn btn-primary w-full text-sm"
-                disabled={!canIssueNewPrimka || issuingPrimka}
-                title={
-                  canIssueNewPrimka
-                    ? "Izdaj novu primku jer su dodane nove količine / aparati"
-                    : "Nema novih podataka — otvori postojeću primku"
-                }
-                onClick={issueNewPrimka}
-              >
-                {issuingPrimka
-                  ? "Izdajem…"
-                  : primkaIssues.length === 0
-                    ? "Izdaj primku"
-                    : "Izdaj novu primku"}
-              </button>
-              {primkaIssues.length > 0 ? (
-                <button
-                  type="button"
-                  className="btn btn-outline w-full text-sm"
-                  disabled={!mailConnected}
-                  title={
-                    mailConnected
-                      ? "Pošalji zadnju izdanu primku na mail"
-                      : (mailDisabledTitle ?? "Mail nije konfiguriran")
-                  }
-                  onClick={() => openMailModal("primka")}
-                >
-                  Pošalji zadnju primku
-                </button>
-              ) : null}
-              {!canIssueNewPrimka && primkaIssues.length > 0 ? (
-                <p className="text-[11px] text-slate-400">
-                  Trenutne količine već imaju izdanu primku.
-                </p>
-              ) : null}
-            </div>
+                    <span className="text-[11px] text-slate-500">
+                      Primka #{issue.version}
+                      <span className="ml-1 text-slate-400">{issue.issuedAtLabel}</span>
+                    </span>
+                    <span className="flex gap-1">
+                      <IconBtn
+                        title="Otvori postojeću primku"
+                        ariaLabel={`Otvori primku ${issue.version}`}
+                        onClick={() => openPdf("primka", issue.id)}
+                      >
+                        <PdfIcon />
+                      </IconBtn>
+                      <IconBtn
+                        disabled={!mailConnected}
+                        title={
+                          mailConnected
+                            ? "Pošalji ovu primku na mail"
+                            : (mailDisabledTitle ?? "Mail nije konfiguriran")
+                        }
+                        ariaLabel={`Pošalji primku ${issue.version}`}
+                        onClick={() => openMailModal("primka", issue.id)}
+                      >
+                        <MailIcon />
+                      </IconBtn>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             <div className="my-1 h-px bg-slate-100" />
             <DocRow kind="register" />
             <div className="my-1 h-px bg-slate-100" />
-            <DocRow kind="delivery-note" disabled={!dnAvailable} disabledTitle={dnDisabledTitle} />
+            <DocRow
+              kind="delivery-note"
+              disabled={!dnAvailable}
+              disabledTitle={dnDisabledTitle}
+              infoText={dnInfoText}
+            />
 
             {isLocked && !deliveryNoteIssued ? (
               <div className="px-3 pt-1 pb-1.5">
@@ -345,12 +413,6 @@ export default function WorkOrderDocumentsMenu({
                   </button>
                 </ConfirmForm>
               </div>
-            ) : null}
-
-            {!isLocked ? (
-              <p className="px-3 pb-1 pt-0.5 text-[11px] text-slate-400">
-                Otpremnica je dostupna nakon zaključavanja naloga.
-              </p>
             ) : null}
           </div>
         )}
@@ -396,7 +458,10 @@ export default function WorkOrderDocumentsMenu({
               <button
                 type="button"
                 className="btn btn-outline px-4"
-                onClick={() => setMailKind(null)}
+                onClick={() => {
+                  setMailKind(null);
+                  setMailPrimkaIssueId(null);
+                }}
                 disabled={sending}
               >
                 Odustani

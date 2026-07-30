@@ -340,6 +340,13 @@ export default async function ServiceViewPage({
             isAdmin={session.role === "ADMIN"}
             deliveryNoteIssued={hasShippedDeliveryNote}
           />
+          {!isLocked ? (
+            <ScanExtinguisherModal
+              orderId={order.id}
+              triggerLabel="Skeniraj QR"
+              triggerClassName="btn btn-outline px-4"
+            />
+          ) : null}
           {eracuniEnabled && isLocked && (!invoice || invoice.status === "ERROR") ? (
             <PendingSubmitForm
               action={`/api/work-orders/${order.id}/eracuni-invoice/create`}
@@ -544,14 +551,8 @@ export default async function ServiceViewPage({
           {isLocked ? (
             <div className="text-xs text-gray-500">Nalog je zaključan — nije moguće dodavati ili brisati stavke.</div>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3">
+            <div className="flex h-full flex-col items-center justify-center">
               <ApparatusQtyPanel orderId={order.id} initialTotalQty={order.receivedQty} />
-              <div className="h-px w-full bg-slate-200" />
-              <ScanExtinguisherModal
-                orderId={order.id}
-                triggerLabel="Skeniraj QR kod"
-                triggerClassName="btn btn-outline h-9 px-4 text-xs"
-              />
             </div>
           )}
         </div>
