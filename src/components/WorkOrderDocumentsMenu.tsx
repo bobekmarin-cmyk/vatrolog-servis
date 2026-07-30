@@ -326,56 +326,58 @@ export default function WorkOrderDocumentsMenu({
             role="menu"
             className="absolute right-0 top-full z-30 mt-1 w-72 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg"
           >
-            <DocRow
-              kind="primka"
-              disabled={primkaNewDisabled}
-              disabledTitle={primkaNewTitle}
-              onPdf={onNewPrimkaPdf}
-              onMail={onNewPrimkaMail}
-            />
+            <div className="pb-1">
+              <DocRow
+                kind="primka"
+                disabled={primkaNewDisabled}
+                disabledTitle={primkaNewTitle}
+                onPdf={onNewPrimkaPdf}
+                onMail={onNewPrimkaMail}
+              />
 
-            {primkaLoading ? (
-              <div className="px-3 pb-1 text-[11px] text-slate-400">Učitavam primke…</div>
-            ) : primkaIssues.length > 0 ? (
-              <div className="pb-1">
-                {primkaIssues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className="flex items-center justify-between gap-2 px-3 py-1"
-                  >
-                    <span className="text-[11px] text-slate-500">
-                      Primka #{issue.version}
-                      <span className="ml-1 text-slate-400">{issue.issuedAtLabel}</span>
-                    </span>
-                    <span className="flex gap-1">
-                      <IconBtn
-                        title="Otvori postojeću primku"
-                        ariaLabel={`Otvori primku ${issue.version}`}
-                        onClick={() => openPdf("primka", issue.id)}
-                      >
-                        <PdfIcon />
-                      </IconBtn>
-                      <IconBtn
-                        disabled={!mailConnected}
-                        title={
-                          mailConnected
-                            ? "Pošalji ovu primku na mail"
-                            : (mailDisabledTitle ?? "Mail nije konfiguriran")
-                        }
-                        ariaLabel={`Pošalji primku ${issue.version}`}
-                        onClick={() => openMailModal("primka", issue.id)}
-                      >
-                        <MailIcon />
-                      </IconBtn>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+              {primkaLoading ? (
+                <div className="px-3 pl-8 pb-0.5 text-[11px] text-slate-400">Učitavam…</div>
+              ) : primkaIssues.length > 0 ? (
+                <div className="space-y-0.5 pb-0.5">
+                  {primkaIssues.map((issue) => (
+                    <div
+                      key={issue.id}
+                      className="flex items-center justify-end gap-2 py-0.5 pl-8 pr-3"
+                    >
+                      <span className="min-w-0 flex-1 text-right text-[11px] tabular-nums text-slate-400">
+                        #{issue.version}
+                        <span className="ml-1.5">{issue.issuedAtLabel}</span>
+                      </span>
+                      <span className="flex shrink-0 gap-1">
+                        <IconBtn
+                          title="Otvori postojeću primku"
+                          ariaLabel={`Otvori primku ${issue.version}`}
+                          onClick={() => openPdf("primka", issue.id)}
+                        >
+                          <PdfIcon />
+                        </IconBtn>
+                        <IconBtn
+                          disabled={!mailConnected}
+                          title={
+                            mailConnected
+                              ? "Pošalji ovu primku na mail"
+                              : (mailDisabledTitle ?? "Mail nije konfiguriran")
+                          }
+                          ariaLabel={`Pošalji primku ${issue.version}`}
+                          onClick={() => openMailModal("primka", issue.id)}
+                        >
+                          <MailIcon />
+                        </IconBtn>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
 
-            <div className="my-1 h-px bg-slate-100" />
+            <div className="my-1.5 h-[2px] bg-slate-200" />
             <DocRow kind="register" />
-            <div className="my-1 h-px bg-slate-100" />
+            <div className="my-1.5 h-[2px] bg-slate-200" />
             <DocRow
               kind="delivery-note"
               disabled={!dnAvailable}
