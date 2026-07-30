@@ -78,6 +78,7 @@ export default function PlaceholderAddForm({
         <button
           type="button"
           className="btn btn-outline h-9 w-9 p-0 text-lg leading-none"
+          aria-label="Smanji količinu"
           onMouseDown={() => startHold(-1)}
           onMouseUp={clearHold}
           onMouseLeave={clearHold}
@@ -93,11 +94,13 @@ export default function PlaceholderAddForm({
           min={1}
           max={200}
           value={count}
+          aria-label="Količina aparata"
           onChange={(e) => setSafe(Number(e.target.value))}
         />
         <button
           type="button"
           className="btn btn-primary h-9 w-9 p-0 text-lg leading-none"
+          aria-label="Povećaj količinu"
           onMouseDown={() => startHold(1)}
           onMouseUp={clearHold}
           onMouseLeave={clearHold}
