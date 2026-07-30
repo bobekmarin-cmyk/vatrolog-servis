@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(npm)",
+      "Shell(npx)",
+      "Shell(node)",
+      "Shell(git)",
+      "Shell(gh)",
+      "Shell(ls)",
+      "Shell(cat)",
+      "Shell(rg)",
+      "Read(**)",
+      "Write(src/**)",
+      "Write(prisma/**)",
+      "Write(scripts/**)",
+      "Write(docs/**)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Write(.env*)",
+      "Write(.github/workflows/**)",
+      "Shell(rm)",
+      "Shell(curl)",
+      "Shell(docker)"
+    ]
+  }
+}
