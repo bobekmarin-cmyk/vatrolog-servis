@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePlatformSession } from "@/lib/platformAuth";
 import { getVendorStatus } from "@/lib/platformGmail";
 import { listRecentBackups, formatBytes } from "@/lib/backupListing";
+import BackupRunButton from "./BackupRunButton";
 import { validateLaunchEnv, type EnvIssue } from "@/lib/envChecks";
 import { getBillingMode } from "@/lib/billing";
 
@@ -323,6 +324,10 @@ export default async function PlatformHealthPage() {
           </Link>
         }
       >
+        <div className="mb-4">
+          <BackupRunButton />
+        </div>
+
         {!backups.configured ? (
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             {backups.errorMessage}
