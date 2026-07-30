@@ -1735,6 +1735,10 @@ model AuditLog {
   @@index([companyId, createdAt])
   @@index([entity, entityId])
   @@index([actorId])
+  /// Platform dashboard čita zadnjih N zapisa globalno (bez companyId filtera).
+  @@index([createdAt])
+  /// Health strip broji neuspjele platform loginove u zadnja 24h.
+  @@index([actorType, action, createdAt])
 }
 
 /**

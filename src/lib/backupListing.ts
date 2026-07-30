@@ -113,6 +113,17 @@ function sortAndSlice(objects: BackupObject[], limit: number): BackupObject[] {
  * bio zastario cim je u bucketu bilo vise od ~50 datoteka. Sada listamo po
  * mjesecima unatrag (najprije trenutni) s punom paginacijom po prefixu.
  */
+/**
+ * Broj mjeseci unatrag koje pretražujemo prije nego padnemo na full-bucket list.
+ * Prazan bucket je prije značio 18 uzastopnih ListObjectsV2 poziva u renderu
+ * platform dashboarda — to je bila glavna komponenta latencije te stranice.
+ */
+const MONTHS_BACK = 2;
+
+/** Kratki in-memory cache — dashboard i health stranica ne trebaju svjež S3 list na svaki render. */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cache: { at: number; limit: number; value: BackupListing } | null = null;
+
 export async function listRecentBackups(limit = 10): Promise<BackupListing> {
   const prefix = "db-backups/";
   const cfg = getClient();
@@ -126,11 +137,16 @@ export async function listRecentBackups(limit = 10): Promise<BackupListing> {
       errorMessage: "S3 (BACKUP_S3_BUCKET ili S3_BUCKET + S3_ACCESS_KEY/SECRET) nije konfiguriran.",
     };
   }
+
+  const need = Math.max(1, Math.min(limit, 100));
+  if (cache && cache.limit >= need && Date.now() - cache.at < CACHE_TTL_MS) {
+    return { ...cache.value, objects: cache.value.objects.slice(0, need) };
+  }
+
   try {
-    const need = Math.max(1, Math.min(limit, 100));
     let merged: BackupObject[] = [];
 
-    for (const monthPrefix of backupMonthPrefixes(18)) {
+    for (const monthPrefix of backupMonthPrefixes(MONTHS_BACK)) {
       const batch = await listAllUnderPrefix(cfg.client, cfg.bucket, monthPrefix);
       if (batch.length === 0) continue;
       merged = sortAndSlice([...merged, ...batch], need);
@@ -141,7 +157,7 @@ export async function listRecentBackups(limit = 10): Promise<BackupListing> {
       merged = sortAndSlice(await listAllUnderPrefix(cfg.client, cfg.bucket, prefix), need);
     }
 
-    return {
+    const value: BackupListing = {
       ok: true,
       configured: true,
       prefix,
@@ -149,6 +165,8 @@ export async function listRecentBackups(limit = 10): Promise<BackupListing> {
       objects: merged,
       errorMessage: null,
     };
+    cache = { at: Date.now(), limit: need, value };
+    return value;
   } catch (err) {
     return {
       ok: false,
