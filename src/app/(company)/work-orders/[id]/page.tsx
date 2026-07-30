@@ -322,7 +322,7 @@ export default async function ServiceViewPage({
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold leading-none">Servisni nalog</h1>
           <span className="text-lg leading-none text-slate-600 font-medium">{order.orderNumber}</span>
-          <span className="text-sm leading-none text-slate-500">{fmtDotDate(order.receivedAt)}</span>
+          <span className="text-sm leading-none text-slate-600">{fmtDotDate(order.receivedAt)}</span>
           <WorkOrderStatusBadge status={order.status} hasShippedDeliveryNote={hasShippedDeliveryNote} />
         </div>
 
@@ -531,11 +531,11 @@ export default async function ServiceViewPage({
               <div className="text-lg font-bold tabular-nums text-slate-800">{total}</div>
             </div>
             <div className="rounded-lg bg-white px-2 py-1">
-              <div className="text-[10px] text-emerald-600 uppercase tracking-wide">Servisirano</div>
+              <div className="text-[10px] text-emerald-700 uppercase tracking-wide">Servisirano</div>
               <div className="text-lg font-bold tabular-nums text-emerald-700">{servicedCount}</div>
             </div>
             <div className="rounded-lg bg-white px-2 py-1">
-              <div className="text-[10px] text-amber-600 uppercase tracking-wide">Preostalo</div>
+              <div className="text-[10px] text-amber-700 uppercase tracking-wide">Preostalo</div>
               <div className={`text-lg font-bold tabular-nums ${remaining > 0 ? "text-amber-700" : "text-slate-400"}`}>{remaining}</div>
             </div>
           </div>
@@ -716,7 +716,7 @@ export default async function ServiceViewPage({
       </WorkOrderServiceDrawerProvider>
       </WorkOrderRowHighlightProvider>
 
-      <p className="mt-4 text-xs text-gray-500">
+      <p className="mt-4 text-xs text-gray-600">
         Pravilo PP roka: datum radnog naloga 10.01.2026. → vrijedi do 01/2027 (kraj mjeseca + 1 godina).
       </p>
     </main>

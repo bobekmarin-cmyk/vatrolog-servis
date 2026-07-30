@@ -122,7 +122,7 @@ export default function DatePickerInput({
       />
       <button
         type="button"
-        className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500"
+        className="absolute inset-y-0 right-1.5 my-auto inline-flex h-6 w-6 min-h-6 min-w-6 items-center justify-center text-slate-600"
         aria-label="Odaberi datum"
         title="Odaberi datum"
         onClick={() => setOpen((prev) => !prev)}

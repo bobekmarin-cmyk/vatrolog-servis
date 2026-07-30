@@ -89,6 +89,7 @@ function QtyStepper({
         type="button"
         className="btn btn-outline h-8 w-8 p-0 text-base leading-none"
         disabled={disabled || value <= min}
+        aria-label="Smanji količinu"
         onMouseDown={() => startHold(-1)}
         onMouseUp={clearHold}
         onMouseLeave={clearHold}
@@ -104,12 +105,14 @@ function QtyStepper({
         max={max}
         value={value}
         disabled={disabled}
+        aria-label="Količina aparata"
         onChange={(e) => setSafe(Number(e.target.value))}
       />
       <button
         type="button"
         className="btn btn-primary h-8 w-8 p-0 text-base leading-none"
         disabled={disabled || value >= max}
+        aria-label="Povećaj količinu"
         onMouseDown={() => startHold(1)}
         onMouseUp={clearHold}
         onMouseLeave={clearHold}
