@@ -43,19 +43,68 @@ napravio.
 
 ---
 
-## Spajanje Sentryja (preporučeno)
+## Spajanje Sentryja
 
-Sentry ima native GitHub integraciju i može sam otvoriti issue:
+> Sentryjeva akcija **„Create a new GitHub issue"** dostupna je tek na **Business**
+> planu. Zato ne idemo preko GitHub issuea nego preko webhooka — radi na svakom
+> planu, uključujući besplatni.
 
-1. Sentry → **Settings → Integrations → GitHub** → *Install* i odaberi repo
-   `bobekmarin-cmyk/vatrolog-servis`
-2. Sentry → **Alerts → Create Alert → Issues**
-   - Uvjet: *A new issue is created* (po želji dodaj `level:error`)
-   - Akcija: **Create a GitHub issue**
+Tok je: Sentry → `POST /api/webhooks/sentry` → GitHub Actions (`auto-fix.yml`) → agent.
 
-Labela nije potrebna. Sentryjeva integracija u tijelo issuea uvijek upiše
-`Sentry Issue:` i link na `sentry.io`, pa workflow to sam prepozna i pokrene
-agenta. Labele `auto-fix` i `sentry` i dalje rade ako ih želite dodati ručno.
+### 1. Napravite Internal Integration u Sentryju
+
+Sentry → **Settings → Developer Settings → Custom Integrations** →
+**Create New Integration** → **Internal Integration**
+
+- **Name**: `VatroLog auto-fix`
+- **Webhook URL**: `https://vatrolog.com/api/webhooks/sentry`
+- **Alert Rule Action**: ✅ uključite (bez toga se integracija neće pojaviti u popisu akcija)
+- **Permissions**: `Issue & Event: Read` je dovoljno
+- **Webhooks**: označite `issue` i `error` ako su ponuđeni
+
+Spremite pa kopirajte **Client Secret** — treba za provjeru potpisa.
+
+### 2. Dodajte varijable u Railway
+
+Railway → servis `vatrolog-servis` → **Variables**:
+
+```
+SENTRY_WEBHOOK_SECRET=<Client Secret iz Sentryja>
+```
+
+Za pokretanje workflowa koristi se `GITHUB_AUTOMATION_TOKEN`, a ako njega nema,
+`GITHUB_BACKUP_TOKEN` (isti token kao za ručni backup — treba mu
+**Actions: Read and write**).
+
+### 3. Napravite Alert u Sentryju
+
+Sentry → **Alerts → Create Alert → Issues**
+
+- **Environment**: `production`
+- **WHEN**: samo *A new issue is created* (uklonite ostale okidače — inače bi i
+  „issue resolved" pokretalo agenta)
+- **IF**: ostavite prazno (`Any event`)
+- **THEN**: *Send a notification via VatroLog auto-fix*
+- **Save Rule**
+
+### Provjera
+
+Na **Platforma → Zdravlje sustava** red **„Sentry → auto-fix agent"** mora
+pisati **Povezan**. Kad se pojavi nova greška, u GitHub **Actions** pokreće se
+**Auto-fix**, a u logu aplikacije zapis `sentry_webhook_agent_dispatched`.
+
+### Sigurnost
+
+Ruta je javna (Sentry nema našu sesiju), pa je zaštita HMAC potpis:
+`sentry-hook-signature` mora odgovarati tijelu zahtjeva potpisanom Client
+Secretom. Bez ispravnog potpisa ruta vraća 401. Isti issue se u roku 10 minuta
+neće poslati dvaput.
+
+### Ručni put (i dalje radi)
+
+Ako issue otvorite sami, dodajte mu labelu `auto-fix` ili `sentry` i agent se
+pokrene. Isto vrijedi za issue koji otvori Sentry na Business planu — workflow
+ga prepozna po tekstu `Sentry Issue:` u tijelu.
 
 ### Praćenje grešaka u pregledniku
 

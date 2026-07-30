@@ -166,6 +166,9 @@ export default async function PlatformHealthPage() {
 
   const sentryConfigured = !!process.env.SENTRY_DSN?.trim();
   const sentryClientConfigured = !!process.env.NEXT_PUBLIC_SENTRY_DSN?.trim();
+  const sentryWebhookConfigured =
+    !!process.env.SENTRY_WEBHOOK_SECRET?.trim() &&
+    !!(process.env.GITHUB_AUTOMATION_TOKEN?.trim() || process.env.GITHUB_BACKUP_TOKEN?.trim());
   const upstashConfigured =
     !!process.env.UPSTASH_REDIS_REST_URL?.trim() &&
     !!process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
@@ -400,6 +403,16 @@ export default async function PlatformHealthPage() {
               sentryConfigured
                 ? `env=${sentryEnv} · trace=${sentryTrace}`
                 : "Greske se logaju samo lokalno"
+            }
+          />
+          <Row
+            label="Sentry → auto-fix agent"
+            tone={sentryWebhookConfigured ? "ok" : "off"}
+            value={sentryWebhookConfigured ? "Povezan" : "Nije povezan"}
+            hint={
+              sentryWebhookConfigured
+                ? "Nova greška u Sentryju pokreće agenta preko /api/webhooks/sentry"
+                : "SENTRY_WEBHOOK_SECRET nije postavljen — greške se ne prosljeđuju agentu"
             }
           />
           <Row
