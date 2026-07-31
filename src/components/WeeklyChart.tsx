@@ -83,7 +83,7 @@ export default function WeeklyChart({
             "rounded-md px-3 py-1 transition-colors",
             mode === "day"
               ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700",
+              : "text-slate-600 hover:text-slate-800",
           ].join(" ")}
         >
           Po danu
@@ -97,7 +97,7 @@ export default function WeeklyChart({
             "rounded-md px-3 py-1 transition-colors",
             mode === "week"
               ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700",
+              : "text-slate-600 hover:text-slate-800",
           ].join(" ")}
         >
           Po tjednu

@@ -300,7 +300,7 @@ export default async function DashboardPage() {
   return (
     <main className="space-y-6">
       <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-sm font-semibold uppercase tracking-wider text-red-600">
+        <h1 className="text-sm font-semibold uppercase tracking-wider text-red-700">
           Pregled servisa
         </h1>
         <div className="flex flex-wrap gap-2">
