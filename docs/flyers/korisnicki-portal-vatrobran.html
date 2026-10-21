@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <title>Korisnički portal — VATROBRAN d.o.o.</title>
+  <style>
+    @font-face {
+      font-family: Inter;
+      src: url("file:///usr/share/fonts/truetype/macos/Inter-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: Inter;
+      src: url("file:///usr/share/fonts/truetype/macos/Inter-Medium.ttf") format("truetype");
+      font-weight: 500;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: Inter;
+      src: url("file:///usr/share/fonts/truetype/macos/Inter-SemiBold.ttf") format("truetype");
+      font-weight: 600;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: Inter;
+      src: url("file:///usr/share/fonts/truetype/macos/Inter-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @page { size: A4; margin: 0; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #fff;
+      color: #0f172a;
+      font-family: Inter, "Noto Sans", sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+      position: relative;
+    }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+
+    /* ---------- PAGE 1 ---------- */
+    .cover {
+      display: flex;
+      background: #fff;
+    }
+    .rail {
+      width: 68mm;
+      flex: 0 0 68mm;
+      background: linear-gradient(180deg, #b91c1c 0%, #991b1b 42%, #7f1d1d 100%);
+      color: #fff;
+      padding: 12mm 8mm 10mm;
+      display: flex;
+      flex-direction: column;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 3.2mm;
+    }
+    .brand img {
+      width: 14mm;
+      height: 14mm;
+      border-radius: 3.4mm;
+      background: #fff;
+      display: block;
+    }
+    .wordmark {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .wordmark span { color: #fecaca; }
+    .brand-sub {
+      margin-top: 1.4mm;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fecaca;
+    }
+    .rail-mid { margin-top: 16mm; }
+    .rail-kicker {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #fecaca;
+    }
+    .rail h2 {
+      margin-top: 2.5mm;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    .rail-role {
+      margin-top: 3mm;
+      font-size: 11px;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.86);
+    }
+    .rail-spacer {
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    .rail-mantra {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+      color: rgba(255,255,255,0.94);
+    }
+    .qr-card {
+      background: #fff;
+      color: #0f172a;
+      border-radius: 3.5mm;
+      padding: 3.5mm 3.5mm 3.2mm;
+      text-align: center;
+    }
+    .qr-card img, .qr-card svg, .qr-card object {
+      width: 34mm;
+      height: 34mm;
+      display: block;
+      margin: 0 auto;
+    }
+    .qr-card .url {
+      margin-top: 1.5mm;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .qr-card .hint {
+      margin-top: 0.6mm;
+      font-size: 8px;
+      color: #64748b;
+      line-height: 1.3;
+    }
+
+    .main {
+      flex: 1;
+      padding: 12mm 12mm 10mm 11mm;
+      display: flex;
+      flex-direction: column;
+    }
+    .kicker {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #b91c1c;
+    }
+    h1 {
+      margin-top: 3.5mm;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      color: #0f172a;
+    }
+    .lead {
+      margin-top: 4.5mm;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .steps {
+      margin-top: 7mm;
+      display: grid;
+      gap: 3.6mm;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 11mm 1fr;
+      gap: 3.5mm;
+      align-items: start;
+    }
+    .num {
+      width: 11mm;
+      height: 11mm;
+      border-radius: 50%;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step h3 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .step p {
+      margin-top: 0.8mm;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #475569;
+    }
+    .preview {
+      margin-top: 7mm;
+      border: 0.35mm solid #e2e8f0;
+      border-radius: 3mm;
+      padding: 4mm 4.2mm 3.8mm;
+      background: #f8fafc;
+    }
+    .preview-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .stats {
+      margin-top: 3mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.4mm;
+    }
+    .stat {
+      background: #fff;
+      border: 0.3mm solid #e2e8f0;
+      border-radius: 2.2mm;
+      padding: 2.6mm 3mm 2.4mm;
+    }
+    .stat b {
+      display: block;
+      font-size: 12px;
+      letter-spacing: -0.02em;
+    }
+    .stat span {
+      display: block;
+      margin-top: 0.6mm;
+      font-size: 9.5px;
+      line-height: 1.3;
+      color: #64748b;
+    }
+    .stat.danger { border-color: #fecaca; background: #fef2f2; }
+    .stat.danger b { color: #b91c1c; }
+    .stat.warn { border-color: #fde68a; background: #fffbeb; }
+    .stat.warn b { color: #b45309; }
+    .more {
+      margin-top: 3.2mm;
+      padding-top: 3mm;
+      border-top: 0.3mm solid #e2e8f0;
+      display: grid;
+      gap: 1.8mm;
+    }
+    .more div {
+      font-size: 10.5px;
+      line-height: 1.35;
+      color: #334155;
+    }
+    .more strong { color: #0f172a; }
+    .foot-note {
+      margin-top: 4mm;
+      font-size: 9px;
+      line-height: 1.4;
+      color: #64748b;
+    }
+
+    /* ---------- PAGE 2 ---------- */
+    .sheet { background: #fff; display: flex; flex-direction: column; }
+    .top {
+      background: #0f172a;
+      color: #fff;
+      padding: 8mm 12mm 7mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8mm;
+    }
+    .top-brand { display: flex; align-items: center; gap: 3mm; }
+    .top-brand img {
+      width: 10mm;
+      height: 10mm;
+      border-radius: 2.4mm;
+      background: #fff;
+    }
+    .top-brand .wm { font-size: 16px; font-weight: 700; letter-spacing: -0.03em; }
+    .top-brand .wm span { color: #fca5a5; }
+    .top-brand .sub {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      margin-top: 0.8mm;
+      font-weight: 600;
+    }
+    .top-sender { text-align: right; }
+    .top-sender .who {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #fca5a5;
+      font-weight: 700;
+    }
+    .top-sender .name {
+      margin-top: 1mm;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .body2 { padding: 8mm 12mm 0; flex: 1; display: flex; flex-direction: column; }
+    .body2 h2 {
+      font-size: 22px;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .body2 .intro {
+      margin-top: 2mm;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: #475569;
+      max-width: 170mm;
+    }
+    .grid {
+      margin-top: 5.5mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3.4mm 6mm;
+    }
+    .card {
+      border: 0.3mm solid #e2e8f0;
+      border-radius: 2.6mm;
+      padding: 3.4mm 3.6mm 3.2mm;
+      background: #fff;
+    }
+    .card .idx {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: #b91c1c;
+    }
+    .card h3 {
+      margin-top: 1mm;
+      font-size: 13px;
+      letter-spacing: -0.02em;
+    }
+    .card p {
+      margin-top: 1.2mm;
+      font-size: 10.2px;
+      line-height: 1.38;
+      color: #334155;
+    }
+    .docs {
+      margin-top: 4mm;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2.4mm;
+    }
+    .doc {
+      background: #fef2f2;
+      border-radius: 2.2mm;
+      padding: 2.6mm 2.8mm;
+    }
+    .doc strong {
+      display: block;
+      font-size: 11px;
+      color: #991b1b;
+    }
+    .doc span {
+      display: block;
+      margin-top: 0.6mm;
+      font-size: 9px;
+      line-height: 1.3;
+      color: #7f1d1d;
+    }
+    .notes {
+      margin-top: 4mm;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 3.2mm;
+    }
+    .note {
+      background: #f8fafc;
+      border-radius: 2.4mm;
+      padding: 3.2mm 3.6mm;
+    }
+    .note h3 { font-size: 12px; letter-spacing: -0.02em; }
+    .note p {
+      margin-top: 1.2mm;
+      font-size: 10.2px;
+      line-height: 1.4;
+      color: #334155;
+    }
+    .cta {
+      margin: 4.5mm 12mm 8mm;
+      background: linear-gradient(90deg, #b91c1c, #7f1d1d);
+      color: #fff;
+      border-radius: 3mm;
+      padding: 4.2mm 5mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6mm;
+    }
+    .cta h3 {
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .cta p {
+      margin-top: 1mm;
+      font-size: 10.5px;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.9);
+      max-width: 125mm;
+    }
+    .cta .go {
+      flex: 0 0 auto;
+      background: #fff;
+      color: #7f1d1d;
+      border-radius: 2mm;
+      padding: 2.6mm 3.6mm;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: center;
+      line-height: 1.25;
+    }
+  </style>
+</head>
+<body>
+  <section class="page cover">
+    <aside class="rail">
+      <div class="brand">
+        <img src="assets/vatrolog-icon.png" alt="VatroLog" />
+        <div>
+          <div class="wordmark">Vatro<span>Log</span></div>
+          <div class="brand-sub">Korisnički portal</div>
+        </div>
+      </div>
+
+      <div class="rail-mid">
+        <div class="rail-kicker">Pozivnicu šalje</div>
+        <h2>VATROBRAN<br />d.o.o.</h2>
+        <p class="rail-role">Vaš servis vatrogasnih aparata.</p>
+      </div>
+
+      <div class="rail-spacer">
+        <p class="rail-mantra">Aparati.<br />Rokovi.<br />Dokumenti.</p>
+      </div>
+
+      <div class="qr-card">
+        <img src="assets/portal-qr.svg" alt="QR kod za vatrolog.com/korisnik" />
+        <div class="url">vatrolog.com/korisnik</div>
+        <div class="hint">Prijava e-mailom i lozinkom.<br />Registracija ide samo pozivnicom.</div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="kicker">Za kupce kojima servisiramo aparate</div>
+      <h1>Svi vaši vatrogasni aparati na jednom mjestu.</h1>
+      <p class="lead">
+        VATROBRAN d.o.o. otvara vam VatroLog Korisnički portal. Na njemu su aparati koje vam servisiramo,
+        servisni nalozi i dokumenti te evidencija redovnih tromjesečnih pregleda koju vodite sami.
+      </p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <div>
+            <h3>Javite nam e-mail</h3>
+            <p>Navedite osobu koja će biti administrator portala i adresu na koju šaljemo pozivnicu.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <div>
+            <h3>Aktivirajte pristup</h3>
+            <p>Na e-mail stiže link koji vrijedi 14 dana. Njime postavljate lozinku i otvarate račun.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <div>
+            <h3>Prijavite se</h3>
+            <p>Ulaz je vatrolog.com/korisnik. Zaboravljenu lozinku resetirate sami, izravno na portalu.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="preview-label">Na početnoj stranici odmah vidite</div>
+        <div class="stats">
+          <div class="stat">
+            <b>Svi aparati</b>
+            <span>Jedan popis, bez obzira na odjeljenje.</span>
+          </div>
+          <div class="stat danger">
+            <b>Istekao servisni rok</b>
+            <span>Periodični servis koji je već prošao.</span>
+          </div>
+          <div class="stat warn">
+            <b>Ističe ovaj mjesec</b>
+            <span>Rok periodičnog servisa koji se bliži.</span>
+          </div>
+          <div class="stat danger">
+            <b>Treba redovni pregled</b>
+            <span>Tromjesečni pregled koji vodite vi.</span>
+          </div>
+        </div>
+        <div class="more">
+          <div><strong>Dokumenti.</strong> Primka, upisnik, otpremnica i račun preuzimaju se kao PDF, čim su izdani.</div>
+          <div><strong>Pregled.</strong> Tromjesečni unos ide skeniranjem oznake na aparatu ili ručnim upisom.</div>
+          <div><strong>Kolege.</strong> Administrator poziva suradnike. Svatko ima svoju prijavu i svoju lozinku.</div>
+        </div>
+      </div>
+
+      <p class="foot-note">
+        Portal ne zamjenjuje periodični servis — njega i dalje obavlja VATROBRAN d.o.o.
+        Stražnja strana nabraja sve što je u portalu dostupno.
+      </p>
+    </div>
+  </section>
+
+  <section class="page sheet">
+    <header class="top">
+      <div class="top-brand">
+        <img src="assets/vatrolog-icon.png" alt="" />
+        <div>
+          <div class="wm">Vatro<span>Log</span></div>
+          <div class="sub">Korisnički portal</div>
+        </div>
+      </div>
+      <div class="top-sender">
+        <div class="who">Servis</div>
+        <div class="name">VATROBRAN d.o.o.</div>
+      </div>
+    </header>
+
+    <div class="body2">
+      <h2>Što sve možete u portalu</h2>
+      <p class="intro">
+        Nakon prijave vidite samo podatke svoje tvrtke. Ako imate više subjekata, birate onaj koji želite otvoriti.
+        Popis aparata i naloga možete suziti po servisu i po odjeljenju.
+      </p>
+
+      <div class="grid">
+        <article class="card">
+          <div class="idx">01 · PREGLED</div>
+          <h3>Početna stranica</h3>
+          <p>Broj svih aparata, broj onih s isteklim periodičnim rokom, broj onih kojima rok ističe ovaj mjesec i broj onih koji čekaju redovni pregled. Ispod su zadnji servisni nalozi.</p>
+        </article>
+        <article class="card">
+          <div class="idx">02 · APARATI</div>
+          <h3>Popis svih aparata</h3>
+          <p>Status, interni broj, proizvođač, tip, serijski broj i godina proizvodnje, servis, trenutna naljepnica te datumi periodičnog servisa i redovnog pregleda.</p>
+        </article>
+        <article class="card">
+          <div class="idx">03 · REDOVNI PREGLEDI</div>
+          <h3>Tromjesečna evidencija</h3>
+          <p>Pregled obavlja vlasnik. Unosite ga kamerom (QR ili crtični kod s oznake) ili ručno. Kontrolna lista pokriva položaj, oznake, kompletnost, oštećenja, plombu i manometar. Povijest ostaje u portalu, a serviser je ne vidi.</p>
+        </article>
+        <article class="card">
+          <div class="idx">04 · SERVISNI NALOZI</div>
+          <h3>Tijek svakog naloga</h3>
+          <p>Broj naloga, servis, odjeljenje, datum zaprimanja i završetka te koliko je stavki servisirano. Status je jasan: servis u tijeku, servis završen ili otpremljeno.</p>
+        </article>
+        <article class="card">
+          <div class="idx">05 · KORISNICI</div>
+          <h3>Više ljudi, iste tvrtke</h3>
+          <p>Administrator šalje pozivnice kolegama i dodjeljuje ulogu. Pristup se može i ukinuti. Svaki korisnik aktivira vlastitu lozinku preko linka koji vrijedi 14 dana.</p>
+        </article>
+        <article class="card">
+          <div class="idx">06 · MOJI SERVISI</div>
+          <h3>Jedna prijava, više servisa</h3>
+          <p>Vidite koji su servisi povezani s vašim portalom. Ako aparate servisira i netko drugi, možete zatražiti povezivanje — taj serviser to odobrava.</p>
+        </article>
+      </div>
+
+      <div class="docs">
+        <div class="doc"><strong>Primka</strong><span>Zaprimanje aparata na servis.</span></div>
+        <div class="doc"><strong>Upisnik</strong><span>Evidencija obavljenog servisa.</span></div>
+        <div class="doc"><strong>Otpremnica</strong><span>Kad je izdana, uz broj dokumenta.</span></div>
+        <div class="doc"><strong>Račun</strong><span>Kad je izdan, za preuzimanje u PDF-u.</span></div>
+      </div>
+
+      <div class="notes">
+        <div class="note">
+          <h3>Podsjetnici</h3>
+          <p>Kad redovni pregled dospije, broj je vidljiv u izborniku portala. Prvog u mjesecu stiže i e-mail ako barem jedan aparat čeka pregled.</p>
+        </div>
+        <div class="note">
+          <h3>Što portal nije</h3>
+          <p>Nije zamjena za servisni nalog. Periodični servis i dalje radi VATROBRAN d.o.o. Portal je uvid u podatke i vaša evidencija tromjesečnih pregleda.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta">
+      <div>
+        <h3>Želite pristup? Javite nam e-mail.</h3>
+        <p>VATROBRAN d.o.o. šalje pozivnicu. Vi postavljate lozinku i odmah vidite svoje aparate, naloge i dokumente.</p>
+      </div>
+      <div class="go">vatrolog.com/korisnik</div>
+    </div>
+  </section>
+</body>
+</html>
